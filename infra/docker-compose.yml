@@ -29,13 +29,15 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-example-root-password}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-app_development}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-app_db}
       MYSQL_USER: ${MYSQL_USER:-app_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-example-password}
     ports:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./mysql/conf.d:/etc/mysql/conf.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
