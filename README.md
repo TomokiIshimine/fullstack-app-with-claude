@@ -15,6 +15,27 @@ This repository is organized as a monorepo hosting the frontend, backend, and in
 ## Shared Configuration
 Common editor and ignore rules are defined in `.editorconfig` and `.gitignore` respectively. Adjust these files when adding new packages or tooling so that formatting and repository hygiene stay consistent across the monorepo.
 
+## Setup & Run
+
+1. 依存関係インストール:
+   ```bash
+   make install
+   ```
+2. 開発用コンテナの起動 (MySQL など):
+   ```bash
+   docker compose -f infra/docker-compose.yml --env-file infra/.env.development up -d
+   ```
+   ※ シンプルに `docker compose up -d` を使う場合は、同等の環境変数を読み込むよう注意してください。
+3. フロントエンド開発サーバー:
+   ```bash
+   pnpm --dir frontend run dev --host 0.0.0.0 --port 5173
+   ```
+4. バックエンド API サーバー:
+   ```bash
+   poetry -C backend run flask --app app.main run --host 0.0.0.0 --port 5000
+   ```
+5. 終了時は `make down` もしくは `docker compose ... down` を実行してリソースを解放してください。
+
 ## Commit Message Guidelines
 
 This repository follows [Conventional Commits](https://www.conventionalcommits.org/) to keep history readable and automation-friendly. Use the `<type>(<scope>): <subject>` format, for example:
