@@ -38,16 +38,16 @@ make install
 
 ## トラブルシューティング
 
-- **環境変数の読み込みに失敗する**  
+- **環境変数の読み込みに失敗する**
   `.env` ファイルの変更後は `make down && make up` で再起動し、`docker compose ... exec db env` などで反映を確認します。
 
-- **Docker が起動しない**  
+- **Docker が起動しない**
   既存のボリュームが壊れている可能性があります。`docker compose ... down -v` を検討し、それでも改善しない場合はログ (`docker compose logs db`) を確認してください。
 
-- **テストの CPU 使用量が高い**  
+- **テストの CPU 使用量が高い**
   `make test` はスレッド数を制限する設定を含みますが、Vitest 側のキャッシュをリセットしたい場合は `pnpm --dir frontend run test -- --runInBand --clearCache` を試してください。
 
-- **Lint でエラーが出る**  
+- **Lint でエラーが出る**
   `make format` を実行して Prettier / isort / black で整形し、必要に応じてルール例外を検討します。
 
 ## 参考

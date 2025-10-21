@@ -1,0 +1,51 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+  - repo: local
+    hooks:
+      - id: frontend-format
+        name: frontend prettier format
+        entry: pnpm --dir frontend run format
+        language: system
+        pass_filenames: false
+      - id: frontend-lint
+        name: frontend eslint
+        entry: pnpm --dir frontend run lint
+        language: system
+        pass_filenames: false
+      - id: frontend-tests
+        name: frontend vitest (changed files)
+        entry: pnpm --dir frontend exec vitest run --pool=threads --poolOptions.threads.singleThread=true --reporter=dot --passWithNoTests --changed
+        language: system
+        pass_filenames: false
+      - id: backend-isort
+        name: backend isort
+        entry: poetry -C backend run isort app backend
+        language: system
+        pass_filenames: false
+      - id: backend-black
+        name: backend black
+        entry: poetry -C backend run black app backend
+        language: system
+        pass_filenames: false
+      - id: backend-lint
+        name: backend flake8
+        entry: poetry -C backend run flake8 app backend
+        language: system
+        pass_filenames: false
+      - id: backend-mypy
+        name: backend mypy
+        entry: poetry -C backend run mypy app
+        language: system
+        pass_filenames: false
+      - id: backend-tests
+        name: backend pytest
+        entry: poetry -C backend run pytest -q
+        language: system
+        pass_filenames: false

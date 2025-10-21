@@ -16,12 +16,17 @@ __pycache__/
 venv/
 .env
 .env.*
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
 # Build artifacts
 dist/
 build/
 coverage/
 .tmp/
+htmlcov/
+coverage.xml
 
 # Docker
 .docker/
@@ -42,6 +47,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
-.pnpm-store/
 
 .pnpm-store/
+.poetry/
+.python-version
