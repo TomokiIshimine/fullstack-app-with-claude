@@ -17,7 +17,8 @@ services:
     working_dir: /app
     volumes:
       - ../backend:/app
-    command: flask run --host=0.0.0.0 --port=5000
+    command: >-
+      sh -c "pip install --no-cache-dir poetry && poetry install && poetry run flask run --host=0.0.0.0 --port=5000"
     environment:
       - FLASK_APP=${FLASK_APP:-app:app}
       - FLASK_ENV=development
