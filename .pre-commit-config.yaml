@@ -11,41 +11,49 @@ repos:
     hooks:
       - id: frontend-format
         name: frontend prettier format
-        entry: pnpm --dir frontend run format
+        entry: pnpm --dir frontend exec node scripts/format.mjs
         language: system
-        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|scss|md|html|ya?ml|cjs|mjs)$
+        pass_filenames: true
       - id: frontend-lint
         name: frontend eslint
-        entry: pnpm --dir frontend run lint
+        entry: pnpm --dir frontend exec node scripts/run-eslint.mjs
         language: system
-        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: true
       - id: frontend-tests
-        name: frontend vitest (changed files)
-        entry: pnpm --dir frontend exec vitest run --pool=threads --poolOptions.threads.singleThread=true --reporter=dot --passWithNoTests --changed
+        name: frontend vitest related
+        entry: pnpm --dir frontend exec node scripts/run-vitest-related.mjs
         language: system
-        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: true
       - id: backend-isort
         name: backend isort
-        entry: poetry -C backend run isort app backend
+        entry: python backend/scripts/run_poetry_tool.py isort
         language: system
-        pass_filenames: false
+        files: ^backend/.*\.py$
+        pass_filenames: true
       - id: backend-black
         name: backend black
-        entry: poetry -C backend run black app backend
+        entry: python backend/scripts/run_poetry_tool.py black
         language: system
-        pass_filenames: false
-      - id: backend-lint
+        files: ^backend/.*\.py$
+        pass_filenames: true
+      - id: backend-flake8
         name: backend flake8
-        entry: poetry -C backend run flake8 app backend
+        entry: python backend/scripts/run_poetry_tool.py flake8
         language: system
-        pass_filenames: false
+        files: ^backend/.*\.py$
+        pass_filenames: true
       - id: backend-mypy
         name: backend mypy
-        entry: poetry -C backend run mypy app
+        entry: python backend/scripts/run_poetry_tool.py mypy
         language: system
-        pass_filenames: false
-      - id: backend-tests
+        files: ^backend/.*\.(py|pyi|toml)$
+        pass_filenames: true
+      - id: backend-pytest
         name: backend pytest
-        entry: poetry -C backend run pytest -q
+        entry: python backend/scripts/run_poetry_tool.py pytest
         language: system
-        pass_filenames: false
+        files: ^backend/.*\.(py|pyi|toml|ya?ml)$
+        pass_filenames: true

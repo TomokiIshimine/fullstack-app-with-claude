@@ -3,21 +3,8 @@ import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
-const args = process.argv.slice(2)
-const isCheck = args.includes('--check')
-const positional = []
-const flags = []
-
-for (const arg of args) {
-  if (arg === '--check') continue
-  if (arg.startsWith('-')) {
-    flags.push(arg)
-  } else {
-    positional.push(arg)
-  }
-}
-
 const cwd = process.cwd()
+
 const normalizePath = input => {
   let candidate = input
   if (candidate.startsWith('frontend/')) {
@@ -34,18 +21,24 @@ const normalizePath = input => {
   return path.relative(cwd, resolved)
 }
 
-const normalizedTargets = Array.from(new Set(positional.map(normalizePath).filter(Boolean)))
+const rawArgs = process.argv.slice(2)
+const files = Array.from(new Set(rawArgs.map(normalizePath).filter(Boolean)))
 
-const targets = normalizedTargets.length > 0 ? normalizedTargets : ['.']
-const prettierArgs = [
-  'prettier',
-  '--ignore-unknown',
-  ...(isCheck ? ['--check'] : ['--write']),
-  ...flags,
-  ...targets,
+if (files.length === 0) {
+  process.exit(0)
+}
+
+const vitestArgs = [
+  'vitest',
+  'related',
+  ...files,
+  '--run',
+  '--pool=threads',
+  '--poolOptions.threads.singleThread=true',
+  '--reporter=dot',
 ]
 
-const result = spawnSync('pnpm', prettierArgs, { stdio: 'inherit', shell: false })
+const result = spawnSync('pnpm', vitestArgs, { stdio: 'inherit', shell: false })
 
 if (result.error) {
   console.error(result.error)
