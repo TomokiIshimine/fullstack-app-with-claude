@@ -1,0 +1,50 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "t.ishimine",email = "ishitoki47259@gmail.com"}
+]
+readme = "README.md"
+requires-python = "^3.12"
+dependencies = [
+    "flask (>=2.3,<3.0)",
+    "sqlalchemy (>=2.0,<3.0)",
+    "pymysql (>=1.1,<2.0)",
+    "python-dotenv (>=1.0,<2.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=8.3,<9.0)",
+    "mypy (>=1.13,<2.0)",
+    "black (>=24.10,<25.0)",
+    "isort (>=5.13,<6.0)",
+    "flake8 (>=7.1,<8.0)"
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["app"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [".venv", ".mypy_cache", ".pytest_cache"]
+
+[tool.mypy]
+python_version = "3.12"
+packages = ["app"]
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = false
