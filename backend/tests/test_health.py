@@ -7,7 +7,9 @@ def test_health_endpoint(client) -> None:
     assert response.get_json() == {"status": "ok"}
 
 
-def test_ping_endpoint(client) -> None:
-    response = client.get("/api/ping")
+def test_todos_endpoint_available(client) -> None:
+    response = client.get("/api/todos")
     assert response.status_code == 200
-    assert response.get_json() == {"message": "pong"}
+    payload = response.get_json()
+    assert payload["items"] == []
+    assert payload["meta"]["count"] == 0
