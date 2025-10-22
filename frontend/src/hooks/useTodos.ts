@@ -1,17 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import {
-  ApiError,
-  Todo,
-  TodoPayload,
-  TodoStatus,
-  TodoUpdatePayload,
-  createTodo,
-  deleteTodo,
-  getTodos,
-  toggleTodo,
-  updateTodo,
-} from '@/lib/api/todos'
+import { ApiError, createTodo, deleteTodo, getTodos, toggleTodo, updateTodo } from '@/lib/api/todos'
+import type { Todo, TodoPayload, TodoStatus, TodoUpdatePayload } from '@/lib/api/todos'
 
 export type SortOrder = 'asc' | 'desc'
 

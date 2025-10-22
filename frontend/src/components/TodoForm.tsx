@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { Todo } from '@/lib/api/todos'
+import type { Todo } from '@/lib/api/todos'
 
 interface TodoFormProps {
   editingTodo: Todo | null

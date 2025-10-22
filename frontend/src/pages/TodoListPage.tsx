@@ -2,7 +2,7 @@ import { TodoForm } from '@/components/TodoForm'
 import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
 import { useTodos } from '@/hooks/useTodos'
-import { Todo } from '@/lib/api/todos'
+import type { Todo } from '@/lib/api/todos'
 
 export function TodoListPage() {
   const {
