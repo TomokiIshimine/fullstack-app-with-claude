@@ -9,6 +9,7 @@ services:
       - "5173:5173"
     environment:
       - NODE_ENV=development
+      - VITE_API_PROXY=http://backend:5000
     networks:
       - app-network
 
