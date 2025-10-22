@@ -1,12 +1,15 @@
-.PHONY: install up down lint test format
+.PHONY: install setup up down lint test format
 
 PNPM ?= pnpm --dir frontend
 POETRY ?= poetry -C backend
 COMPOSE ?= docker compose -f infra/docker-compose.yml --env-file infra/.env.development
 
 install:
-	$(PNPM) install
+	CI=true $(PNPM) install --config.allow-scripts=true
 	$(POETRY) install
+
+setup: install
+	@printf '✅ Environment setup complete. You can now run `make up` to start the stack.\n'
 
 up:
 	$(COMPOSE) up -d
