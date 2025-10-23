@@ -10,7 +10,7 @@ ENV_PATH = BASE_DIR / ".env"
 
 load_dotenv(dotenv_path=ENV_PATH if ENV_PATH.exists() else None)
 
-DEFAULT_DB_URL = "mysql+pymysql://user:password@db:3306/app_db"
+DEFAULT_DB_URL = "mysql+pymysql://app_user:example-password@db:3306/app_db"
 
 
 class Config:
