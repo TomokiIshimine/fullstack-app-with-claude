@@ -52,3 +52,5 @@ Thumbs.db
 .pnpm-store/
 .poetry/
 .python-version
+
+.playwright-mcp/
