@@ -1,18 +1,13 @@
 from __future__ import annotations
 
-from datetime import date
-from typing import Iterable, Sequence
+from typing import Sequence
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 from werkzeug.exceptions import HTTPException
 
 from app.models.todo import Todo
-from app.schemas.todo import TodoCreateData, TodoResponse, TodoStatus, TodoToggleData, TodoUpdateData
-
-MAX_TITLE_LENGTH = 120
-MAX_DETAIL_LENGTH = 1000
-VALID_STATUSES: tuple[TodoStatus, ...] = ("all", "active", "completed")
+from app.repositories.todo_repository import TodoRepository
+from app.schemas.todo import TodoCreateData, TodoStatus, TodoToggleData, TodoUpdateData
 
 
 class TodoServiceError(HTTPException):
@@ -23,142 +18,86 @@ class TodoServiceError(HTTPException):
         super().__init__(description=message or self.description)
 
 
-class TodoValidationError(TodoServiceError):
-    code = 400
-    description = "Validation failed for todo operation."
-
-
 class TodoNotFoundError(TodoServiceError):
     code = 404
     description = "Todo not found."
 
 
-def list_todos(session: Session, status: TodoStatus = "active") -> Sequence[Todo]:
-    status = status or "active"
-    if status not in VALID_STATUSES:
-        raise TodoValidationError("Invalid status filter.")
+class TodoService:
+    """Service layer for todo business logic."""
 
-    stmt = select(Todo)
-    if status == "active":
-        stmt = stmt.where(Todo.is_completed.is_(False))
-    elif status == "completed":
-        stmt = stmt.where(Todo.is_completed.is_(True))
+    def __init__(self, session: Session):
+        self.repository = TodoRepository(session)
 
-    stmt = stmt.order_by(Todo.due_date.asc(), Todo.created_at.asc())
-    return list(session.scalars(stmt))
+    def list_todos(self, status: TodoStatus = "active") -> Sequence[Todo]:
+        """Retrieve todos filtered by status."""
+        if status == "all":
+            return self.repository.find_all()
+        elif status == "active":
+            return self.repository.find_active()
+        elif status == "completed":
+            return self.repository.find_completed()
+        else:
+            # This should not happen due to type constraints, but handle it anyway
+            return self.repository.find_active()
 
+    def create_todo(self, data: TodoCreateData) -> Todo:
+        """Create a new todo with validated data."""
+        validated_data = data.validate()
+        todo = Todo(
+            title=validated_data.title,
+            detail=validated_data.detail,
+            due_date=validated_data.due_date,
+        )
+        return self.repository.save(todo)
 
-def create_todo(session: Session, data: TodoCreateData) -> Todo:
-    title = _normalize_title(data.title)
-    detail = _normalize_detail(data.detail)
-    due_date = _validate_due_date(data.due_date)
+    def update_todo(self, todo_id: int, data: TodoUpdateData) -> Todo:
+        """Update an existing todo with validated data."""
+        todo = self.repository.find_by_id(todo_id)
+        if todo is None:
+            raise TodoNotFoundError()
 
-    todo = Todo(
-        title=title,
-        detail=detail,
-        due_date=due_date,
-    )
-    session.add(todo)
-    session.flush()
-    session.refresh(todo)
-    return todo
+        if not data.has_updates():
+            from app.schemas.todo import TodoValidationError
 
+            raise TodoValidationError("No fields provided for update.")
 
-def update_todo(session: Session, todo_id: int, data: TodoUpdateData) -> Todo:
-    todo = session.get(Todo, todo_id)
-    if todo is None:
-        raise TodoNotFoundError()
+        validated_data = data.validate()
+        updates = validated_data.to_updates()
 
-    if not data.has_updates():
-        raise TodoValidationError("No fields provided for update.")
+        if "title" in updates:
+            todo.title = str(updates["title"])
 
-    updates = data.to_updates()
+        if "detail" in updates:
+            todo.detail = updates["detail"]  # type: ignore
 
-    if "title" in updates:
-        todo.title = _normalize_title(str(updates["title"]))
+        if "due_date" in updates:
+            todo.due_date = updates["due_date"]  # type: ignore
 
-    if "detail" in updates:
-        todo.detail = _normalize_detail(updates["detail"])
+        return self.repository.update(todo)
 
-    if "due_date" in updates:
-        todo.due_date = _validate_due_date(updates["due_date"])
+    def toggle_completed(self, todo_id: int, data: TodoToggleData) -> Todo:
+        """Toggle the completion status of a todo."""
+        todo = self.repository.find_by_id(todo_id)
+        if todo is None:
+            raise TodoNotFoundError()
 
-    session.flush()
-    session.refresh(todo)
-    return todo
+        validated_data = data.validate()
+        todo.is_completed = validated_data.is_completed
 
+        return self.repository.update(todo)
 
-def toggle_completed(session: Session, todo_id: int, data: TodoToggleData) -> Todo:
-    todo = session.get(Todo, todo_id)
-    if todo is None:
-        raise TodoNotFoundError()
+    def delete_todo(self, todo_id: int) -> None:
+        """Delete a todo by ID."""
+        todo = self.repository.find_by_id(todo_id)
+        if todo is None:
+            raise TodoNotFoundError()
 
-    if not isinstance(data.is_completed, bool):
-        raise TodoValidationError("is_completed must be a boolean.")
-
-    todo.is_completed = data.is_completed
-    session.flush()
-    session.refresh(todo)
-    return todo
-
-
-def delete_todo(session: Session, todo_id: int) -> None:
-    todo = session.get(Todo, todo_id)
-    if todo is None:
-        raise TodoNotFoundError()
-
-    session.delete(todo)
-    session.flush()
-
-
-def serialize_todo(todo: Todo) -> dict[str, object]:
-    schema = TodoResponse.from_model(todo)
-    return schema.to_dict()
-
-
-def serialize_todos(todos: Iterable[Todo]) -> list[dict[str, object]]:
-    return [serialize_todo(todo) for todo in todos]
-
-
-def _normalize_title(title: str) -> str:
-    trimmed = title.strip()
-    if not trimmed:
-        raise TodoValidationError("Title must be between 1 and 120 characters.")
-    if len(trimmed) > MAX_TITLE_LENGTH:
-        raise TodoValidationError("Title must be between 1 and 120 characters.")
-    return trimmed
-
-
-def _normalize_detail(detail: object | None) -> str | None:
-    if detail is None:
-        return None
-    if not isinstance(detail, str):
-        raise TodoValidationError("Detail must be a string.")
-    trimmed = detail.strip()
-    if len(trimmed) > MAX_DETAIL_LENGTH:
-        raise TodoValidationError("Detail must be at most 1000 characters.")
-    return trimmed or None
-
-
-def _validate_due_date(due_date: object | None) -> date | None:
-    if due_date is None:
-        return None
-    if not isinstance(due_date, date):
-        raise TodoValidationError("Due date must be a date.")
-    if due_date < date.today():
-        raise TodoValidationError("Due date cannot be in the past.")
-    return due_date
+        self.repository.delete(todo)
 
 
 __all__ = [
-    "create_todo",
-    "update_todo",
-    "toggle_completed",
-    "delete_todo",
-    "list_todos",
-    "serialize_todo",
-    "serialize_todos",
+    "TodoService",
     "TodoServiceError",
-    "TodoValidationError",
     "TodoNotFoundError",
 ]

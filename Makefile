@@ -19,8 +19,8 @@ down:
 
 lint:
 	$(PNPM) run lint
-	$(POETRY) run flake8 app backend
-	$(POETRY) run mypy app
+	$(POETRY) run flake8 backend/app backend/tests
+	$(POETRY) run mypy backend/app
 
 test:
 	$(PNPM) run test -- --runInBand
@@ -28,5 +28,5 @@ test:
 
 format:
 	$(PNPM) run format
-	$(POETRY) run isort app backend
-	$(POETRY) run black app backend
+	$(POETRY) run isort backend/app backend/tests
+	$(POETRY) run black backend/app backend/tests

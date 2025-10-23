@@ -1,92 +1,114 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any, cast
+from typing import Any
 
 from flask import Blueprint, Response, jsonify, request
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, HTTPException
 
-from app.schemas.todo import TodoCreateData, TodoStatus, TodoToggleData, TodoUpdateData
-from app.services.todo_service import (
-    TodoValidationError,
-    create_todo,
-    delete_todo,
-    list_todos,
-    serialize_todo,
-    serialize_todos,
-    toggle_completed,
-    update_todo,
-)
+from app.database import get_session
+from app.schemas.todo import TodoCreateData, TodoToggleData, TodoUpdateData, TodoValidationError, serialize_todos, validate_status
+from app.services.todo_service import TodoService
 
 todo_bp = Blueprint("todos", __name__, url_prefix="/todos")
 
 
 @todo_bp.get("")
 def get_todos() -> Response:
-    session = _get_session()
+    """List todos filtered by status."""
+    try:
+        session = get_session()
+        service = TodoService(session)
 
-    raw_status = request.args.get("status", "active")
-    status = cast(TodoStatus, raw_status)
+        raw_status = request.args.get("status", "active")
+        status = validate_status(raw_status)
 
-    todos = list_todos(session, status)
-    items = serialize_todos(todos)
-    return jsonify({"items": items, "meta": {"count": len(items)}})
+        todos = service.list_todos(status)
+        items = serialize_todos(todos)
+        return jsonify({"items": items, "meta": {"count": len(items)}})
+    except TodoValidationError as exc:
+        raise _to_http_exception(exc)
 
 
 @todo_bp.post("")
 def create_todo_route() -> tuple[Response, int]:
-    session = _get_session()
-    payload = _load_json_body()
+    """Create a new todo."""
+    try:
+        session = get_session()
+        service = TodoService(session)
+        payload = _load_json_body()
 
-    title = _require_string(payload, "title")
-    detail = _optional_string(payload, "detail")
-    due_date = _optional_date(payload, "due_date")
+        title = payload.get("title", "")
+        detail = payload.get("detail")
+        due_date = _parse_date(payload.get("due_date"))
 
-    todo = create_todo(session, TodoCreateData(title=title, detail=detail, due_date=due_date))
-    return jsonify(serialize_todo(todo)), 201
+        data = TodoCreateData(title=title, detail=detail, due_date=due_date)
+        todo = service.create_todo(data)
+
+        from app.schemas.todo import serialize_todo
+
+        return jsonify(serialize_todo(todo)), 201
+    except TodoValidationError as exc:
+        raise _to_http_exception(exc)
 
 
 @todo_bp.patch("/<int:todo_id>")
 def update_todo_route(todo_id: int) -> Response:
-    session = _get_session()
-    payload = _load_json_body()
+    """Update an existing todo."""
+    try:
+        session = get_session()
+        service = TodoService(session)
+        payload = _load_json_body()
 
-    update_kwargs: dict[str, Any] = {}
-    if "title" in payload:
-        update_kwargs["title"] = _require_string(payload, "title")
-    if "detail" in payload:
-        update_kwargs["detail"] = _optional_string(payload, "detail")
-    if "due_date" in payload:
-        update_kwargs["due_date"] = _optional_date(payload, "due_date")
+        from app.schemas.todo import _MISSING
 
-    todo = update_todo(session, todo_id, TodoUpdateData(**update_kwargs))
-    return jsonify(serialize_todo(todo))
+        title = payload.get("title", _MISSING)
+        detail = payload.get("detail", _MISSING) if "detail" in payload else _MISSING
+        due_date = _parse_date(payload.get("due_date")) if "due_date" in payload else _MISSING
+
+        data = TodoUpdateData(title=title, detail=detail, due_date=due_date)
+        todo = service.update_todo(todo_id, data)
+
+        from app.schemas.todo import serialize_todo
+
+        return jsonify(serialize_todo(todo))
+    except TodoValidationError as exc:
+        raise _to_http_exception(exc)
 
 
 @todo_bp.patch("/<int:todo_id>/complete")
 def toggle_todo_route(todo_id: int) -> Response:
-    session = _get_session()
-    payload = _load_json_body()
+    """Toggle the completion status of a todo."""
+    try:
+        session = get_session()
+        service = TodoService(session)
+        payload = _load_json_body()
 
-    if "is_completed" not in payload:
-        raise TodoValidationError("Request must include is_completed.")
+        is_completed = payload.get("is_completed")
+        if is_completed is None:
+            raise TodoValidationError("Request must include is_completed.")
 
-    is_completed = payload["is_completed"]
-    if not isinstance(is_completed, bool):
-        raise TodoValidationError("is_completed must be a boolean.")
+        data = TodoToggleData(is_completed=is_completed)
+        todo = service.toggle_completed(todo_id, data)
 
-    todo = toggle_completed(session, todo_id, TodoToggleData(is_completed=is_completed))
-    return jsonify(serialize_todo(todo))
+        from app.schemas.todo import serialize_todo
+
+        return jsonify(serialize_todo(todo))
+    except TodoValidationError as exc:
+        raise _to_http_exception(exc)
 
 
 @todo_bp.delete("/<int:todo_id>")
 def delete_todo_route(todo_id: int) -> Response:
-    session = _get_session()
-    delete_todo(session, todo_id)
+    """Delete a todo by ID."""
+    session = get_session()
+    service = TodoService(session)
+    service.delete_todo(todo_id)
     return Response(status=204)
 
 
 def _load_json_body() -> dict[str, Any]:
+    """Load and validate JSON request body."""
     payload = request.get_json(silent=True)
     if payload is None:
         raise BadRequest("Request must contain application/json body.")
@@ -95,44 +117,21 @@ def _load_json_body() -> dict[str, Any]:
     return payload
 
 
-def _require_string(payload: dict[str, Any], key: str) -> str:
-    value = payload.get(key)
-    if value is None:
-        raise TodoValidationError(f"{key} is required.")
-    if not isinstance(value, str):
-        raise TodoValidationError(f"{key} must be a string.")
-    return value
-
-
-def _optional_string(payload: dict[str, Any], key: str) -> str | None:
-    if key not in payload:
-        return None
-    value = payload.get(key)
+def _parse_date(value: Any) -> date | None:
+    """Parse an ISO date string to a date object."""
     if value is None:
         return None
     if not isinstance(value, str):
-        raise TodoValidationError(f"{key} must be a string or null.")
-    return value
-
-
-def _optional_date(payload: dict[str, Any], key: str) -> date | None:
-    if key not in payload:
-        return None
-    value = payload.get(key)
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise TodoValidationError(f"{key} must be an ISO date string.")
+        raise TodoValidationError("Date must be an ISO date string.")
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise TodoValidationError(f"{key} must follow YYYY-MM-DD format.") from exc
+        raise TodoValidationError("Date must follow YYYY-MM-DD format.") from exc
 
 
-def _get_session():
-    from app.main import get_session
-
-    return get_session()
+def _to_http_exception(exc: TodoValidationError) -> HTTPException:
+    """Convert TodoValidationError to HTTPException."""
+    return BadRequest(str(exc))
 
 
 __all__ = ["todo_bp"]
