@@ -1,4 +1,4 @@
-.PHONY: install setup up down lint test test-fast test-cov test-parallel format
+.PHONY: install setup up down lint test test-fast test-cov test-parallel format pre-commit-install pre-commit-run pre-commit-update
 
 PNPM ?= pnpm --dir frontend
 POETRY ?= poetry -C backend
@@ -43,3 +43,14 @@ format:
 	$(PNPM) run format
 	$(POETRY) run isort backend/app backend/tests
 	$(POETRY) run black backend/app backend/tests
+
+pre-commit-install:
+	$(POETRY) run pre-commit install
+	@printf '✅ Pre-commit hooks installed\n'
+
+pre-commit-run:
+	$(POETRY) run pre-commit run --all-files
+
+pre-commit-update:
+	$(POETRY) run pre-commit autoupdate
+	@printf '✅ Pre-commit hooks updated\n'

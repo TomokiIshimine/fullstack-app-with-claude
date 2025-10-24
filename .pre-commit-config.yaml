@@ -1,3 +1,6 @@
+# Stop running hooks after the first failure for faster feedback
+fail_fast: true
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -44,16 +47,4 @@ repos:
         entry: python backend/scripts/run_poetry_tool.py flake8
         language: system
         files: ^backend/.*\.py$
-        pass_filenames: true
-      - id: backend-mypy
-        name: backend mypy
-        entry: python backend/scripts/run_poetry_tool.py mypy
-        language: system
-        files: ^backend/.*\.(py|pyi|toml)$
-        pass_filenames: true
-      - id: backend-pytest
-        name: backend pytest
-        entry: python backend/scripts/run_poetry_tool.py pytest
-        language: system
-        files: ^backend/.*\.(py|pyi|toml|ya?ml)$
         pass_filenames: true
