@@ -1,5 +1,4 @@
-import type { SortOrder } from '@/hooks/useTodos'
-import type { TodoStatus } from '@/lib/api/todos'
+import type { SortOrder, TodoStatus } from '@/types/todo'
 
 interface TodoFilterToggleProps {
   totalCount: number

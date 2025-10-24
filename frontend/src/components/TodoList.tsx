@@ -1,4 +1,5 @@
-import type { Todo } from '@/lib/api/todos'
+import type { Todo } from '@/types/todo'
+import { formatDate } from '@/lib/utils/dateFormat'
 
 interface TodoListProps {
   todos: Todo[]
@@ -74,12 +75,4 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
       </div>
     </li>
   )
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-  return date.toLocaleDateString()
 }

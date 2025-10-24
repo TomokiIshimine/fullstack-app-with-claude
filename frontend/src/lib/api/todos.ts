@@ -1,37 +1,8 @@
-export type TodoStatus = 'all' | 'active' | 'completed'
+import type { Todo, TodoDto, TodoPayload, TodoStatus, TodoUpdatePayload } from '@/types/todo'
 
-export interface TodoDto {
-  id: number
-  title: string
-  detail: string | null
-  due_date: string | null
-  is_completed: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface Todo {
-  id: number
-  title: string
-  detail: string | null
-  dueDate: string | null
-  isCompleted: boolean
-  createdAt: string
-  updatedAt: string
-}
-
-export interface TodoPayload {
-  title: string
-  detail?: string | null
-  dueDate?: string | null
-}
-
-export interface TodoUpdatePayload {
-  title?: string
-  detail?: string | null
-  dueDate?: string | null
-}
-
+/**
+ * API error class for handling HTTP errors
+ */
 export class ApiError extends Error {
   status: number
   body: unknown
@@ -56,7 +27,7 @@ export async function getTodos(status: TodoStatus = 'all'): Promise<Todo[]> {
   if (!response.ok) {
     throw buildApiError(response, json)
   }
-  const items = (json?.items ?? []) as TodoDto[]
+  const items = ((json as { items?: TodoDto[] })?.items ?? []) as TodoDto[]
   return items.map(mapTodoDto)
 }
 

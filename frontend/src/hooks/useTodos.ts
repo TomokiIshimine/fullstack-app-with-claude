@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import type { Todo, TodoPayload, TodoStatus, TodoUpdatePayload, SortOrder } from '@/types/todo'
 import { ApiError, createTodo, deleteTodo, getTodos, toggleTodo, updateTodo } from '@/lib/api/todos'
-import type { Todo, TodoPayload, TodoStatus, TodoUpdatePayload } from '@/lib/api/todos'
-
-export type SortOrder = 'asc' | 'desc'
+import { filterByStatus, sortTodos } from '@/lib/utils/todoFilters'
 
 export interface UseTodosResult {
   todos: Todo[]
@@ -56,8 +55,8 @@ export function useTodos(): UseTodosResult {
   }, [loadTodos])
 
   const filteredTodos = useMemo(() => {
-    const subset = filterByStatus(todos, status)
-    return sortTodos(subset, sortOrder)
+    const filtered = filterByStatus(todos, status)
+    return sortTodos(filtered, sortOrder)
   }, [todos, status, sortOrder])
 
   const totalCount = todos.length
@@ -155,40 +154,9 @@ export function useTodos(): UseTodosResult {
   }
 }
 
-function filterByStatus(todos: Todo[], status: TodoStatus): Todo[] {
-  if (status === 'active') {
-    return todos.filter(todo => !todo.isCompleted)
-  }
-  if (status === 'completed') {
-    return todos.filter(todo => todo.isCompleted)
-  }
-  return todos
-}
-
-function sortTodos(todos: Todo[], sortOrder: SortOrder): Todo[] {
-  const sorted = [...todos]
-  sorted.sort((a, b) => {
-    if (a.dueDate && b.dueDate) {
-      if (a.dueDate === b.dueDate) {
-        return a.createdAt.localeCompare(b.createdAt)
-      }
-      return sortOrder === 'asc'
-        ? a.dueDate.localeCompare(b.dueDate)
-        : b.dueDate.localeCompare(a.dueDate)
-    }
-    if (a.dueDate && !b.dueDate) {
-      return -1
-    }
-    if (!a.dueDate && b.dueDate) {
-      return 1
-    }
-    return sortOrder === 'asc'
-      ? a.createdAt.localeCompare(b.createdAt)
-      : b.createdAt.localeCompare(a.createdAt)
-  })
-  return sorted
-}
-
+/**
+ * Extract error message from various error types
+ */
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.message

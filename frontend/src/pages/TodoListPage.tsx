@@ -2,7 +2,6 @@ import { TodoForm } from '@/components/TodoForm'
 import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
 import { useTodos } from '@/hooks/useTodos'
-import type { Todo } from '@/lib/api/todos'
 
 export function TodoListPage() {
   const {
@@ -22,30 +21,9 @@ export function TodoListPage() {
     startEditing,
     cancelEditing,
     submitTodo,
-    deleteTodo,
+    deleteTodo: deleteTodoById,
     toggleTodoCompletion,
   } = useTodos()
-
-  const handleSubmit = async (payload: {
-    title: string
-    detail: string | null
-    dueDate: string | null
-  }) => {
-    await submitTodo(payload)
-  }
-
-  const handleDelete = (todo: Todo) => {
-    void deleteTodo(todo.id)
-  }
-
-  const handleToggle = (todo: Todo, nextState: boolean) => {
-    void toggleTodoCompletion(todo.id, nextState)
-  }
-
-  const handleRetry = () => {
-    clearError()
-    void refresh()
-  }
 
   return (
     <div className="todo-page">
@@ -55,7 +33,13 @@ export function TodoListPage() {
         {error && (
           <div className="todo-error" role="alert">
             <span>{error}</span>
-            <button type="button" onClick={handleRetry}>
+            <button
+              type="button"
+              onClick={() => {
+                clearError()
+                void refresh()
+              }}
+            >
               再読み込み
             </button>
           </div>
@@ -76,15 +60,15 @@ export function TodoListPage() {
             <TodoList
               todos={todos}
               isLoading={isLoading}
-              onToggle={handleToggle}
+              onToggle={(todo, nextState) => void toggleTodoCompletion(todo.id, nextState)}
               onEdit={startEditing}
-              onDelete={handleDelete}
+              onDelete={todo => void deleteTodoById(todo.id)}
             />
           </div>
           <div className="todo-layout__form">
             <TodoForm
               editingTodo={editingTodo}
-              onSubmit={handleSubmit}
+              onSubmit={submitTodo}
               onCancelEdit={cancelEditing}
             />
           </div>
