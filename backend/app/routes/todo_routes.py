@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import Any
 
 from flask import Blueprint, Response, jsonify, request
+from pydantic import ValidationError
 from werkzeug.exceptions import BadRequest, HTTPException
 
 from app.database import get_session
@@ -38,16 +38,16 @@ def create_todo_route() -> tuple[Response, int]:
         service = TodoService(session)
         payload = _load_json_body()
 
-        title = payload.get("title", "")
-        detail = payload.get("detail")
-        due_date = _parse_date(payload.get("due_date"))
-
-        data = TodoCreateData(title=title, detail=detail, due_date=due_date)
+        # Parse and validate with Pydantic
+        data = TodoCreateData.model_validate(payload)
         todo = service.create_todo(data)
 
         from app.schemas.todo import serialize_todo
 
         return jsonify(serialize_todo(todo)), 201
+    except ValidationError as exc:
+        # Convert Pydantic ValidationError to TodoValidationError
+        raise _to_http_exception(_pydantic_error_to_todo_error(exc))
     except TodoValidationError as exc:
         raise _to_http_exception(exc)
 
@@ -60,18 +60,15 @@ def update_todo_route(todo_id: int) -> Response:
         service = TodoService(session)
         payload = _load_json_body()
 
-        from app.schemas.todo import _MISSING
-
-        title = payload.get("title", _MISSING)
-        detail = payload.get("detail", _MISSING) if "detail" in payload else _MISSING
-        due_date = _parse_date(payload.get("due_date")) if "due_date" in payload else _MISSING
-
-        data = TodoUpdateData(title=title, detail=detail, due_date=due_date)
+        # Parse and validate with Pydantic
+        data = TodoUpdateData.model_validate(payload)
         todo = service.update_todo(todo_id, data)
 
         from app.schemas.todo import serialize_todo
 
         return jsonify(serialize_todo(todo))
+    except ValidationError as exc:
+        raise _to_http_exception(_pydantic_error_to_todo_error(exc))
     except TodoValidationError as exc:
         raise _to_http_exception(exc)
 
@@ -84,16 +81,19 @@ def toggle_todo_route(todo_id: int) -> Response:
         service = TodoService(session)
         payload = _load_json_body()
 
-        is_completed = payload.get("is_completed")
-        if is_completed is None:
+        # Validate is_completed field exists
+        if "is_completed" not in payload:
             raise TodoValidationError("Request must include is_completed.")
 
-        data = TodoToggleData(is_completed=is_completed)
+        # Parse and validate with Pydantic
+        data = TodoToggleData.model_validate(payload)
         todo = service.toggle_completed(todo_id, data)
 
         from app.schemas.todo import serialize_todo
 
         return jsonify(serialize_todo(todo))
+    except ValidationError as exc:
+        raise _to_http_exception(_pydantic_error_to_todo_error(exc))
     except TodoValidationError as exc:
         raise _to_http_exception(exc)
 
@@ -117,16 +117,19 @@ def _load_json_body() -> dict[str, Any]:
     return payload
 
 
-def _parse_date(value: Any) -> date | None:
-    """Parse an ISO date string to a date object."""
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise TodoValidationError("Date must be an ISO date string.")
-    try:
-        return date.fromisoformat(value)
-    except ValueError as exc:
-        raise TodoValidationError("Date must follow YYYY-MM-DD format.") from exc
+def _pydantic_error_to_todo_error(exc: ValidationError) -> TodoValidationError:
+    """Convert Pydantic ValidationError to TodoValidationError."""
+    # Extract first error message for consistency with existing error handling
+    errors = exc.errors()
+    if errors:
+        first_error = errors[0]
+        msg = first_error.get("msg", "Validation error")
+        # Try to extract our custom error messages
+        if "Value error, " in msg:
+            # Pydantic wraps our custom errors with "Value error, " prefix
+            msg = msg.replace("Value error, ", "")
+        return TodoValidationError(msg)
+    return TodoValidationError("Validation error")
 
 
 def _to_http_exception(exc: TodoValidationError) -> HTTPException:

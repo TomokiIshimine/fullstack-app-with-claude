@@ -129,6 +129,47 @@ pnpm -C frontend run commitlint -- --help
 - Type hints preferred but `disallow_untyped_defs=false` in mypy config
 - Import order: stdlib, third-party, first-party (`app`)
 
+### Validation with Pydantic
+The backend uses **Pydantic v2** for request/response validation:
+
+**Schema Definition** (`app/schemas/`):
+- All request/response schemas inherit from `pydantic.BaseModel`
+- Use `@field_validator` for custom field validation
+- Use `@model_validator` for cross-field validation
+- Pydantic validates automatically on instantiation
+
+**Route Layer** (`app/routes/`):
+- Parse JSON requests with `Schema.model_validate(payload)`
+- Pydantic's `ValidationError` is caught and converted to `TodoValidationError` for consistent error responses
+- No manual validation logic in routes
+
+**Service Layer** (`app/services/`):
+- Receive validated Pydantic models as input
+- No need to call `.validate()` - validation happens at instantiation
+- Business logic operates on validated data
+
+**Example:**
+```python
+# Schema definition
+class TodoCreateData(BaseModel):
+    title: str
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        trimmed = v.strip()
+        if not trimmed:
+            raise TodoValidationError("Title is required")
+        return trimmed
+
+# Route handler
+@todo_bp.post("")
+def create_todo():
+    payload = request.get_json()
+    data = TodoCreateData.model_validate(payload)  # Auto-validates
+    return service.create_todo(data)
+```
+
 ### Frontend Code Style
 - ESLint with TypeScript rules, max-warnings=0
 - Prettier for formatting (via `scripts/format.mjs`)

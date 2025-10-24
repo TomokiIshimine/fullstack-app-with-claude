@@ -43,11 +43,11 @@ class TodoService:
 
     def create_todo(self, data: TodoCreateData) -> Todo:
         """Create a new todo with validated data."""
-        validated_data = data.validate()
+        # Pydantic validates on instantiation, no need to call validate()
         todo = Todo(
-            title=validated_data.title,
-            detail=validated_data.detail,
-            due_date=validated_data.due_date,
+            title=data.title,
+            detail=data.detail,
+            due_date=data.due_date,
         )
         return self.repository.save(todo)
 
@@ -62,8 +62,8 @@ class TodoService:
 
             raise TodoValidationError("No fields provided for update.")
 
-        validated_data = data.validate()
-        updates = validated_data.to_updates()
+        # Pydantic validates on instantiation
+        updates = data.to_updates()
 
         if "title" in updates:
             todo.title = str(updates["title"])
@@ -82,8 +82,8 @@ class TodoService:
         if todo is None:
             raise TodoNotFoundError()
 
-        validated_data = data.validate()
-        todo.is_completed = validated_data.is_completed
+        # Pydantic validates on instantiation
+        todo.is_completed = data.is_completed
 
         return self.repository.update(todo)
 

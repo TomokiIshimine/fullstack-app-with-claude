@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from app.database import get_session_factory
 from app.models.todo import Todo
@@ -40,10 +41,10 @@ def test_create_todo_success(todo_service):
 
 def test_create_todo_rejects_past_due_date(todo_service):
     past_due = date.today() - timedelta(days=1)
-    data = TodoCreateData(title="Past due", due_date=past_due)
 
-    with pytest.raises(TodoValidationError):
-        todo_service.create_todo(data)
+    # Pydantic validates on instantiation, so this raises ValidationError
+    with pytest.raises(ValidationError):
+        TodoCreateData(title="Past due", due_date=past_due)
 
 
 def test_list_todos_filters_by_status(todo_service):
