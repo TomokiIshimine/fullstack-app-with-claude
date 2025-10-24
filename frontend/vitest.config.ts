@@ -11,11 +11,17 @@ export default defineConfig({
     },
   },
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
     coverage: {
-      reporter: ['text', 'html'],
+      provider: 'v8',
+      reporter: ['text', 'html', 'json'],
+      exclude: [
+        'node_modules/**',
+        'src/test/**',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        'src/main.tsx',
+        'src/App.tsx',
+      ],
     },
   },
 })
