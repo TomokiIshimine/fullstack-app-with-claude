@@ -27,6 +27,7 @@ build/
 coverage/
 .tmp/
 htmlcov/
+.coverage
 coverage.xml
 
 # Docker

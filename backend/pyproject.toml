@@ -23,6 +23,10 @@ build-backend = "poetry.core.masonry.api"
 [dependency-groups]
 dev = [
     "pytest (>=8.3,<9.0)",
+    "pytest-cov (>=6.0,<7.0)",
+    "pytest-xdist (>=3.6,<4.0)",
+    "pytest-mock (>=3.14,<4.0)",
+    "pytest-sugar (>=1.0,<2.0)",
     "mypy (>=1.13,<2.0)",
     "black (>=24.10,<25.0)",
     "isort (>=5.13,<6.0)",
@@ -53,3 +57,56 @@ disallow_untyped_defs = false
 
 [tool.poetry]
 package-mode = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",                           # verbose output
+    "--strict-markers",             # error on unknown markers
+    "--strict-config",              # error on invalid config
+    "--showlocals",                 # show local variables on failure
+    "-W", "error",                  # treat warnings as errors
+    "-W", "ignore::DeprecationWarning:distutils",
+    "-W", "ignore::DeprecationWarning:importlib",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    "*/__init__.py",
+]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"

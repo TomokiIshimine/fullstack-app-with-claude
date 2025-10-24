@@ -1,4 +1,4 @@
-.PHONY: install setup up down lint test format
+.PHONY: install setup up down lint test test-fast test-cov test-parallel format
 
 PNPM ?= pnpm --dir frontend
 POETRY ?= poetry -C backend
@@ -24,7 +24,20 @@ lint:
 
 test:
 	$(PNPM) run test -- --runInBand
-	$(POETRY) run pytest
+	$(POETRY) run pytest --cov=app --cov-report=term-missing
+
+test-fast:
+	$(PNPM) run test -- --runInBand
+	$(POETRY) run pytest --no-cov
+
+test-cov:
+	$(PNPM) run test -- --runInBand
+	$(POETRY) run pytest --cov=app --cov-report=term-missing --cov-report=html
+	@printf '\n✅ Coverage report generated in backend/htmlcov/index.html\n'
+
+test-parallel:
+	$(PNPM) run test -- --runInBand
+	$(POETRY) run pytest -n auto --cov=app --cov-report=term-missing
 
 format:
 	$(PNPM) run format
