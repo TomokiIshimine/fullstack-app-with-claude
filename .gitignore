@@ -55,3 +55,6 @@ Thumbs.db
 .python-version
 
 .playwright-mcp/
+
+
+.claude/settings.local.json

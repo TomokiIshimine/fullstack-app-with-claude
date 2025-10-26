@@ -4,7 +4,33 @@
     "features": {
       "ghcr.io/devcontainers/features/docker-in-docker:2": {},
       "ghcr.io/devcontainers/features/node:1": {},
-      "ghcr.io/devcontainers/features/python:1": {}
+      "ghcr.io/devcontainers/features/python:1": {},
+      "ghcr.io/devcontainers/features/git:1": {}
     },
-    "runArgs": ["--privileged"]
+    "runArgs": ["--privileged"],
+    "forwardPorts": [5173, 5000, 3306],
+    "portsAttributes": {
+      "5173": {
+        "label": "Frontend (Vite)"
+      },
+      "5000": {
+        "label": "Backend (Flask)"
+      },
+      "3306": {
+        "label": "MySQL"
+      }
+    },
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "ms-python.python",
+          "dbaeumer.vscode-eslint",
+          "esbenp.prettier-vscode",
+          "ms-azuretools.vscode-docker"
+        ]
+      }
+    },
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+
+    "remoteUser": "vscode"
   }
