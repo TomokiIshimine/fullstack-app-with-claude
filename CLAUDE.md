@@ -59,11 +59,11 @@ poetry -C backend run isort app backend
 ```
 
 ### Pre-commit Hooks (Lightweight)
-Pre-commit hooks automatically run **lightweight checks** on staged files before each commit. Heavy checks (mypy, pytest) are intentionally excluded for fast commits.
+Pre-commit hooks automatically run **lightweight checks** on staged files before each commit. Heavy checks (mypy, pytest, vitest) are intentionally excluded for fast commits.
 
 **What runs automatically on commit:**
-- Code formatting (black, isort)
-- Basic linting (flake8)
+- Code formatting (Prettier for frontend, black/isort for backend)
+- Linting (ESLint for frontend, flake8 for backend)
 - Common issues (trailing whitespace, merge conflicts, large files)
 
 **Manual commands:**
@@ -73,9 +73,9 @@ make pre-commit-run       # Manually run hooks on all files
 make pre-commit-update    # Update hook versions
 ```
 
-**Important:** Type checking (mypy) and tests (pytest) are NOT run on commit for performance. Run them manually:
+**Important:** Type checking (mypy) and tests (pytest, vitest) are NOT run on commit for performance. Run them manually:
 ```bash
-make lint                 # Run mypy + flake8
+make lint                 # Run mypy + flake8 + ESLint
 make test                 # Run tests with coverage
 ```
 

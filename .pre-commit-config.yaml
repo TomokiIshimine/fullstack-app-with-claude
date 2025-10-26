@@ -24,12 +24,6 @@ repos:
         language: system
         files: ^frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: true
-      - id: frontend-tests
-        name: frontend vitest related
-        entry: pnpm --dir frontend exec node scripts/run-vitest-related.mjs
-        language: system
-        files: ^frontend/.*\.(ts|tsx|js|jsx)$
-        pass_filenames: true
       - id: backend-isort
         name: backend isort
         entry: python backend/scripts/run_poetry_tool.py isort
