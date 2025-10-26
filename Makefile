@@ -19,8 +19,8 @@ down:
 
 lint:
 	$(PNPM) run lint
-	$(POETRY) run flake8 backend/app backend/tests
-	$(POETRY) run mypy backend/app
+	$(POETRY) run flake8 app tests
+	$(POETRY) run mypy app
 
 test:
 	$(PNPM) run test -- --runInBand
@@ -41,8 +41,8 @@ test-parallel:
 
 format:
 	$(PNPM) run format
-	$(POETRY) run isort backend/app backend/tests
-	$(POETRY) run black backend/app backend/tests
+	$(POETRY) run isort app tests
+	$(POETRY) run black app tests
 
 pre-commit-install:
 	$(POETRY) run pre-commit install
