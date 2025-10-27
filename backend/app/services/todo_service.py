@@ -32,37 +32,38 @@ class TodoService:
     def __init__(self, session: Session):
         self.repository = TodoRepository(session)
 
-    def list_todos(self, status: TodoStatus = "active") -> Sequence[Todo]:
-        """Retrieve todos filtered by status."""
+    def list_todos(self, user_id: int, status: TodoStatus = "active") -> Sequence[Todo]:
+        """Retrieve todos filtered by status for a specific user."""
         if status == "all":
-            result = self.repository.find_all()
+            result = self.repository.find_all(user_id)
         elif status == "active":
-            result = self.repository.find_active()
+            result = self.repository.find_active(user_id)
         elif status == "completed":
-            result = self.repository.find_completed()
+            result = self.repository.find_completed(user_id)
         else:
             # This should not happen due to type constraints, but handle it anyway
             logger.warning(f"Invalid status '{status}' provided, defaulting to 'active'")
-            result = self.repository.find_active()
+            result = self.repository.find_active(user_id)
         return result
 
-    def create_todo(self, data: TodoCreateData) -> Todo:
-        """Create a new todo with validated data."""
+    def create_todo(self, user_id: int, data: TodoCreateData) -> Todo:
+        """Create a new todo with validated data for a specific user."""
         # Pydantic validates on instantiation, no need to call validate()
         todo = Todo(
+            user_id=user_id,
             title=data.title,
             detail=data.detail,
             due_date=data.due_date,
         )
         result = self.repository.save(todo)
-        logger.info(f"Todo created successfully: id={result.id}, title='{result.title}'")
+        logger.info(f"Todo created successfully: id={result.id}, title='{result.title}', user_id={user_id}")
         return result
 
-    def update_todo(self, todo_id: int, data: TodoUpdateData) -> Todo:
-        """Update an existing todo with validated data."""
-        todo = self.repository.find_by_id(todo_id)
+    def update_todo(self, user_id: int, todo_id: int, data: TodoUpdateData) -> Todo:
+        """Update an existing todo with validated data for a specific user."""
+        todo = self.repository.find_by_id(todo_id, user_id)
         if todo is None:
-            logger.warning(f"Todo not found for update: id={todo_id}")
+            logger.warning(f"Todo not found for update: id={todo_id}, user_id={user_id}")
             raise TodoNotFoundError()
 
         if not data.has_updates():
@@ -88,11 +89,11 @@ class TodoService:
         logger.info(f"Todo updated successfully: id={todo_id}")
         return result
 
-    def toggle_completed(self, todo_id: int, data: TodoToggleData) -> Todo:
-        """Toggle the completion status of a todo."""
-        todo = self.repository.find_by_id(todo_id)
+    def toggle_completed(self, user_id: int, todo_id: int, data: TodoToggleData) -> Todo:
+        """Toggle the completion status of a todo for a specific user."""
+        todo = self.repository.find_by_id(todo_id, user_id)
         if todo is None:
-            logger.warning(f"Todo not found for toggle: id={todo_id}")
+            logger.warning(f"Todo not found for toggle: id={todo_id}, user_id={user_id}")
             raise TodoNotFoundError()
 
         # Pydantic validates on instantiation
@@ -102,11 +103,11 @@ class TodoService:
         logger.info(f"Todo completion toggled successfully: id={todo_id}, is_completed={data.is_completed}")
         return result
 
-    def delete_todo(self, todo_id: int) -> None:
-        """Delete a todo by ID."""
-        todo = self.repository.find_by_id(todo_id)
+    def delete_todo(self, user_id: int, todo_id: int) -> None:
+        """Delete a todo by ID for a specific user."""
+        todo = self.repository.find_by_id(todo_id, user_id)
         if todo is None:
-            logger.warning(f"Todo not found for deletion: id={todo_id}")
+            logger.warning(f"Todo not found for deletion: id={todo_id}, user_id={user_id}")
             raise TodoNotFoundError()
 
         self.repository.delete(todo)
