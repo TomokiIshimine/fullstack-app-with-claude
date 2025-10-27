@@ -71,7 +71,7 @@ class AuthService:
         response = LoginResponse(user=UserResponse(id=user.id, email=user.email))
         return response, access_token, refresh_token
 
-    def refresh_access_token(self, refresh_token: str) -> tuple[str, str]:
+    def refresh_access_token(self, refresh_token: str) -> tuple[str, str, object]:
         """
         Refresh access token using refresh token.
 
@@ -79,7 +79,7 @@ class AuthService:
             refresh_token: Refresh token string
 
         Returns:
-            Tuple of (new_access_token, new_refresh_token)
+            Tuple of (new_access_token, new_refresh_token, user)
 
         Raises:
             ValueError: If refresh token is invalid or expired
@@ -129,7 +129,7 @@ class AuthService:
 
             logger.info(f"Access token refreshed for user: {user.email} (id={user.id})")
 
-            return new_access_token, new_refresh_token
+            return new_access_token, new_refresh_token, user
 
         except jwt.ExpiredSignatureError:
             logger.warning("Refresh token expired (JWT)")

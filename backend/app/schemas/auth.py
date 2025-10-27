@@ -62,6 +62,7 @@ class RefreshTokenResponse(BaseModel):
     """Refresh token response schema."""
 
     message: str
+    user: UserResponse
 
 
 class LogoutResponse(BaseModel):

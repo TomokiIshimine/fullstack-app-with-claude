@@ -63,14 +63,16 @@ export async function logout(): Promise<void> {
 /**
  * Refresh access token using refresh token from cookies
  */
-export async function refreshToken(): Promise<void> {
+export async function refreshToken(): Promise<User> {
   const response = await fetchWithLogging(`${API_BASE_URL}/refresh`, {
     method: 'POST',
   })
+  const json = await parseJson(response)
   if (!response.ok) {
-    const json = await parseJson(response)
     throw buildApiError(response, json)
   }
+  const refreshResponse = json as { message: string; user: UserDto }
+  return mapUserDto(refreshResponse.user)
 }
 
 function buildJsonHeaders(): HeadersInit {

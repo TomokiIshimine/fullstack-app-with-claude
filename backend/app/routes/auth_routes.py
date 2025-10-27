@@ -114,7 +114,11 @@ def refresh():
 
     Returns:
         {
-            "message": "トークンを更新しました"
+            "message": "トークンを更新しました",
+            "user": {
+                "id": 1,
+                "email": "user@example.com"
+            }
         }
 
     Sets httpOnly cookies:
@@ -131,10 +135,13 @@ def refresh():
         # Refresh tokens
         session = get_session()
         auth_service = AuthService(session)
-        new_access_token, new_refresh_token = auth_service.refresh_access_token(refresh_token)
+        new_access_token, new_refresh_token, user = auth_service.refresh_access_token(refresh_token)
 
-        # Create response
-        response_data = RefreshTokenResponse(message="トークンを更新しました")
+        # Create response with user information
+        from app.schemas.auth import UserResponse
+
+        user_response = UserResponse.model_validate(user, from_attributes=True)
+        response_data = RefreshTokenResponse(message="トークンを更新しました", user=user_response)
         response = make_response(jsonify(response_data.model_dump()), 200)
 
         # Set cookies

@@ -29,12 +29,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = async () => {
     try {
       // Try to refresh token to verify authentication
-      await authApi.refreshToken()
-      // If refresh succeeds, we're authenticated
-      // Note: The backend doesn't return user info on refresh,
-      // so we'll set a minimal user object or fetch user info separately
-      // For now, we'll mark as authenticated but won't have user details
-      // until after login
+      const user = await authApi.refreshToken()
+      // If refresh succeeds, set user information
+      setUser(user)
+      logger.debug('Authentication restored from cookie', { userId: user.id, email: user.email })
       setIsLoading(false)
     } catch (error) {
       // Not authenticated or token expired
