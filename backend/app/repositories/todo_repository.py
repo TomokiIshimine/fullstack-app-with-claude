@@ -48,7 +48,7 @@ class TodoRepository:
         if result:
             logger.debug(f"Found todo: id={todo_id}")
         else:
-            logger.debug(f"Todo not found: id={todo_id}")
+            logger.info(f"Todo not found: id={todo_id}")
         return result
 
     def save(self, todo: Todo) -> Todo:

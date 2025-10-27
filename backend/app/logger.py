@@ -96,6 +96,15 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
 
+    # Configure werkzeug logger to reduce noise in production
+    werkzeug_logger = logging.getLogger("werkzeug")
+    if not is_development:
+        # In production, only log warnings and errors from werkzeug
+        werkzeug_logger.setLevel(logging.WARNING)
+    else:
+        # In development, use the same level as root logger
+        werkzeug_logger.setLevel(numeric_level)
+
     app_logger.info(f"Logging initialized: level={log_level}, file={log_file}, console={'enabled' if is_development else 'disabled'}")
 
 
