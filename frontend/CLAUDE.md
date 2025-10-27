@@ -307,12 +307,214 @@ The TODO feature demonstrates the full frontend stack:
    });
    ```
 
+## Logging
+
+The frontend uses a comprehensive logging system with environment-based configuration, sensitive data masking, API request tracking, and global error handling.
+
+### Architecture
+
+The logging system is implemented in `lib/logger.ts` with the following components:
+
+1. **Environment-Aware Logging**: Different log levels for development and production
+2. **Sensitive Data Masking**: Automatic filtering of passwords, tokens, and secrets
+3. **API Request Tracking**: Automatic logging of API calls with timing information
+4. **Global Error Handling**: Catches uncaught errors and unhandled promise rejections
+5. **React Error Boundary**: Catches React component errors and displays fallback UI
+
+### Configuration
+
+Logging is configured via environment variables in `frontend/.env`:
+
+- **VITE_LOG_LEVEL**: Logging level (DEBUG, INFO, WARN, ERROR, SILENT)
+  - Development: `DEBUG` (default)
+  - Production: `WARN` (default)
+- **VITE_ENABLE_API_LOGGING**: Enable/disable API request logging
+  - Development: `true` (default)
+  - Production: `false` (default)
+
+### Log Format
+
+All logs include timestamps and severity levels:
+
+```
+[2025-10-27T10:30:45.123Z] INFO: Todo created successfully
+[2025-10-27T10:30:45.456Z] ERROR: Failed to fetch todos {"status":500}
+```
+
+### API Logging
+
+API requests are automatically logged with timing information:
+
+```typescript
+// Automatically logged by fetchWithLogging wrapper
+[2025-10-27T04:13:15.123Z] DEBUG: API Request: GET /api/todos?status=all
+[2025-10-27T04:13:15.200Z] DEBUG: API Response: GET /api/todos?status=all - 200 (77.00ms)
+```
+
+**Error responses** (status >= 400) are logged as warnings:
+
+```
+[2025-10-27T04:13:15.300Z] WARN: API Response: POST /api/todos - 400 (25.50ms)
+```
+
+**Network errors** are logged with full error details:
+
+```
+[2025-10-27T04:13:15.400Z] ERROR: API Error: GET /api/todos {"duration":150.25}
+```
+
+### Sensitive Data Masking
+
+The logger automatically masks sensitive information in log messages:
+
+**Masked Patterns**:
+
+- `password`: `password='secret123'` → `password='***'`
+- `token`: `token=abc123xyz` → `token='***'`
+- `api_key` / `api-key`: `api_key: sk-123456` → `api_key='***'`
+- `secret`: `secret="mysecret"` → `secret='***'`
+- `authorization`: `Authorization: Bearer token123` → `Authorization: Bearer ***`
+
+### Usage in Code
+
+Import the logger and use appropriate log levels:
+
+**Basic Setup**:
+
+```typescript
+import { logger } from '@/lib/logger'
+```
+
+**Log Levels and Guidelines**:
+
+- **DEBUG**: Detailed execution flow, API requests/responses, performance metrics
+  - Use for development debugging only
+  - Automatically disabled in production (unless explicitly enabled)
+
+- **INFO**: Important operations completed, user actions, state changes
+  - Business-level operations (e.g., "User created todo", "Filter changed")
+  - Component mount/unmount (use sparingly)
+
+- **WARN**: Validation errors, deprecated features, fallback behaviors
+  - User input validation failures
+  - Non-critical errors that don't prevent functionality
+
+- **ERROR**: Exceptions, unexpected failures, API errors
+  - Always include error object for stack traces
+  - Use for unrecoverable errors
+
+**Examples by Layer**:
+
+**Components** (`components/`, `pages/`):
+
+```typescript
+// User action (INFO)
+logger.info('Todo filter changed', { status: 'active' })
+
+// Component error (ERROR)
+logger.error('Failed to render TodoList', error, { todoCount: todos.length })
+```
+
+**API Layer** (`lib/api/`):
+
+```typescript
+// API calls are automatically logged by fetchWithLogging
+// No manual logging needed for request/response
+
+// Business logic error (ERROR)
+logger.error('Failed to parse API response', error, { endpoint: '/api/todos' })
+```
+
+**Hooks** (`hooks/`):
+
+```typescript
+// State change (DEBUG)
+logger.debug('Todos state updated', { count: todos.length })
+
+// Hook error (ERROR)
+logger.error('useTodos hook error', error)
+```
+
+**Performance Measurement**:
+
+```typescript
+// Async operation
+const result = await logger.measureAsync('Fetch todos', async () => {
+  return await getTodos('all')
+})
+
+// Sync operation
+const filtered = logger.measure(
+  'Filter todos',
+  () => {
+    return filterByStatus(todos, 'active')
+  },
+  { todoCount: todos.length }
+)
+```
+
+### Global Error Handling
+
+**Uncaught Errors** (`window.onerror`):
+
+- Catches synchronous errors not caught by try-catch
+- Automatically logged with file, line, and column information
+- Configured in `main.tsx`
+
+**Unhandled Promise Rejections** (`window.onunhandledrejection`):
+
+- Catches async errors not caught by try-catch
+- Automatically logged with rejection reason
+- Configured in `main.tsx`
+
+**React Error Boundary** (`components/ErrorBoundary.tsx`):
+
+- Catches errors during React rendering
+- Displays user-friendly error UI with reload option
+- Logs errors with component stack trace
+
+### Environment-Specific Behavior
+
+**Development** (`MODE=development`):
+
+- **Log Level**: DEBUG (all logs shown)
+- **API Logging**: Enabled by default
+- **Output**: Browser console
+- **Format**: Readable text with timestamps
+
+**Production** (`MODE=production`):
+
+- **Log Level**: WARN (only warnings and errors)
+- **API Logging**: Disabled by default
+- **Output**: Browser console
+- **Format**: Structured logs ready for external services
+
+**Testing** (`MODE=test`):
+
+- **Log Level**: DEBUG
+- **API Logging**: Disabled by default
+- **Output**: Suppressed to reduce test noise
+
+### Best Practices
+
+1. **Don't log on every render**: Avoid DEBUG logs in render functions or frequently-called hooks
+2. **Use appropriate levels**: DEBUG for development, INFO for user actions, WARN for recoverable errors, ERROR for failures
+3. **Include context**: Add relevant metadata (IDs, states, counts) to log messages
+4. **Avoid sensitive data**: The filter handles common patterns, but avoid logging user PII
+5. **Use error objects**: Always pass error objects to `logger.error()` for stack traces
+6. **Keep it concise**: Log messages should be clear and actionable
+7. **Leverage automatic logging**: API calls are logged automatically, no need to log manually
+
 ## Environment Variables
 
 Create a `frontend/.env` file for local development:
 
 ```env
 VITE_API_PROXY=http://localhost:5000
+
+# Logging configuration
+VITE_LOG_LEVEL=DEBUG
+VITE_ENABLE_API_LOGGING=true
 ```
 
 **Note**: Vite only exposes variables prefixed with `VITE_` to the client-side code.

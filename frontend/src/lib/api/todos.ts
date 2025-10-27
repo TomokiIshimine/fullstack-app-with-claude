@@ -1,4 +1,5 @@
 import type { Todo, TodoDto, TodoPayload, TodoStatus, TodoUpdatePayload } from '@/types/todo'
+import { logger } from '@/lib/logger'
 
 /**
  * API error class for handling HTTP errors
@@ -17,8 +18,31 @@ export class ApiError extends Error {
 
 const API_BASE_URL = '/api/todos'
 
+/**
+ * Wrapper for fetch with automatic logging and timing
+ */
+async function fetchWithLogging(url: string, options?: RequestInit): Promise<Response> {
+  const method = options?.method || 'GET'
+  const startTime = performance.now()
+
+  logger.logApiRequest(method, url)
+
+  try {
+    const response = await fetch(url, options)
+    const duration = performance.now() - startTime
+
+    logger.logApiResponse(method, url, response.status, duration)
+
+    return response
+  } catch (error) {
+    const duration = performance.now() - startTime
+    logger.logApiError(method, url, error, { duration })
+    throw error
+  }
+}
+
 export async function getTodos(status: TodoStatus = 'all'): Promise<Todo[]> {
-  const response = await fetch(`${API_BASE_URL}?status=${status}`, {
+  const response = await fetchWithLogging(`${API_BASE_URL}?status=${status}`, {
     headers: {
       Accept: 'application/json',
     },
@@ -32,7 +56,7 @@ export async function getTodos(status: TodoStatus = 'all'): Promise<Todo[]> {
 }
 
 export async function createTodo(payload: TodoPayload): Promise<Todo> {
-  const response = await fetch(API_BASE_URL, {
+  const response = await fetchWithLogging(API_BASE_URL, {
     method: 'POST',
     headers: buildJsonHeaders(),
     body: JSON.stringify(mapTodoPayload(payload)),
@@ -45,7 +69,7 @@ export async function createTodo(payload: TodoPayload): Promise<Todo> {
 }
 
 export async function updateTodo(id: number, payload: TodoUpdatePayload): Promise<Todo> {
-  const response = await fetch(`${API_BASE_URL}/${id}`, {
+  const response = await fetchWithLogging(`${API_BASE_URL}/${id}`, {
     method: 'PATCH',
     headers: buildJsonHeaders(),
     body: JSON.stringify(mapTodoPayload(payload)),
@@ -58,7 +82,7 @@ export async function updateTodo(id: number, payload: TodoUpdatePayload): Promis
 }
 
 export async function toggleTodo(id: number, isCompleted: boolean): Promise<Todo> {
-  const response = await fetch(`${API_BASE_URL}/${id}/complete`, {
+  const response = await fetchWithLogging(`${API_BASE_URL}/${id}/complete`, {
     method: 'PATCH',
     headers: buildJsonHeaders(),
     body: JSON.stringify({ is_completed: isCompleted }),
@@ -71,7 +95,7 @@ export async function toggleTodo(id: number, isCompleted: boolean): Promise<Todo
 }
 
 export async function deleteTodo(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/${id}`, {
+  const response = await fetchWithLogging(`${API_BASE_URL}/${id}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
