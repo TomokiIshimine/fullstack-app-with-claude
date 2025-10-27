@@ -21,9 +21,9 @@ export const LogLevel = {
   WARN: 2,
   ERROR: 3,
   SILENT: 4,
-} as const
+}
 
-export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
+export type LogLevel = 0 | 1 | 2 | 3 | 4
 
 /**
  * Log metadata for structured logging
@@ -70,10 +70,10 @@ function getConfig(): LoggerConfig {
   let level: LogLevel
 
   if (envLogLevel in LogLevel) {
-    level = LogLevel[envLogLevel as keyof typeof LogLevel]
+    level = LogLevel[envLogLevel as keyof typeof LogLevel] as LogLevel
   } else {
     // Default levels by environment
-    level = isDevelopment || isTest ? LogLevel.DEBUG : LogLevel.WARN
+    level = (isDevelopment || isTest ? LogLevel.DEBUG : LogLevel.WARN) as LogLevel
   }
 
   // API logging (default: enabled in development, disabled in production)
