@@ -18,9 +18,20 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     """
     # Convert log_level string to logging constant
     numeric_level = getattr(logging, log_level.upper(), logging.INFO)
+
+    # Configure root logger to ensure all module loggers inherit settings
+    root_logger = logging.getLogger()
+    root_logger.setLevel(numeric_level)
+
+    # Clear existing handlers from root logger
+    for handler in root_logger.handlers[:]:
+        handler.close()
+        root_logger.removeHandler(handler)
+
+    # Configure Flask app logger level (it will use root logger's handlers)
     app_logger.setLevel(numeric_level)
 
-    # Clear existing handlers to avoid duplicates (close them first)
+    # Clear Flask app logger's default handlers to avoid duplicates
     for handler in app_logger.handlers[:]:
         handler.close()
         app_logger.removeHandler(handler)
@@ -36,8 +47,7 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
         console_handler = logging.StreamHandler()
         console_handler.setLevel(numeric_level)
         console_handler.setFormatter(formatter)
-        app_logger.addHandler(console_handler)
-        app_logger.propagate = False
+        root_logger.addHandler(console_handler)
         app_logger.info(f"Logging initialized: level={log_level}, mode=testing (console only)")
         return
 
@@ -59,18 +69,15 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     file_handler.setLevel(numeric_level)
     file_handler.setFormatter(formatter)
 
-    # Add file handler
-    app_logger.addHandler(file_handler)
+    # Add file handler to root logger (all loggers inherit)
+    root_logger.addHandler(file_handler)
 
     # Add console handler only in development
     if is_development:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(numeric_level)
         console_handler.setFormatter(formatter)
-        app_logger.addHandler(console_handler)
-
-    # Prevent propagation to avoid duplicate logs
-    app_logger.propagate = False
+        root_logger.addHandler(console_handler)
 
     app_logger.info(f"Logging initialized: level={log_level}, file={log_file}, console={'enabled' if is_development else 'disabled'}")
 
