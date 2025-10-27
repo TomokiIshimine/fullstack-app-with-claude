@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from flask import Flask, Response, g, jsonify
+import time
+import uuid
+
+from flask import Flask, Response, g, jsonify, request
 from werkzeug.exceptions import HTTPException
 
 from .config import Config
@@ -21,6 +24,29 @@ def _register_error_handlers(app: Flask) -> None:
         app.logger.error(f"Unhandled application error: {type(err).__name__}: {err}", exc_info=True)
         response = jsonify(error={"code": 500, "message": "Internal server error"})
         return response, 500
+
+
+def _register_request_hooks(app: Flask) -> None:
+    """Register request lifecycle hooks for tracing and logging."""
+
+    @app.before_request
+    def set_request_id() -> None:
+        """Generate a unique request ID for tracing."""
+        g.request_id = str(uuid.uuid4())
+        g.start_time = time.time()
+
+    @app.after_request
+    def log_request_completion(response: Response) -> Response:
+        """Log request completion with timing information."""
+        if hasattr(g, "start_time") and hasattr(g, "request_id"):
+            elapsed_ms = (time.time() - g.start_time) * 1000
+            app.logger.info(
+                f"Request completed: {request.method} {request.path} - "
+                f"status={response.status_code} - "
+                f"duration={elapsed_ms:.2f}ms - "
+                f"request_id={g.request_id}"
+            )
+        return response
 
 
 def _register_session_hooks(app: Flask) -> None:
@@ -71,6 +97,7 @@ def create_app() -> Flask:
     app.extensions["sqlalchemy_session_factory"] = get_session_factory()
 
     _register_error_handlers(app)
+    _register_request_hooks(app)
     _register_session_hooks(app)
 
     app.register_blueprint(api_bp)
