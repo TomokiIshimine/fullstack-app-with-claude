@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
@@ -55,8 +56,9 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     log_path = Path(log_dir)
     log_path.mkdir(parents=True, exist_ok=True)
 
-    # Configure log file path
-    log_file = log_path / "app.log"
+    # Configure log file path with current date (e.g., app-2025-10-27.log)
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    log_file = log_path / f"app-{current_date}.log"
 
     # Create file handler with daily rotation (midnight), keeping 5 backups
     file_handler = TimedRotatingFileHandler(
@@ -68,6 +70,21 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     )
     file_handler.setLevel(numeric_level)
     file_handler.setFormatter(formatter)
+
+    # Custom namer to ensure rotated files have date-based names
+    def namer(default_name: str) -> str:
+        """Generate date-based filename for rotated logs."""
+        # TimedRotatingFileHandler appends a timestamp, we want just the date
+        # Extract the date portion and create a clean filename
+        dir_name, base_name = default_name.rsplit("/", 1) if "/" in default_name else ("", default_name)
+        parts = base_name.split(".")
+        if len(parts) >= 3:  # app-2025-10-27.log.2025-10-28 -> app-2025-10-28.log
+            # Extract the date from the suffix
+            date_suffix = parts[-1]  # 2025-10-28
+            return f"{dir_name}/app-{date_suffix}.log" if dir_name else f"app-{date_suffix}.log"
+        return default_name
+
+    file_handler.namer = namer
 
     # Add file handler to root logger (all loggers inherit)
     root_logger.addHandler(file_handler)
