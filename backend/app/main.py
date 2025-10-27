@@ -12,12 +12,13 @@ from .routes import api_bp
 def _register_error_handlers(app: Flask) -> None:
     @app.errorhandler(HTTPException)
     def handle_http_exception(err: HTTPException):
+        app.logger.warning(f"HTTP exception: {err.code} - {err.description}")
         response = jsonify(error={"code": err.code, "message": err.description})
         return response, err.code
 
     @app.errorhandler(Exception)
     def handle_unexpected_exception(err: Exception):
-        app.logger.exception("Unhandled application error", exc_info=err)
+        app.logger.error(f"Unhandled application error: {type(err).__name__}: {err}", exc_info=True)
         response = jsonify(error={"code": 500, "message": "Internal server error"})
         return response, 500
 
@@ -35,10 +36,13 @@ def _register_session_hooks(app: Flask) -> None:
 
         try:
             if exception is None:
+                app.logger.debug("Committing database session")
                 session.commit()
             else:
+                app.logger.warning(f"Rolling back database session due to exception: {exception}")
                 session.rollback()
-        except Exception:
+        except Exception as e:
+            app.logger.error(f"Error during session cleanup: {e}", exc_info=True)
             session.rollback()
             raise
         finally:
@@ -60,6 +64,8 @@ def create_app() -> Flask:
         is_testing=app.config.get("TESTING", False),
     )
 
+    app.logger.info(f"Starting application in {app.config['FLASK_ENV']} mode")
+
     init_engine(app.config["SQLALCHEMY_DATABASE_URI"])
     app.extensions["sqlalchemy_engine"] = get_engine()
     app.extensions["sqlalchemy_session_factory"] = get_session_factory()
@@ -68,11 +74,13 @@ def create_app() -> Flask:
     _register_session_hooks(app)
 
     app.register_blueprint(api_bp)
+    app.logger.info("API blueprint registered: /api")
 
     @app.get("/health")
     def health_check() -> Response:
         return jsonify(status="ok")
 
+    app.logger.info("Application initialization completed successfully")
     return app
 
 

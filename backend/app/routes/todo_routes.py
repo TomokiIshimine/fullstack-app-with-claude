@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from flask import Blueprint, Response, jsonify, request
@@ -10,29 +11,35 @@ from app.database import get_session
 from app.schemas.todo import TodoCreateData, TodoToggleData, TodoUpdateData, TodoValidationError, serialize_todos, validate_status
 from app.services.todo_service import TodoService
 
+logger = logging.getLogger(__name__)
+
 todo_bp = Blueprint("todos", __name__, url_prefix="/todos")
 
 
 @todo_bp.get("")
 def get_todos() -> Response:
     """List todos filtered by status."""
+    raw_status = request.args.get("status", "active")
+    logger.info(f"GET /api/todos - Listing todos with status filter: {raw_status}")
     try:
         session = get_session()
         service = TodoService(session)
 
-        raw_status = request.args.get("status", "active")
         status = validate_status(raw_status)
 
         todos = service.list_todos(status)
         items = serialize_todos(todos)
+        logger.info(f"GET /api/todos - Successfully retrieved {len(items)} todos")
         return jsonify({"items": items, "meta": {"count": len(items)}})
     except TodoValidationError as exc:
+        logger.warning(f"GET /api/todos - Validation error: {exc}")
         raise _to_http_exception(exc)
 
 
 @todo_bp.post("")
 def create_todo_route() -> tuple[Response, int]:
     """Create a new todo."""
+    logger.info("POST /api/todos - Creating new todo")
     try:
         session = get_session()
         service = TodoService(session)
@@ -44,17 +51,21 @@ def create_todo_route() -> tuple[Response, int]:
 
         from app.schemas.todo import serialize_todo
 
+        logger.info(f"POST /api/todos - Todo created successfully: id={todo.id}")
         return jsonify(serialize_todo(todo)), 201
     except ValidationError as exc:
         # Convert Pydantic ValidationError to TodoValidationError
+        logger.warning(f"POST /api/todos - Validation error: {exc.errors()}")
         raise _to_http_exception(_pydantic_error_to_todo_error(exc))
     except TodoValidationError as exc:
+        logger.warning(f"POST /api/todos - Validation error: {exc}")
         raise _to_http_exception(exc)
 
 
 @todo_bp.patch("/<int:todo_id>")
 def update_todo_route(todo_id: int) -> Response:
     """Update an existing todo."""
+    logger.info(f"PATCH /api/todos/{todo_id} - Updating todo")
     try:
         session = get_session()
         service = TodoService(session)
@@ -66,16 +77,20 @@ def update_todo_route(todo_id: int) -> Response:
 
         from app.schemas.todo import serialize_todo
 
+        logger.info(f"PATCH /api/todos/{todo_id} - Todo updated successfully")
         return jsonify(serialize_todo(todo))
     except ValidationError as exc:
+        logger.warning(f"PATCH /api/todos/{todo_id} - Validation error: {exc.errors()}")
         raise _to_http_exception(_pydantic_error_to_todo_error(exc))
     except TodoValidationError as exc:
+        logger.warning(f"PATCH /api/todos/{todo_id} - Validation error: {exc}")
         raise _to_http_exception(exc)
 
 
 @todo_bp.patch("/<int:todo_id>/complete")
 def toggle_todo_route(todo_id: int) -> Response:
     """Toggle the completion status of a todo."""
+    logger.info(f"PATCH /api/todos/{todo_id}/complete - Toggling todo completion status")
     try:
         session = get_session()
         service = TodoService(session)
@@ -91,19 +106,24 @@ def toggle_todo_route(todo_id: int) -> Response:
 
         from app.schemas.todo import serialize_todo
 
+        logger.info(f"PATCH /api/todos/{todo_id}/complete - Todo completion status toggled: is_completed={todo.is_completed}")
         return jsonify(serialize_todo(todo))
     except ValidationError as exc:
+        logger.warning(f"PATCH /api/todos/{todo_id}/complete - Validation error: {exc.errors()}")
         raise _to_http_exception(_pydantic_error_to_todo_error(exc))
     except TodoValidationError as exc:
+        logger.warning(f"PATCH /api/todos/{todo_id}/complete - Validation error: {exc}")
         raise _to_http_exception(exc)
 
 
 @todo_bp.delete("/<int:todo_id>")
 def delete_todo_route(todo_id: int) -> Response:
     """Delete a todo by ID."""
+    logger.info(f"DELETE /api/todos/{todo_id} - Deleting todo")
     session = get_session()
     service = TodoService(session)
     service.delete_todo(todo_id)
+    logger.info(f"DELETE /api/todos/{todo_id} - Todo deleted successfully")
     return Response(status=204)
 
 

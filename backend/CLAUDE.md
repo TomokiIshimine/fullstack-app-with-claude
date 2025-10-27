@@ -153,33 +153,77 @@ Logging is configured in `app/logger.py` and initialized in `app/main.py`. Setti
 
 ### Usage in Code
 
-Use Python's standard `logging` module in any layer (routes, services, repositories):
+Use Python's standard `logging` module in any layer. All application files include comprehensive logging at appropriate levels.
 
+**Basic Setup**:
 ```python
 import logging
 
 logger = logging.getLogger(__name__)
-
-# In your code
-logger.debug("Detailed debugging information")
-logger.info("Todo created successfully: id=1")
-logger.warning("Potential issue detected")
-logger.error("Operation failed", exc_info=True)
 ```
 
-**Example (Service Layer)**:
+**Log Levels and Guidelines**:
+- **DEBUG**: Detailed execution flow, database queries, method parameters
+- **INFO**: Important operations completed, request/response summaries
+- **WARNING**: Validation errors, not-found errors, fallback behaviors
+- **ERROR**: Exceptions, unexpected failures, transaction rollbacks
+
+**Examples by Layer**:
+
+**Routes Layer** (`app/routes/`):
 ```python
-# app/services/todo_service.py
-import logging
+# Request logging
+logger.info(f"POST /api/todos - Creating new todo")
 
-logger = logging.getLogger(__name__)
+# Success logging
+logger.info(f"POST /api/todos - Todo created successfully: id={todo.id}")
 
-def create_todo(self, data: TodoCreateData) -> Todo:
-    logger.debug(f"Creating todo: title='{data.title}'")
-    todo = Todo(title=data.title, ...)
-    result = self.repository.save(todo)
-    logger.info(f"Todo created: id={result.id}")
-    return result
+# Validation error logging
+logger.warning(f"POST /api/todos - Validation error: {exc}")
+```
+
+**Service Layer** (`app/services/`):
+```python
+# Operation start
+logger.debug(f"Creating todo: title='{data.title}', due_date={data.due_date}")
+
+# Business logic
+logger.info(f"Todo created successfully: id={result.id}, title='{result.title}'")
+
+# Not found warning
+logger.warning(f"Todo not found for update: id={todo_id}")
+```
+
+**Repository Layer** (`app/repositories/`):
+```python
+# Database query
+logger.debug("Querying active todos from database")
+
+# Query result
+logger.debug(f"Retrieved {len(result)} active todos from database")
+
+# Save operation
+logger.debug(f"Saving new todo to database: title='{todo.title}'")
+logger.debug(f"Todo saved to database: id={todo.id}")
+```
+
+**Database Layer** (`app/database.py`):
+```python
+# Connection initialization
+logger.info(f"Initializing database engine: {safe_uri}")
+
+# Transaction management
+logger.debug("Starting database transaction scope")
+logger.error(f"Database transaction failed, rolling back: {e}", exc_info=True)
+```
+
+**Error Handling** (`app/main.py`):
+```python
+# HTTP exceptions
+app.logger.warning(f"HTTP exception: {err.code} - {err.description}")
+
+# Unhandled errors
+app.logger.error(f"Unhandled application error: {type(err).__name__}: {err}", exc_info=True)
 ```
 
 ### Environment-Specific Behavior
