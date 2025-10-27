@@ -69,13 +69,11 @@ def get_session() -> Session:
     if has_app_context():
         session = g.get("db_session")
         if session is None:
-            logger.debug("Creating new database session for Flask context")
             session = factory()
             g.db_session = session
         return session
 
     # Outside of Flask application context (e.g. in tests), return a new session.
-    logger.debug("Creating new database session outside Flask context")
     return factory()
 
 

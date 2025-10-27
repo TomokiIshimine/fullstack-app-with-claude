@@ -62,7 +62,6 @@ def _register_session_hooks(app: Flask) -> None:
 
         try:
             if exception is None:
-                app.logger.debug("Committing database session")
                 session.commit()
             else:
                 app.logger.warning(f"Rolling back database session due to exception: {exception}")

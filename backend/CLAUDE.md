@@ -132,7 +132,17 @@ def create_todo():
 
 ## Logging
 
-The backend uses a configured logging system with automatic file rotation and environment-based settings.
+The backend uses a comprehensive logging system with request tracing, sensitive data masking, automatic file rotation, and environment-based configuration.
+
+### Architecture
+
+The logging system is implemented in `app/logger.py` with the following components:
+
+1. **Request Tracing**: Automatic UUID-based request ID generation for distributed tracing
+2. **Sensitive Data Masking**: Automatic filtering of passwords, tokens, and secrets
+3. **Structured Logging**: JSON format in production, human-readable text in development
+4. **File Rotation**: Daily log rotation with 5-day retention
+5. **Environment-Aware**: Different configurations for development, testing, and production
 
 ### Configuration
 
@@ -146,14 +156,100 @@ Logging is configured in `app/logger.py` and initialized in `app/main.py`. Setti
 
 ### Log Files
 
-- Location: `backend/logs/app.log`
-- Rotation: Daily at midnight
-- Retention: 5 backup files
-- Format: `2025-10-27 10:30:45 - app.services.todo - INFO - Todo created: id=1`
+- **Location**: `backend/logs/app-YYYY-MM-DD.log` (e.g., `app-2025-10-27.log`)
+- **Rotation**: Daily at midnight
+- **Retention**: 5 backup files
+- **Encoding**: UTF-8 (supports Japanese and other non-ASCII characters)
+
+### Log Format
+
+**Development/Testing (Text Format)**:
+```
+2025-10-27 10:30:45 - [660258eb-2348-4534-859c-c8629c69da74] - app.services.todo - INFO - Todo created: id=1
+```
+
+Format: `timestamp - [request_id] - logger_name - level - message`
+
+**Production (JSON Format)**:
+```json
+{
+  "timestamp": "2025-10-27T10:30:45.123456",
+  "level": "INFO",
+  "logger": "app.services.todo",
+  "message": "Todo created: id=1",
+  "request_id": "660258eb-2348-4534-859c-c8629c69da74"
+}
+```
+
+For WARNING and ERROR levels, additional fields are included:
+```json
+{
+  "timestamp": "2025-10-27T10:30:45.123456",
+  "level": "ERROR",
+  "logger": "app.services.todo",
+  "message": "Failed to create todo",
+  "request_id": "660258eb-2348-4534-859c-c8629c69da74",
+  "file": "/app/app/services/todo_service.py",
+  "line": 42,
+  "function": "create_todo",
+  "exception": "Traceback (most recent call last)..."
+}
+```
+
+### Request Tracing
+
+Each HTTP request is automatically assigned a unique UUID (`request_id`) for tracing:
+
+- **Generation**: UUID v4 generated in `app/main.py` via `@app.before_request`
+- **Storage**: Stored in Flask's `g.request_id` for the request lifetime
+- **Propagation**: Automatically added to all log records via `RequestIDFilter`
+- **Value**: Shows as `no-request` for logs outside request context (startup, teardown)
+
+**Example request flow**:
+```
+2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.routes.todo_routes - INFO - POST /api/todos - Creating new todo
+2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.services.todo_service - INFO - Todo created successfully: id=22
+2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.main - INFO - Request completed: POST /api/todos - status=201 - duration=19.52ms
+```
+
+### Performance Tracking
+
+Request completion logs include timing information:
+
+- **Metric**: `duration` field showing request processing time in milliseconds
+- **Logging**: Automatically logged in `app/main.py` via `@app.after_request`
+- **Format**: `Request completed: {method} {path} - status={code} - duration={ms}ms - request_id={uuid}`
+
+**Example**:
+```
+Request completed: GET /api/todos - status=200 - duration=77.57ms - request_id=660258eb-2348-4534-859c-c8629c69da74
+```
+
+### Sensitive Data Masking
+
+The `SensitiveDataFilter` automatically masks sensitive information in log messages:
+
+**Masked Patterns**:
+- `password`: `password='secret123'` → `password='***'`
+- `token`: `token=abc123xyz` → `token=***`
+- `api_key` / `api-key`: `api_key: sk-123456` → `api_key: ***`
+- `secret`: `secret="mysecret"` → `secret="***"`
+- `authorization`: `Authorization: Bearer token123` → `Authorization: Bearer ***`
+
+**Implementation**: Applied to all log records via filter, works with both message strings and format args.
+
+**Example**:
+```python
+# Code
+logger.info(f"Database URI: {database_uri}")
+
+# Output (if URI contains password)
+Database URI: mysql+pymysql://user:***@db:3306/app_db
+```
 
 ### Usage in Code
 
-Use Python's standard `logging` module in any layer. All application files include comprehensive logging at appropriate levels.
+Use Python's standard `logging` module in any layer. The logging system automatically handles request tracing and sensitive data masking.
 
 **Basic Setup**:
 ```python
@@ -163,80 +259,118 @@ logger = logging.getLogger(__name__)
 ```
 
 **Log Levels and Guidelines**:
-- **DEBUG**: Detailed execution flow, database queries, method parameters
-- **INFO**: Important operations completed, request/response summaries
-- **WARNING**: Validation errors, not-found errors, fallback behaviors
-- **ERROR**: Exceptions, unexpected failures, transaction rollbacks
+
+- **DEBUG**: Detailed execution flow, database queries, performance metrics
+  - Use sparingly to avoid noise
+  - Avoid logging routine operations that happen on every request
+  - Good for: Complex algorithm steps, detailed state information
+
+- **INFO**: Important operations completed, request/response summaries, state changes
+  - Business-level operations (e.g., "Todo created", "User logged in")
+  - Request lifecycle events (start, completion with timing)
+  - System initialization and configuration
+
+- **WARNING**: Validation errors, not-found errors, deprecated features, fallback behaviors
+  - Recoverable errors (e.g., invalid input, missing optional data)
+  - Business rule violations
+  - Rollback operations
+
+- **ERROR**: Exceptions, unexpected failures, transaction failures, system errors
+  - Always include `exc_info=True` to capture stack traces
+  - Use for unrecoverable errors that require investigation
+  - Database failures, external service failures
 
 **Examples by Layer**:
 
 **Routes Layer** (`app/routes/`):
 ```python
-# Request logging
+# Request start (INFO)
 logger.info(f"POST /api/todos - Creating new todo")
 
-# Success logging
+# Success (INFO)
 logger.info(f"POST /api/todos - Todo created successfully: id={todo.id}")
 
-# Validation error logging
+# Validation error (WARNING)
 logger.warning(f"POST /api/todos - Validation error: {exc}")
+
+# Unexpected error (ERROR)
+logger.error(f"POST /api/todos - Unexpected error: {exc}", exc_info=True)
 ```
 
 **Service Layer** (`app/services/`):
 ```python
-# Operation start
-logger.debug(f"Creating todo: title='{data.title}', due_date={data.due_date}")
-
-# Business logic
+# Business operation success (INFO)
 logger.info(f"Todo created successfully: id={result.id}, title='{result.title}'")
 
-# Not found warning
+# Not found (WARNING)
 logger.warning(f"Todo not found for update: id={todo_id}")
+
+# Business logic error (ERROR)
+logger.error(f"Failed to create todo: {exc}", exc_info=True)
 ```
 
 **Repository Layer** (`app/repositories/`):
 ```python
-# Database query
-logger.debug("Querying active todos from database")
-
-# Query result
+# Query result (DEBUG) - only when investigating issues
 logger.debug(f"Retrieved {len(result)} active todos from database")
 
-# Save operation
-logger.debug(f"Saving new todo to database: title='{todo.title}'")
-logger.debug(f"Todo saved to database: id={todo.id}")
+# Complex query (DEBUG)
+logger.debug(f"Executing complex query with filters: {filters}")
 ```
 
 **Database Layer** (`app/database.py`):
 ```python
-# Connection initialization
+# Initialization (INFO)
 logger.info(f"Initializing database engine: {safe_uri}")
 
-# Transaction management
+# Transaction scope (DEBUG) - for session_scope() context manager
 logger.debug("Starting database transaction scope")
+
+# Transaction failure (ERROR)
 logger.error(f"Database transaction failed, rolling back: {e}", exc_info=True)
 ```
 
 **Error Handling** (`app/main.py`):
 ```python
-# HTTP exceptions
+# HTTP exceptions (WARNING)
 app.logger.warning(f"HTTP exception: {err.code} - {err.description}")
 
-# Unhandled errors
+# Unhandled errors (ERROR)
 app.logger.error(f"Unhandled application error: {type(err).__name__}: {err}", exc_info=True)
 ```
 
 ### Environment-Specific Behavior
 
-- **Development** (`FLASK_ENV=development`):
-  - Logs to file AND console
-  - Log level: DEBUG
-- **Testing** (`FLASK_ENV=testing`):
-  - Logs to console only (no file rotation issues)
-  - Log level: DEBUG
-- **Production** (`FLASK_ENV=production`):
-  - Logs to file only
-  - Log level: INFO
+**Development** (`FLASK_ENV=development`):
+- **Format**: Text format with color support (via ANSI codes from werkzeug)
+- **Output**: File (`logs/app-YYYY-MM-DD.log`) AND console
+- **Log Level**: DEBUG
+- **Werkzeug**: INFO level (shows all HTTP requests)
+- **Request ID**: Included in all logs
+
+**Testing** (`FLASK_ENV=testing`):
+- **Format**: Text format
+- **Output**: Console only (avoids file rotation issues in tests)
+- **Log Level**: DEBUG
+- **Werkzeug**: Same as root logger level
+- **Request ID**: Included when available
+
+**Production** (`FLASK_ENV=production`):
+- **Format**: JSON (structured logging for log aggregation tools)
+- **Output**: File only (`logs/app-YYYY-MM-DD.log`)
+- **Log Level**: INFO (reduces noise)
+- **Werkzeug**: WARNING level (only errors, no routine HTTP logs)
+- **Request ID**: Included in all logs
+
+### Best Practices
+
+1. **Don't log on every request**: Avoid DEBUG logs that run on every request (e.g., session creation)
+2. **Use request_id**: All logs automatically include request_id for tracing
+3. **Mask sensitive data**: The filter handles common patterns, but avoid logging raw user input
+4. **Include context**: Add relevant IDs, states, and values to log messages
+5. **Use exc_info**: Always add `exc_info=True` to ERROR logs from exception handlers
+6. **Avoid duplicate logs**: Don't log the same information at multiple layers
+7. **Keep it concise**: Log messages should be clear and actionable
 
 ## Database Configuration
 
