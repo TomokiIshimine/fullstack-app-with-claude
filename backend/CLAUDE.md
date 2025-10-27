@@ -130,6 +130,70 @@ def create_todo():
     return service.create_todo(data)
 ```
 
+## Logging
+
+The backend uses a configured logging system with automatic file rotation and environment-based settings.
+
+### Configuration
+
+Logging is configured in `app/logger.py` and initialized in `app/main.py`. Settings are loaded from environment variables:
+
+- **LOG_LEVEL**: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  - Development/Testing: `DEBUG` (default)
+  - Production: `INFO` (default)
+- **LOG_DIR**: Directory for log files (default: `backend/logs`)
+- **FLASK_ENV**: Environment mode (`development`, `testing`, `production`)
+
+### Log Files
+
+- Location: `backend/logs/app.log`
+- Rotation: Daily at midnight
+- Retention: 5 backup files
+- Format: `2025-10-27 10:30:45 - app.services.todo - INFO - Todo created: id=1`
+
+### Usage in Code
+
+Use Python's standard `logging` module in any layer (routes, services, repositories):
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+# In your code
+logger.debug("Detailed debugging information")
+logger.info("Todo created successfully: id=1")
+logger.warning("Potential issue detected")
+logger.error("Operation failed", exc_info=True)
+```
+
+**Example (Service Layer)**:
+```python
+# app/services/todo_service.py
+import logging
+
+logger = logging.getLogger(__name__)
+
+def create_todo(self, data: TodoCreateData) -> Todo:
+    logger.debug(f"Creating todo: title='{data.title}'")
+    todo = Todo(title=data.title, ...)
+    result = self.repository.save(todo)
+    logger.info(f"Todo created: id={result.id}")
+    return result
+```
+
+### Environment-Specific Behavior
+
+- **Development** (`FLASK_ENV=development`):
+  - Logs to file AND console
+  - Log level: DEBUG
+- **Testing** (`FLASK_ENV=testing`):
+  - Logs to console only (no file rotation issues)
+  - Log level: DEBUG
+- **Production** (`FLASK_ENV=production`):
+  - Logs to file only
+  - Log level: INFO
+
 ## Database Configuration
 
 **Default connection**: `mysql+pymysql://user:password@db:3306/app_db`

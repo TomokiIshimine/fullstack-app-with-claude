@@ -5,6 +5,7 @@ from werkzeug.exceptions import HTTPException
 
 from .config import Config
 from .database import get_engine, get_session_factory, init_engine
+from .logger import setup_logging
 from .routes import api_bp
 
 
@@ -49,6 +50,15 @@ def _register_session_hooks(app: Flask) -> None:
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Initialize logging
+    setup_logging(
+        app_logger=app.logger,
+        log_dir=app.config["LOG_DIR"],
+        log_level=app.config["LOG_LEVEL"],
+        is_development=app.config["FLASK_ENV"] == "development",
+        is_testing=app.config.get("TESTING", False),
+    )
 
     init_engine(app.config["SQLALCHEMY_DATABASE_URI"])
     app.extensions["sqlalchemy_engine"] = get_engine()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Sequence
 
 from sqlalchemy.orm import Session
@@ -8,6 +9,8 @@ from werkzeug.exceptions import HTTPException
 from app.models.todo import Todo
 from app.repositories.todo_repository import TodoRepository
 from app.schemas.todo import TodoCreateData, TodoStatus, TodoToggleData, TodoUpdateData
+
+logger = logging.getLogger(__name__)
 
 
 class TodoServiceError(HTTPException):
@@ -43,13 +46,16 @@ class TodoService:
 
     def create_todo(self, data: TodoCreateData) -> Todo:
         """Create a new todo with validated data."""
+        logger.debug(f"Creating todo: title='{data.title}', due_date={data.due_date}")
         # Pydantic validates on instantiation, no need to call validate()
         todo = Todo(
             title=data.title,
             detail=data.detail,
             due_date=data.due_date,
         )
-        return self.repository.save(todo)
+        result = self.repository.save(todo)
+        logger.info(f"Todo created successfully: id={result.id}, title='{result.title}'")
+        return result
 
     def update_todo(self, todo_id: int, data: TodoUpdateData) -> Todo:
         """Update an existing todo with validated data."""
