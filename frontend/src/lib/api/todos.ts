@@ -19,7 +19,7 @@ export class ApiError extends Error {
 const API_BASE_URL = '/api/todos'
 
 /**
- * Wrapper for fetch with automatic logging and timing
+ * Wrapper for fetch with automatic logging, timing, and credentials
  */
 async function fetchWithLogging(url: string, options?: RequestInit): Promise<Response> {
   const method = options?.method || 'GET'
@@ -28,7 +28,10 @@ async function fetchWithLogging(url: string, options?: RequestInit): Promise<Res
   logger.logApiRequest(method, url)
 
   try {
-    const response = await fetch(url, options)
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include', // Always include cookies for authentication
+    })
     const duration = performance.now() - startTime
 
     logger.logApiResponse(method, url, response.status, duration)

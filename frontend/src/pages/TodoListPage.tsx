@@ -1,7 +1,10 @@
+import { useNavigate } from 'react-router-dom'
 import { TodoForm } from '@/components/TodoForm'
 import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
 import { useTodos } from '@/hooks/useTodos'
+import { useAuth } from '@/contexts/AuthContext'
+import { logger } from '@/lib/logger'
 
 export function TodoListPage() {
   const {
@@ -25,10 +28,33 @@ export function TodoListPage() {
     toggleTodoCompletion,
   } = useTodos()
 
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      logger.info('Logout successful, redirecting to login')
+      navigate('/login')
+    } catch (error) {
+      logger.error('Logout error', error as Error)
+      // Navigate to login even if logout fails
+      navigate('/login')
+    }
+  }
+
   return (
     <div className="todo-page">
       <div className="todo-page__content">
-        <h1 className="todo-page__title">TODOリスト</h1>
+        <div className="todo-page__header">
+          <h1 className="todo-page__title">TODOリスト</h1>
+          <div className="todo-page__user-info">
+            {user && <span className="user-email">{user.email}</span>}
+            <button type="button" onClick={handleLogout} className="logout-button">
+              ログアウト
+            </button>
+          </div>
+        </div>
 
         {error && (
           <div className="todo-error" role="alert">
