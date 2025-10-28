@@ -1,4 +1,4 @@
-.PHONY: install setup up down lint test test-fast test-cov test-parallel format pre-commit-install pre-commit-run pre-commit-update db-init db-create-user db-reset
+.PHONY: install setup up down lint test test-frontend test-backend test-fast test-cov test-parallel format pre-commit-install pre-commit-run pre-commit-update db-init db-create-user db-reset
 
 PNPM ?= pnpm --dir frontend
 POETRY ?= poetry -C backend
@@ -24,6 +24,12 @@ lint:
 
 test:
 	$(PNPM) run test -- --runInBand
+	$(POETRY) run pytest --cov=app --cov-report=term-missing
+
+test-frontend:
+	$(PNPM) run test -- --runInBand
+
+test-backend:
 	$(POETRY) run pytest --cov=app --cov-report=term-missing
 
 test-fast:
