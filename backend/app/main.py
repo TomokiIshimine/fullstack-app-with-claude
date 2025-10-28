@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 import time
 import uuid
 
 from flask import Flask, Response, g, jsonify, request
+from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from .config import Config
@@ -90,6 +92,17 @@ def create_app() -> Flask:
     )
 
     app.logger.info(f"Starting application in {app.config['FLASK_ENV']} mode")
+
+    # Setup CORS for cookie-based authentication
+    frontend_origin = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    CORS(
+        app,
+        supports_credentials=True,
+        origins=[frontend_origin],
+        allow_headers=["Content-Type"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    )
+    app.logger.info(f"CORS enabled for origin: {frontend_origin}")
 
     init_engine(app.config["SQLALCHEMY_DATABASE_URI"])
     app.extensions["sqlalchemy_engine"] = get_engine()

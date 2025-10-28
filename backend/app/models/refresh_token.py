@@ -1,21 +1,21 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, func, text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from . import Base
 
 
-class Todo(Base):
-    """Persistent representation of a todo item."""
+class RefreshToken(Base):
+    """Refresh token model for JWT authentication."""
 
-    __tablename__ = "todos"
+    __tablename__ = "refresh_tokens"
     __table_args__ = (
-        Index("idx_todos_due_date", "due_date"),
-        Index("idx_todos_completed", "is_completed"),
-        Index("idx_todos_user_id", "user_id"),
+        Index("idx_refresh_tokens_token", "token", unique=True),
+        Index("idx_refresh_tokens_user_id", "user_id"),
+        Index("idx_refresh_tokens_expires_at", "expires_at"),
         {"sqlite_autoincrement": True},
     )
 
@@ -24,15 +24,14 @@ class Todo(Base):
         primary_key=True,
         autoincrement=True,
     )
+    token: Mapped[str] = mapped_column(String(length=500), nullable=False, unique=True)
     user_id: Mapped[int] = mapped_column(
         BigInteger().with_variant(Integer, "sqlite"),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    title: Mapped[str] = mapped_column(String(length=120), nullable=False)
-    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
-    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    is_completed: Mapped[bool] = mapped_column(
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    is_revoked: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
@@ -51,10 +50,10 @@ class Todo(Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="todos")  # type: ignore  # noqa: F821
+    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")  # type: ignore  # noqa: F821
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f"Todo(id={self.id!r}, title={self.title!r}, is_completed={self.is_completed!r})"
+        return f"RefreshToken(id={self.id!r}, user_id={self.user_id!r}, is_revoked={self.is_revoked!r})"
 
 
-__all__ = ["Todo"]
+__all__ = ["RefreshToken"]

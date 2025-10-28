@@ -35,6 +35,49 @@ make lint                 # Lint both frontend and backend
 make format               # Format both frontend and backend
 ```
 
+## Database Setup
+
+### Initial Setup (New Environment)
+
+When starting a new environment, Docker Compose automatically initializes the database:
+
+```bash
+make up                   # Start all services including MySQL
+```
+
+The MySQL container executes `infra/mysql/init/001_init.sql` on first startup, creating:
+- `users` table - User authentication
+- `refresh_tokens` table - JWT token management
+- `todos` table - TODO items with user associations
+
+### Manual Schema Management
+
+For existing environments or schema updates:
+
+**Initialize/recreate all tables:**
+```bash
+make db-init
+# Or directly:
+poetry -C backend run python scripts/create_tables.py
+```
+
+**Create a test user:**
+```bash
+make db-create-user EMAIL=user@example.com PASSWORD=password123
+# Or directly:
+poetry -C backend run python scripts/create_user.py user@example.com password123
+```
+
+**Reset database (⚠️ destructive):**
+```bash
+make db-reset             # Drops all data and recreates database
+```
+
+**Notes:**
+- `create_tables.py` uses SQLAlchemy models as the source of truth
+- Schema changes require updating both SQLAlchemy models and `001_init.sql`
+- The init SQL file is only executed when the Docker volume is empty
+
 ## Pre-commit Hooks (Lightweight)
 
 Pre-commit hooks automatically run **lightweight checks** on staged files before each commit. Heavy checks (mypy, pytest, vitest) are intentionally excluded for fast commits.

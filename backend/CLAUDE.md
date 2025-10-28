@@ -387,6 +387,58 @@ DATABASE_URL=mysql+pymysql://user:password@localhost:3306/app_db
 FLASK_ENV=development
 ```
 
+### Schema Management
+
+The project uses **two approaches** for database schema management:
+
+#### 1. Docker Compose Initialization (Recommended for New Environments)
+
+When Docker starts with an empty volume, `infra/mysql/init/001_init.sql` automatically creates all tables:
+
+```bash
+make up                   # Starts Docker, MySQL initializes automatically
+```
+
+This SQL file contains the complete schema and is the **single source of truth** for initial setup.
+
+#### 2. Python Scripts (Development & Testing)
+
+For development, testing, or manual schema updates:
+
+**Create/recreate all tables:**
+```bash
+make db-init
+# Or directly:
+poetry -C backend run python scripts/create_tables.py
+```
+
+This script uses SQLAlchemy models to create tables via `Base.metadata.create_all()`.
+
+**Create a test user:**
+```bash
+make db-create-user EMAIL=user@example.com PASSWORD=password123
+# Or directly:
+poetry -C backend run python scripts/create_user.py user@example.com password123
+```
+
+**Reset database (destructive):**
+```bash
+make db-reset             # Drops Docker volume and recreates database
+```
+
+#### Schema Update Workflow
+
+When modifying database schema:
+
+1. Update SQLAlchemy model in `app/models/`
+2. Update `infra/mysql/init/001_init.sql` to match
+3. For existing environments, run `make db-init` or manually migrate data
+
+**Important Notes:**
+- SQLAlchemy models and SQL file must be kept in sync manually
+- The project does not currently use Alembic migrations
+- For production deployments, consider implementing proper migration tooling
+
 ## Feature Implementation Example: TODO
 
 The TODO feature demonstrates the full backend stack:
