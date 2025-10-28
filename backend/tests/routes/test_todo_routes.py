@@ -1,94 +1,91 @@
+"""Tests for TODO routes (CRUD operations)."""
+
 from __future__ import annotations
 
-from datetime import date, timedelta
+from tests.factories import TodoFactory, get_tomorrow, get_yesterday
+from tests.helpers import assert_response_error, assert_response_success, create_todo
 
 
 def test_get_todos_returns_empty_list(auth_client):
+    """Test that GET /api/todos returns empty list initially."""
     response = auth_client.get("/api/todos")
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload["items"] == []
-    assert payload["meta"]["count"] == 0
+    data = assert_response_success(response, 200)
+    assert data["items"] == []
+    assert data["meta"]["count"] == 0
 
 
 def test_create_todo_success(auth_client):
-    due_date = (date.today() + timedelta(days=1)).isoformat()
-    response = auth_client.post(
-        "/api/todos",
-        json={"title": "New todo", "detail": "Details", "due_date": due_date},
-    )
-    assert response.status_code == 201
-    data = response.get_json()
-    assert data["title"] == "New todo"
-    assert data["detail"] == "Details"
-    assert data["due_date"] == due_date
-    assert data["is_completed"] is False
+    """Test successful TODO creation with all fields."""
+    due_date = get_tomorrow().isoformat()
+    todo_data = TodoFactory.build(title="New todo", detail="Details", due_date=due_date)
+
+    response = auth_client.post("/api/todos", json=todo_data)
+
+    assert_response_success(response, 201, title="New todo", detail="Details", due_date=due_date, is_completed=False)
 
 
 def test_create_todo_with_past_due_date_returns_error(auth_client):
-    past_due = (date.today() - timedelta(days=1)).isoformat()
-    response = auth_client.post("/api/todos", json={"title": "Invalid", "due_date": past_due})
-    assert response.status_code == 400
-    error = response.get_json()["error"]
-    assert error["code"] == 400
+    """Test that creating TODO with past due date returns validation error."""
+    past_due = get_yesterday().isoformat()
+    todo_data = TodoFactory.build(title="Invalid", due_date=past_due)
+
+    response = auth_client.post("/api/todos", json=todo_data)
+
+    assert_response_error(response, 400, 400)
 
 
 def test_update_todo_updates_selected_fields(auth_client):
-    create_resp = auth_client.post("/api/todos", json={"title": "Original", "detail": "Desc"})
-    todo_id = create_resp.get_json()["id"]
-    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    """Test that PATCH /api/todos/{id} updates only specified fields."""
+    # Create a todo
+    todo = create_todo(auth_client, title="Original", detail="Desc")
+    todo_id = todo["id"]
+    tomorrow = get_tomorrow().isoformat()
 
     # Update title only
     response = auth_client.patch(f"/api/todos/{todo_id}", json={"title": "Updated"})
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["title"] == "Updated"
-    assert data["detail"] == "Desc"
+    assert_response_success(response, 200, title="Updated", detail="Desc")
 
     # Update detail and due_date
-    response = auth_client.patch(
-        f"/api/todos/{todo_id}",
-        json={"detail": " New detail ", "due_date": tomorrow},
-    )
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["detail"] == "New detail"
-    assert data["due_date"] == tomorrow
+    response = auth_client.patch(f"/api/todos/{todo_id}", json={"detail": " New detail ", "due_date": tomorrow})
+    assert_response_success(response, 200, detail="New detail", due_date=tomorrow)
 
 
 def test_update_todo_missing_body_returns_error(auth_client):
-    create_resp = auth_client.post("/api/todos", json={"title": "No body"})
-    todo_id = create_resp.get_json()["id"]
+    """Test that updating TODO without body returns error."""
+    todo = create_todo(auth_client, title="No body")
 
-    response = auth_client.patch(f"/api/todos/{todo_id}", data="invalid", content_type="text/plain")
-    assert response.status_code == 400
+    response = auth_client.patch(f"/api/todos/{todo['id']}", data="invalid", content_type="text/plain")
+
+    assert_response_error(response, 400)
 
 
 def test_toggle_todo_completion(auth_client):
-    create_resp = auth_client.post("/api/todos", json={"title": "Toggle"})
-    todo_id = create_resp.get_json()["id"]
+    """Test marking TODO as complete/incomplete."""
+    todo = create_todo(auth_client, title="Toggle")
 
-    response = auth_client.patch(f"/api/todos/{todo_id}/complete", json={"is_completed": True})
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["is_completed"] is True
+    response = auth_client.patch(f"/api/todos/{todo['id']}/complete", json={"is_completed": True})
+
+    assert_response_success(response, 200, is_completed=True)
 
 
 def test_toggle_todo_requires_boolean(auth_client):
-    create_resp = auth_client.post("/api/todos", json={"title": "Toggle invalid"})
-    todo_id = create_resp.get_json()["id"]
+    """Test that completion toggle requires boolean value."""
+    todo = create_todo(auth_client, title="Toggle invalid")
 
-    response = auth_client.patch(f"/api/todos/{todo_id}/complete", json={"is_completed": "yes"})
-    assert response.status_code == 400
+    response = auth_client.patch(f"/api/todos/{todo['id']}/complete", json={"is_completed": "yes"})
+
+    assert_response_error(response, 400)
 
 
 def test_delete_todo_success(auth_client):
-    create_resp = auth_client.post("/api/todos", json={"title": "Delete"})
-    todo_id = create_resp.get_json()["id"]
+    """Test successful TODO deletion."""
+    todo = create_todo(auth_client, title="Delete")
+    todo_id = todo["id"]
 
     response = auth_client.delete(f"/api/todos/{todo_id}")
     assert response.status_code == 204
 
+    # Verify todo is deleted
     follow_up = auth_client.get("/api/todos?status=all")
     data = follow_up.get_json()
     ids = [item["id"] for item in data["items"]]
@@ -96,21 +93,28 @@ def test_delete_todo_success(auth_client):
 
 
 def test_get_todos_with_status_filter(auth_client):
-    active_resp = auth_client.post("/api/todos", json={"title": "Active"})
-    completed_resp = auth_client.post("/api/todos", json={"title": "Completed"})
+    """Test filtering TODOs by status (active/completed)."""
+    active_todo = create_todo(auth_client, title="Active")
+    completed_todo = create_todo(auth_client, title="Completed")
 
-    completed_id = completed_resp.get_json()["id"]
-    auth_client.patch(f"/api/todos/{completed_id}/complete", json={"is_completed": True})
+    # Mark one as completed
+    auth_client.patch(f"/api/todos/{completed_todo['id']}/complete", json={"is_completed": True})
 
-    active_resp = auth_client.get("/api/todos?status=active")
-    active_ids = [item["id"] for item in active_resp.get_json()["items"]]
-    assert completed_id not in active_ids
+    # Get active todos (should not include completed)
+    active_response = auth_client.get("/api/todos?status=active")
+    active_ids = [item["id"] for item in active_response.get_json()["items"]]
+    assert completed_todo["id"] not in active_ids
+    assert active_todo["id"] in active_ids
 
-    completed_resp = auth_client.get("/api/todos?status=completed")
-    completed_ids = [item["id"] for item in completed_resp.get_json()["items"]]
-    assert completed_id in completed_ids
+    # Get completed todos (should include completed)
+    completed_response = auth_client.get("/api/todos?status=completed")
+    completed_ids = [item["id"] for item in completed_response.get_json()["items"]]
+    assert completed_todo["id"] in completed_ids
+    assert active_todo["id"] not in completed_ids
 
 
 def test_invalid_status_returns_error(auth_client):
+    """Test that invalid status filter returns error."""
     response = auth_client.get("/api/todos?status=unknown")
-    assert response.status_code == 400
+
+    assert_response_error(response, 400)
