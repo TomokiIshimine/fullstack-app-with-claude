@@ -4,6 +4,13 @@ import { useTodoForm } from './useTodoForm'
 import { createMockTodo } from '@/test/helpers/mockData'
 import { TODO_ERROR_MESSAGES } from '@/constants/todo'
 
+// Helper function to get a future date in YYYY-MM-DD format
+function getFutureDate(daysFromNow: number = 1): string {
+  const date = new Date()
+  date.setDate(date.getDate() + daysFromNow)
+  return date.toISOString().split('T')[0]
+}
+
 describe('useTodoForm', () => {
   const mockOnSubmit = vi.fn()
 
@@ -13,6 +20,7 @@ describe('useTodoForm', () => {
   })
   describe('Form Submission', () => {
     it('submits valid form successfully', async () => {
+      const futureDate = getFutureDate(7)
       const { result } = renderHook(() =>
         useTodoForm({
           editingTodo: null,
@@ -23,7 +31,7 @@ describe('useTodoForm', () => {
       act(() => {
         result.current.setTitle('Valid Title')
         result.current.setDetail('Valid Detail')
-        result.current.setDueDate('2024-06-20')
+        result.current.setDueDate(futureDate)
       })
 
       await act(async () => {
@@ -35,7 +43,7 @@ describe('useTodoForm', () => {
       expect(mockOnSubmit).toHaveBeenCalledWith({
         title: 'Valid Title',
         detail: 'Valid Detail',
-        dueDate: '2024-06-20',
+        dueDate: futureDate,
       })
       expect(result.current.fieldErrors).toEqual({})
     })
@@ -119,6 +127,7 @@ describe('useTodoForm', () => {
     })
 
     it('resets form after successful submission in create mode', async () => {
+      const futureDate = getFutureDate(7)
       const { result } = renderHook(() =>
         useTodoForm({
           editingTodo: null,
@@ -129,7 +138,7 @@ describe('useTodoForm', () => {
       act(() => {
         result.current.setTitle('Valid Title')
         result.current.setDetail('Valid Detail')
-        result.current.setDueDate('2024-06-20')
+        result.current.setDueDate(futureDate)
       })
 
       await act(async () => {

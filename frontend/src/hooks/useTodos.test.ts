@@ -263,7 +263,10 @@ describe('useTodos', () => {
         await result.current.submitTodo(payload)
 
         expect(todosApi.updateTodo).toHaveBeenCalledWith(todoToEdit.id, payload)
-        expect(result.current.editingTodo).toBeNull()
+
+        await waitFor(() => {
+          expect(result.current.editingTodo).toBeNull()
+        })
       })
 
       it('sets error when update fails', async () => {
@@ -277,6 +280,10 @@ describe('useTodos', () => {
         })
 
         result.current.startEditing(mockTodos[0])
+
+        await waitFor(() => {
+          expect(result.current.editingTodo).toEqual(mockTodos[0])
+        })
 
         await expect(result.current.submitTodo({ title: 'Test' })).rejects.toThrow()
 

@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { ProtectedRoute } from './ProtectedRoute'
 import * as authApi from '@/lib/api/auth'
 import { createMockUser } from '@/test/helpers/mockData'
 import { renderWithAuthAndRouter } from '@/test/helpers/renderHelpers'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 describe('ProtectedRoute', () => {
   const mockUser = createMockUser({

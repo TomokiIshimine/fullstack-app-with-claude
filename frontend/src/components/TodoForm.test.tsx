@@ -5,6 +5,13 @@ import { TodoForm } from './TodoForm'
 import { createMockTodo } from '@/test/helpers/mockData'
 import { TODO_VALIDATION } from '@/constants/todo'
 
+// Helper function to get a future date in YYYY-MM-DD format
+function getFutureDate(daysFromNow: number = 1): string {
+  const date = new Date()
+  date.setDate(date.getDate() + daysFromNow)
+  return date.toISOString().split('T')[0]
+}
+
 describe('TodoForm', () => {
   const mockOnSubmit = vi.fn()
   const mockOnCancelEdit = vi.fn()
@@ -89,19 +96,21 @@ describe('TodoForm', () => {
     })
 
     it('allows setting due date', async () => {
+      const futureDate = getFutureDate(7)
       render(<TodoForm {...defaultProps} />)
 
       const dueDateInput = screen.getByLabelText('期限') as HTMLInputElement
-      await userEvent.type(dueDateInput, '2024-06-20')
+      await userEvent.type(dueDateInput, futureDate)
 
-      expect(dueDateInput.value).toBe('2024-06-20')
+      expect(dueDateInput.value).toBe(futureDate)
     })
 
     it('populates fields with editing todo data', () => {
+      const futureDate = getFutureDate(7)
       const todo = createMockTodo({
         title: 'Existing Todo',
         detail: 'Existing detail',
-        dueDate: '2024-06-20',
+        dueDate: futureDate,
       })
 
       render(<TodoForm {...defaultProps} editingTodo={todo} />)
@@ -112,7 +121,7 @@ describe('TodoForm', () => {
 
       expect(titleInput.value).toBe('Existing Todo')
       expect(detailInput.value).toBe('Existing detail')
-      expect(dueDateInput.value).toBe('2024-06-20')
+      expect(dueDateInput.value).toBe(futureDate)
     })
   })
 
@@ -148,11 +157,12 @@ describe('TodoForm', () => {
 
   describe('Form Submission', () => {
     it('calls onSubmit with form data', async () => {
+      const futureDate = getFutureDate(7)
       render(<TodoForm {...defaultProps} />)
 
       await userEvent.type(screen.getByLabelText('タイトル'), 'New Todo')
       await userEvent.type(screen.getByLabelText('詳細'), 'Todo details')
-      await userEvent.type(screen.getByLabelText('期限'), '2024-06-20')
+      await userEvent.type(screen.getByLabelText('期限'), futureDate)
 
       const submitButton = screen.getByRole('button', { name: '追加' })
       await userEvent.click(submitButton)
@@ -161,7 +171,7 @@ describe('TodoForm', () => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
           title: 'New Todo',
           detail: 'Todo details',
-          dueDate: '2024-06-20',
+          dueDate: futureDate,
         })
       })
     })

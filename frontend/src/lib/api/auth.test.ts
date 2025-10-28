@@ -63,12 +63,19 @@ describe('API Client - auth', () => {
         error: 'Invalid email or password',
       }
 
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse(errorResponse, {
-          status: 401,
-          ok: false,
-        })
-      )
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse(errorResponse, {
+            status: 401,
+            ok: false,
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse(errorResponse, {
+            status: 401,
+            ok: false,
+          })
+        )
 
       await expect(
         login({
@@ -143,12 +150,19 @@ describe('API Client - auth', () => {
         error: 'Logout failed',
       }
 
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse(errorResponse, {
-          status: 500,
-          ok: false,
-        })
-      )
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse(errorResponse, {
+            status: 500,
+            ok: false,
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse(errorResponse, {
+            status: 500,
+            ok: false,
+          })
+        )
 
       await expect(logout()).rejects.toThrow(ApiError)
       await expect(logout()).rejects.toThrow('Logout failed')
@@ -192,12 +206,19 @@ describe('API Client - auth', () => {
         error: 'Refresh token invalid',
       }
 
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse(errorResponse, {
-          status: 401,
-          ok: false,
-        })
-      )
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse(errorResponse, {
+            status: 401,
+            ok: false,
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse(errorResponse, {
+            status: 401,
+            ok: false,
+          })
+        )
 
       await expect(refreshToken()).rejects.toThrow(ApiError)
       await expect(refreshToken()).rejects.toThrow('Refresh token invalid')
@@ -359,7 +380,7 @@ describe('API Client - auth', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ApiError)
         expect((error as ApiError).status).toBe(404)
-        expect((error as ApiError).message).toBe('Request failed')
+        expect((error as ApiError).message).toBe('Not Found')
       }
     })
   })
