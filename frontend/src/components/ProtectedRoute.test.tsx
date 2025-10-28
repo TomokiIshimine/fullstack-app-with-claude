@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { screen, waitFor } from '@testing-library/react'
 import { ProtectedRoute } from './ProtectedRoute'
-import { AuthProvider } from '@/contexts/AuthContext'
 import * as authApi from '@/lib/api/auth'
 import { createMockUser } from '@/test/helpers/mockData'
+import { renderWithAuthAndRouter } from '@/test/helpers/renderHelpers'
 
 describe('ProtectedRoute', () => {
   const mockUser = createMockUser({
@@ -16,23 +15,28 @@ describe('ProtectedRoute', () => {
     vi.clearAllMocks()
   })
 
+  // Helper function to render ProtectedRoute with common setup
+  // Note: mockRefreshToken defaults to false so tests can manually mock as needed
   const renderProtectedRoute = (initialPath = '/') => {
-    return render(
-      <MemoryRouter initialEntries={[initialPath]}>
-        <AuthProvider>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <div>Protected Content</div>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/login" element={<div>Login Page</div>} />
-          </Routes>
-        </AuthProvider>
-      </MemoryRouter>
+    return renderWithAuthAndRouter(
+      <ProtectedRoute>
+        <div>Protected Content</div>
+      </ProtectedRoute>,
+      {
+        mockRefreshToken: false, // Let tests handle their own mocking
+        initialEntries: [initialPath],
+        routes: [
+          {
+            path: '/',
+            element: (
+              <ProtectedRoute>
+                <div>Protected Content</div>
+              </ProtectedRoute>
+            ),
+          },
+          { path: '/login', element: <div>Login Page</div> },
+        ],
+      }
     )
   }
 
@@ -116,22 +120,14 @@ describe('ProtectedRoute', () => {
     it('renders multiple children when authenticated', async () => {
       vi.spyOn(authApi, 'refreshToken').mockResolvedValue(mockUser)
 
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AuthProvider>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <div>Child 1</div>
-                    <div>Child 2</div>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </AuthProvider>
-        </MemoryRouter>
+      renderWithAuthAndRouter(
+        <ProtectedRoute>
+          <div>Child 1</div>
+          <div>Child 2</div>
+        </ProtectedRoute>,
+        {
+          mockRefreshToken: false,
+        }
       )
 
       await waitFor(() => {
@@ -238,21 +234,24 @@ describe('ProtectedRoute', () => {
     it('works with different initial paths', async () => {
       vi.spyOn(authApi, 'refreshToken').mockResolvedValue(mockUser)
 
-      render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <AuthProvider>
-            <Routes>
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <div>Dashboard Content</div>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </AuthProvider>
-        </MemoryRouter>
+      renderWithAuthAndRouter(
+        <ProtectedRoute>
+          <div>Dashboard Content</div>
+        </ProtectedRoute>,
+        {
+          mockRefreshToken: false,
+          initialEntries: ['/dashboard'],
+          routes: [
+            {
+              path: '/dashboard',
+              element: (
+                <ProtectedRoute>
+                  <div>Dashboard Content</div>
+                </ProtectedRoute>
+              ),
+            },
+          ],
+        }
       )
 
       await waitFor(() => {
@@ -334,15 +333,9 @@ describe('ProtectedRoute', () => {
     it('handles empty children', async () => {
       vi.spyOn(authApi, 'refreshToken').mockResolvedValue(mockUser)
 
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<ProtectedRoute>{null}</ProtectedRoute>} />
-            </Routes>
-          </AuthProvider>
-        </MemoryRouter>
-      )
+      renderWithAuthAndRouter(<ProtectedRoute>{null}</ProtectedRoute>, {
+        mockRefreshToken: false,
+      })
 
       await waitFor(() => {
         expect(screen.queryByText('読み込み中...')).not.toBeInTheDocument()
@@ -352,27 +345,19 @@ describe('ProtectedRoute', () => {
     it('handles complex nested children', async () => {
       vi.spyOn(authApi, 'refreshToken').mockResolvedValue(mockUser)
 
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AuthProvider>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <div>
-                      <header>Header</header>
-                      <main>
-                        <article>Article Content</article>
-                      </main>
-                      <footer>Footer</footer>
-                    </div>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </AuthProvider>
-        </MemoryRouter>
+      renderWithAuthAndRouter(
+        <ProtectedRoute>
+          <div>
+            <header>Header</header>
+            <main>
+              <article>Article Content</article>
+            </main>
+            <footer>Footer</footer>
+          </div>
+        </ProtectedRoute>,
+        {
+          mockRefreshToken: false,
+        }
       )
 
       await waitFor(() => {
@@ -387,29 +372,32 @@ describe('ProtectedRoute', () => {
     it('handles multiple protected routes independently', async () => {
       vi.spyOn(authApi, 'refreshToken').mockResolvedValue(mockUser)
 
-      render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <AuthProvider>
-            <Routes>
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <div>Dashboard</div>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <div>Profile</div>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </AuthProvider>
-        </MemoryRouter>
+      renderWithAuthAndRouter(
+        <ProtectedRoute>
+          <div>Dashboard</div>
+        </ProtectedRoute>,
+        {
+          mockRefreshToken: false,
+          initialEntries: ['/dashboard'],
+          routes: [
+            {
+              path: '/dashboard',
+              element: (
+                <ProtectedRoute>
+                  <div>Dashboard</div>
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: '/profile',
+              element: (
+                <ProtectedRoute>
+                  <div>Profile</div>
+                </ProtectedRoute>
+              ),
+            },
+          ],
+        }
       )
 
       await waitFor(() => {

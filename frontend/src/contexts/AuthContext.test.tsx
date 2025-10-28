@@ -294,41 +294,10 @@ describe('AuthContext', () => {
   })
 
   describe('Integration scenarios', () => {
-    it('handles full authentication flow', async () => {
-      // Start unauthenticated
-      vi.spyOn(authApi, 'refreshToken').mockRejectedValue(new Error('Not authenticated'))
+    it('handles complete authentication lifecycle and session management', async () => {
+      // Test 1: Session restoration on mount (successful)
+      const { result, unmount } = renderHook(() => useAuth(), { wrapper })
 
-      const { result } = renderHook(() => useAuth(), { wrapper })
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
-
-      expect(result.current.isAuthenticated).toBe(false)
-
-      // Login
-      await result.current.login('test@example.com', 'password')
-
-      await waitFor(() => {
-        expect(result.current.isAuthenticated).toBe(true)
-      })
-
-      expect(result.current.user).toEqual(mockUser)
-
-      // Logout
-      await result.current.logout()
-
-      await waitFor(() => {
-        expect(result.current.isAuthenticated).toBe(false)
-      })
-
-      expect(result.current.user).toBeNull()
-    })
-
-    it('handles session restoration on mount', async () => {
-      const { result } = renderHook(() => useAuth(), { wrapper })
-
-      // Should automatically restore session via refreshToken
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
       })
@@ -336,19 +305,51 @@ describe('AuthContext', () => {
       expect(result.current.isAuthenticated).toBe(true)
       expect(result.current.user).toEqual(mockUser)
       expect(authApi.refreshToken).toHaveBeenCalled()
-    })
 
-    it('handles failed session restoration gracefully', async () => {
+      unmount()
+
+      // Test 2: Failed session restoration
       vi.spyOn(authApi, 'refreshToken').mockRejectedValue(new Error('Token expired'))
 
-      const { result } = renderHook(() => useAuth(), { wrapper })
+      const { result: result2, unmount: unmount2 } = renderHook(() => useAuth(), { wrapper })
 
       await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
+        expect(result2.current.isLoading).toBe(false)
       })
 
-      expect(result.current.isAuthenticated).toBe(false)
-      expect(result.current.user).toBeNull()
+      expect(result2.current.isAuthenticated).toBe(false)
+      expect(result2.current.user).toBeNull()
+
+      unmount2()
+
+      // Test 3: Full authentication flow (unauthenticated → login → logout)
+      vi.spyOn(authApi, 'refreshToken').mockRejectedValue(new Error('Not authenticated'))
+
+      const { result: result3 } = renderHook(() => useAuth(), { wrapper })
+
+      await waitFor(() => {
+        expect(result3.current.isLoading).toBe(false)
+      })
+
+      expect(result3.current.isAuthenticated).toBe(false)
+
+      // Login
+      await result3.current.login('test@example.com', 'password')
+
+      await waitFor(() => {
+        expect(result3.current.isAuthenticated).toBe(true)
+      })
+
+      expect(result3.current.user).toEqual(mockUser)
+
+      // Logout
+      await result3.current.logout()
+
+      await waitFor(() => {
+        expect(result3.current.isAuthenticated).toBe(false)
+      })
+
+      expect(result3.current.user).toBeNull()
     })
   })
 })

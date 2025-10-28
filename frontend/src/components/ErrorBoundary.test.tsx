@@ -330,8 +330,9 @@ describe('ErrorBoundary', () => {
   })
 
   describe('Nested Error Boundaries', () => {
-    it('inner boundary catches errors before outer boundary', () => {
-      render(
+    it('catches errors at the correct boundary level', () => {
+      // Test: Inner boundary catches errors from inner children
+      const { unmount } = render(
         <ErrorBoundary fallback={<div>Outer boundary error</div>}>
           <div>Outer content</div>
           <ErrorBoundary fallback={<div>Inner boundary error</div>}>
@@ -343,9 +344,10 @@ describe('ErrorBoundary', () => {
       expect(screen.getByText('Inner boundary error')).toBeInTheDocument()
       expect(screen.getByText('Outer content')).toBeInTheDocument()
       expect(screen.queryByText('Outer boundary error')).not.toBeInTheDocument()
-    })
 
-    it('outer boundary catches errors from outer children', () => {
+      unmount()
+
+      // Test: Outer boundary catches errors from outer children
       render(
         <ErrorBoundary fallback={<div>Outer boundary error</div>}>
           <ThrowError shouldThrow={true} />
@@ -361,12 +363,13 @@ describe('ErrorBoundary', () => {
   })
 
   describe('Different Error Types', () => {
-    it('catches TypeError', () => {
+    it('catches different error types (TypeError, ReferenceError, custom errors)', () => {
+      // Test TypeError
       const ThrowTypeError = () => {
         throw new TypeError('Type error occurred')
       }
 
-      render(
+      const { unmount } = render(
         <ErrorBoundary>
           <ThrowTypeError />
         </ErrorBoundary>
@@ -374,14 +377,15 @@ describe('ErrorBoundary', () => {
 
       expect(screen.getByText('エラーが発生しました')).toBeInTheDocument()
       expect(screen.getByText(/Type error occurred/)).toBeInTheDocument()
-    })
 
-    it('catches ReferenceError', () => {
+      unmount()
+
+      // Test ReferenceError
       const ThrowReferenceError = () => {
         throw new ReferenceError('Reference error occurred')
       }
 
-      render(
+      const { unmount: unmount2 } = render(
         <ErrorBoundary>
           <ThrowReferenceError />
         </ErrorBoundary>
@@ -389,9 +393,10 @@ describe('ErrorBoundary', () => {
 
       expect(screen.getByText('エラーが発生しました')).toBeInTheDocument()
       expect(screen.getByText(/Reference error occurred/)).toBeInTheDocument()
-    })
 
-    it('catches custom error', () => {
+      unmount2()
+
+      // Test Custom Error
       class CustomError extends Error {
         constructor(message: string) {
           super(message)
