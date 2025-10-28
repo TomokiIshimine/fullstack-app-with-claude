@@ -1,4 +1,4 @@
-.PHONY: install setup up down lint test test-fast test-cov test-parallel format pre-commit-install pre-commit-run pre-commit-update
+.PHONY: install setup up down lint test test-fast test-cov test-parallel format pre-commit-install pre-commit-run pre-commit-update db-init db-create-user db-reset
 
 PNPM ?= pnpm --dir frontend
 POETRY ?= poetry -C backend
@@ -54,3 +54,23 @@ pre-commit-run:
 pre-commit-update:
 	$(POETRY) run pre-commit autoupdate
 	@printf '✅ Pre-commit hooks updated\n'
+
+# Database management targets
+db-init:
+	$(POETRY) run python scripts/create_tables.py
+	@printf '✅ Database tables created\n'
+
+db-create-user:
+	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
+		printf 'Usage: make db-create-user EMAIL=user@example.com PASSWORD=password123\n'; \
+		exit 1; \
+	fi
+	$(POETRY) run python scripts/create_user.py $(EMAIL) $(PASSWORD)
+
+db-reset:
+	@printf '⚠️  This will reset the database. Are you sure? [y/N] ' && read ans && [ $${ans:-N} = y ]
+	$(COMPOSE) down -v
+	$(COMPOSE) up -d db
+	@printf 'Waiting for database to be ready...\n'
+	@sleep 5
+	@printf '✅ Database reset complete\n'
