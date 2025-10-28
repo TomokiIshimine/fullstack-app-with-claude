@@ -1,19 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { filterByStatus, sortTodos } from './todoFilters'
-import type { Todo } from '@/types/todo'
+import { createMockTodo } from '@/test/helpers/mockData'
 
 describe('todoFilters', () => {
-  const mockTodos: Todo[] = [
-    {
+  const mockTodos = [
+    createMockTodo({
       id: 1,
       title: 'Active Todo 1',
-      detail: null,
       dueDate: '2024-06-20',
       isCompleted: false,
       createdAt: '2024-06-01T10:00:00Z',
-      updatedAt: '2024-06-01T10:00:00Z',
-    },
-    {
+    }),
+    createMockTodo({
       id: 2,
       title: 'Completed Todo',
       detail: 'Details',
@@ -21,25 +19,21 @@ describe('todoFilters', () => {
       isCompleted: true,
       createdAt: '2024-06-02T10:00:00Z',
       updatedAt: '2024-06-02T10:00:00Z',
-    },
-    {
+    }),
+    createMockTodo({
       id: 3,
       title: 'Active Todo 2',
-      detail: null,
       dueDate: null,
       isCompleted: false,
       createdAt: '2024-06-03T10:00:00Z',
-      updatedAt: '2024-06-03T10:00:00Z',
-    },
-    {
+    }),
+    createMockTodo({
       id: 4,
       title: 'Active Todo 3',
-      detail: null,
       dueDate: '2024-06-10',
       isCompleted: false,
       createdAt: '2024-06-04T10:00:00Z',
-      updatedAt: '2024-06-04T10:00:00Z',
-    },
+    }),
   ]
 
   describe('filterByStatus', () => {
@@ -94,34 +88,22 @@ describe('todoFilters', () => {
     })
 
     it('sorts todos without due dates by creation date', () => {
-      const todosWithoutDueDate: Todo[] = [
-        {
+      const todosWithoutDueDate = [
+        createMockTodo({
           id: 1,
           title: 'Second',
-          detail: null,
-          dueDate: null,
-          isCompleted: false,
           createdAt: '2024-06-02T10:00:00Z',
-          updatedAt: '2024-06-02T10:00:00Z',
-        },
-        {
+        }),
+        createMockTodo({
           id: 2,
           title: 'First',
-          detail: null,
-          dueDate: null,
-          isCompleted: false,
           createdAt: '2024-06-01T10:00:00Z',
-          updatedAt: '2024-06-01T10:00:00Z',
-        },
-        {
+        }),
+        createMockTodo({
           id: 3,
           title: 'Third',
-          detail: null,
-          dueDate: null,
-          isCompleted: false,
           createdAt: '2024-06-03T10:00:00Z',
-          updatedAt: '2024-06-03T10:00:00Z',
-        },
+        }),
       ]
 
       const resultAsc = sortTodos(todosWithoutDueDate, 'asc')
@@ -149,25 +131,19 @@ describe('todoFilters', () => {
     })
 
     it('sorts todos with same due date by creation date', () => {
-      const sameDueDateTodos: Todo[] = [
-        {
+      const sameDueDateTodos = [
+        createMockTodo({
           id: 1,
           title: 'Second',
-          detail: null,
           dueDate: '2024-06-15',
-          isCompleted: false,
           createdAt: '2024-06-02T10:00:00Z',
-          updatedAt: '2024-06-02T10:00:00Z',
-        },
-        {
+        }),
+        createMockTodo({
           id: 2,
           title: 'First',
-          detail: null,
           dueDate: '2024-06-15',
-          isCompleted: false,
           createdAt: '2024-06-01T10:00:00Z',
-          updatedAt: '2024-06-01T10:00:00Z',
-        },
+        }),
       ]
 
       const result = sortTodos(sameDueDateTodos, 'asc')

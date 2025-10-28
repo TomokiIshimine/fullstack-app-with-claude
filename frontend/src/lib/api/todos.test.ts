@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getTodos, createTodo, updateTodo, toggleTodo, deleteTodo, ApiError } from './todos'
-import type { TodoDto } from '@/types/todo'
+import { createMockTodoDto } from '@/test/helpers/mockData'
+import { createMockResponse, restoreFetch } from '@/test/helpers/mockApi'
 
 describe('API Client - todos', () => {
   let originalFetch: typeof global.fetch
@@ -13,19 +14,15 @@ describe('API Client - todos', () => {
   })
 
   afterEach(() => {
-    global.fetch = originalFetch
+    restoreFetch(originalFetch)
     vi.restoreAllMocks()
   })
 
-  const mockTodoDto: TodoDto = {
-    id: 1,
+  const mockTodoDto = createMockTodoDto({
     title: 'Test Todo',
     detail: 'Test detail',
     due_date: '2024-06-20',
-    is_completed: false,
-    created_at: '2024-06-01T10:00:00Z',
-    updated_at: '2024-06-01T10:00:00Z',
-  }
+  })
 
   describe('getTodos', () => {
     it('fetches all todos successfully', async () => {
@@ -34,10 +31,7 @@ describe('API Client - todos', () => {
         meta: { count: 1 },
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify(mockResponse),
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockResponse))
 
       const result = await getTodos('all')
 
