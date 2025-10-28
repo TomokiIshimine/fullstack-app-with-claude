@@ -336,38 +336,11 @@ Set-Cookie: refresh_token=; HttpOnly; SameSite=Lax; Path=/api; Max-Age=0
 
 ## 7. データベーススキーマ
 
-### 7.1 users テーブル
+認証・認可に関連するテーブル定義（users、refresh_tokens）の詳細については [データベース設計書](./database-design.md) を参照してください。
 
-| カラム | 型 | 制約 | 説明 |
-|-------|-----|------|------|
-| id | BIGINT UNSIGNED | PRIMARY KEY, AUTO_INCREMENT | ユーザーID |
-| email | VARCHAR(255) | NOT NULL, UNIQUE | メールアドレス |
-| password_hash | VARCHAR(255) | NOT NULL | bcrypt ハッシュ化パスワード |
-| created_at | TIMESTAMP | NOT NULL, DEFAULT NOW | 作成日時 |
-| updated_at | TIMESTAMP | NOT NULL, ON UPDATE NOW | 更新日時 |
-
-**インデックス:**
-- `idx_users_email` on `email`
-
-### 7.2 refresh_tokens テーブル
-
-| カラム | 型 | 制約 | 説明 |
-|-------|-----|------|------|
-| id | BIGINT UNSIGNED | PRIMARY KEY, AUTO_INCREMENT | トークンID |
-| token | VARCHAR(500) | NOT NULL, UNIQUE | リフレッシュトークン |
-| user_id | BIGINT UNSIGNED | NOT NULL, FOREIGN KEY → users.id | ユーザーID |
-| expires_at | DATETIME | NOT NULL | 有効期限 |
-| is_revoked | TINYINT(1) | NOT NULL, DEFAULT 0 | 無効化フラグ |
-| created_at | TIMESTAMP | NOT NULL, DEFAULT NOW | 作成日時 |
-| updated_at | TIMESTAMP | NOT NULL, ON UPDATE NOW | 更新日時 |
-
-**インデックス:**
-- `idx_refresh_tokens_token` on `token`
-- `idx_refresh_tokens_user_id` on `user_id`
-- `idx_refresh_tokens_expires_at` on `expires_at`
-
-**外部キー:**
-- `user_id` → `users.id` (ON DELETE CASCADE)
+**関連テーブル:**
+- `users` テーブル: ユーザー情報、パスワードハッシュ
+- `refresh_tokens` テーブル: リフレッシュトークン管理、有効期限、無効化フラグ
 
 ---
 

@@ -88,10 +88,10 @@ graph TB
 
 | 機能 | 実装箇所 | 主な仕様 |
 |------|---------|---------|
-| **ロギング** | BE: `logger.py`<br/>FE: `lib/logger.ts` | **バックエンド:**<br/>- UUIDリクエストID、パフォーマンス測定<br/>- センシティブデータマスキング<br/>- 日次ログローテーション (5日保持)<br/>- 環境別設定 (開発:DEBUG, 本番:INFO)<br/><br/>**フロントエンド:**<br/>- API自動ログ、グローバルエラーハンドリング<br/>- 環境別 (開発:DEBUG, 本番:WARN) |
-| **エラーハンドリング** | BE: `main.py`<br/>FE: `ErrorBoundary.tsx` | **バックエンド:**<br/>- HTTP例外の統一処理<br/>- HTTPステータス: 400/401/403/404/500<br/><br/>**フロントエンド:**<br/>- React Error Boundary<br/>- フォールバックUI表示 |
-| **バリデーション** | BE: `schemas/`<br/>FE: `hooks/useTodoForm.ts` | **バックエンド (Pydantic v2):**<br/>- TODO: title必須(1-120), detail(500), due_date(今日以降)<br/>- ログイン: email形式, password必須<br/><br/>**フロントエンド:**<br/>- リアルタイムバリデーション<br/>- HTML5属性 (required, maxLength) |
-| **セキュリティ** | BE: `utils/`, `auth_routes.py`<br/>FE: `AuthContext.tsx` | - JWT認証 (httpOnly Cookie)<br/>- bcryptハッシュ化 (コスト:12)<br/>- トークンローテーション<br/>- XSS/CSRF対策 (httpOnly, SameSite)<br/>- SQLインジェクション対策 (ORM)<br/>- ユーザー別アクセス制御 |
+| **ロギング** | BE: `logger.py`<br/>FE: `lib/logger.ts` | - リクエストトレーシング (UUID)<br/>- センシティブデータマスキング<br/>- 環境別ログレベル設定<br/>- 詳細は [システム構成設計書](./system-architecture.md) セクション6参照 |
+| **エラーハンドリング** | BE: `main.py`<br/>FE: `ErrorBoundary.tsx` | **バックエンド:** HTTP例外の統一処理 (400/401/403/404/500)<br/>**フロントエンド:** React Error Boundary、フォールバックUI |
+| **バリデーション** | BE: `schemas/`<br/>FE: `hooks/useTodoForm.ts` | **バックエンド:** Pydantic による厳格な入力検証<br/>**フロントエンド:** リアルタイムバリデーション、HTML5属性 |
+| **セキュリティ** | BE: `utils/`, `auth_routes.py`<br/>FE: `AuthContext.tsx` | - JWT認証 (httpOnly Cookie)<br/>- bcryptハッシュ化<br/>- トークンローテーション<br/>- 詳細は [認証・認可設計書](./authentication-authorization.md) 参照 |
 
 ---
 
