@@ -71,6 +71,9 @@ JWT_SECRET_KEY=your-secret-key-here
 | テスト            | `make test`         | Vitest (frontend) と pytest (backend)    |
 | フォーマット      | `make format`       | Prettier / isort / black                 |
 
+**テストインフラ:**
+テストファクトリー・ヘルパー関数・セキュリティテストなどの詳細については、[テスト戦略書](./testing-strategy.md) を参照してください。
+
 ## データベース管理
 
 ### 初回セットアップ（新規環境）

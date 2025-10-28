@@ -482,7 +482,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - 他ユーザーのリソース操作で403を返す
 - 存在しないリソースで404を返す
 
-詳細は [テスト戦略書](./testing-strategy.md) を参照してください。
+### 11.3 テストカバレッジ
+
+APIエンドポイントの包括的なテストカバレッジとテスト戦略の詳細については、[テスト戦略書](./testing-strategy.md) を参照してください。
 
 ---
 

@@ -330,6 +330,9 @@ graph TB
     style Pyramid fill:#f9f9f9,stroke:#666,stroke-width:3px
 ```
 
+**テストインフラ:**
+テスト戦略とインフラの詳細については、[テスト戦略書](./testing-strategy.md) を参照してください。
+
 ---
 
 ## 8. 付録
