@@ -43,6 +43,7 @@ describe('API Client - todos', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/todos?status=all', {
         headers: { Accept: 'application/json' },
+        credentials: 'include',
       })
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual({
@@ -66,6 +67,7 @@ describe('API Client - todos', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/todos?status=active', {
         headers: { Accept: 'application/json' },
+        credentials: 'include',
       })
     })
 
@@ -79,6 +81,7 @@ describe('API Client - todos', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/todos?status=completed', {
         headers: { Accept: 'application/json' },
+        credentials: 'include',
       })
     })
 
@@ -127,6 +130,7 @@ describe('API Client - todos', () => {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: 'New Todo',
           detail: 'Details',
@@ -185,6 +189,7 @@ describe('API Client - todos', () => {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ title: 'Updated Title' }),
       })
       expect(result.title).toBe('Updated Title')
@@ -234,6 +239,7 @@ describe('API Client - todos', () => {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ is_completed: true }),
       })
       expect(result.isCompleted).toBe(true)
@@ -268,6 +274,7 @@ describe('API Client - todos', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/todos/1', {
         method: 'DELETE',
+        credentials: 'include',
       })
     })
 
