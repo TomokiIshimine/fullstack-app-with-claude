@@ -33,22 +33,19 @@ def test_create_todo_with_past_due_date_returns_error(auth_client):
     assert error["code"] == 400
 
 
-def test_update_todo_partial_fields(auth_client):
+def test_update_todo_updates_selected_fields(auth_client):
     create_resp = auth_client.post("/api/todos", json={"title": "Original", "detail": "Desc"})
     todo_id = create_resp.get_json()["id"]
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
 
+    # Update title only
     response = auth_client.patch(f"/api/todos/{todo_id}", json={"title": "Updated"})
     assert response.status_code == 200
     data = response.get_json()
     assert data["title"] == "Updated"
     assert data["detail"] == "Desc"
 
-
-def test_update_todo_with_due_date_and_detail(auth_client):
-    create_resp = auth_client.post("/api/todos", json={"title": "Update me"})
-    todo_id = create_resp.get_json()["id"]
-    tomorrow = (date.today() + timedelta(days=1)).isoformat()
-
+    # Update detail and due_date
     response = auth_client.patch(
         f"/api/todos/{todo_id}",
         json={"detail": " New detail ", "due_date": tomorrow},

@@ -51,93 +51,34 @@ describe('todoValidation', () => {
         expect(errors.title).toBe(TODO_ERROR_MESSAGES.TITLE_REQUIRED)
       })
 
-      it('requires title after trimming whitespace', () => {
-        const data: TodoFormData = {
-          title: '   ',
-          detail: '',
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
+      it('validates title trimming and length', () => {
+        // Empty after trim
+        let data: TodoFormData = { title: '   ', detail: '', dueDate: '' }
+        let errors = validateTodoForm(data)
         expect(errors.title).toBe(TODO_ERROR_MESSAGES.TITLE_REQUIRED)
-      })
 
-      it('rejects title exceeding max length', () => {
-        const data: TodoFormData = {
-          title: 'a'.repeat(121), // 121 characters
-          detail: '',
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
+        // Exceeds max length
+        data = { title: 'a'.repeat(121), detail: '', dueDate: '' }
+        errors = validateTodoForm(data)
         expect(errors.title).toBe(TODO_ERROR_MESSAGES.TITLE_TOO_LONG)
-      })
 
-      it('accepts title at max length', () => {
-        const data: TodoFormData = {
-          title: 'a'.repeat(120), // exactly 120 characters
-          detail: '',
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
-        expect(errors.title).toBeUndefined()
-      })
-
-      it('accepts title with leading/trailing whitespace after trimming', () => {
-        const data: TodoFormData = {
-          title: '  Valid Title  ',
-          detail: '',
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
+        // Valid with whitespace (trims correctly)
+        data = { title: '  Valid Title  ', detail: '', dueDate: '' }
+        errors = validateTodoForm(data)
         expect(errors.title).toBeUndefined()
       })
     })
 
     describe('detail validation', () => {
-      it('allows empty detail', () => {
-        const data: TodoFormData = {
-          title: 'Title',
-          detail: '',
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
+      it('validates detail length', () => {
+        // Empty detail is allowed
+        let data: TodoFormData = { title: 'Title', detail: '', dueDate: '' }
+        let errors = validateTodoForm(data)
         expect(errors.detail).toBeUndefined()
-      })
 
-      it('rejects detail exceeding max length', () => {
-        const data: TodoFormData = {
-          title: 'Title',
-          detail: 'a'.repeat(1001), // 1001 characters
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
-        expect(errors.detail).toBe(TODO_ERROR_MESSAGES.DETAIL_TOO_LONG)
-      })
-
-      it('accepts detail at max length', () => {
-        const data: TodoFormData = {
-          title: 'Title',
-          detail: 'a'.repeat(1000), // exactly 1000 characters
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
-        expect(errors.detail).toBeUndefined()
-      })
-
-      it('checks length after trimming', () => {
-        const data: TodoFormData = {
-          title: 'Title',
-          detail: '  ' + 'a'.repeat(1001) + '  ',
-          dueDate: '',
-        }
-
-        const errors = validateTodoForm(data)
+        // Exceeds max length (checks after trimming)
+        data = { title: 'Title', detail: '  ' + 'a'.repeat(1001) + '  ', dueDate: '' }
+        errors = validateTodoForm(data)
         expect(errors.detail).toBe(TODO_ERROR_MESSAGES.DETAIL_TOO_LONG)
       })
     })

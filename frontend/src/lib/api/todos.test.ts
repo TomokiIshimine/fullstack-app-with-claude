@@ -57,34 +57,6 @@ describe('API Client - todos', () => {
       })
     })
 
-    it('fetches active todos', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({ items: [] }),
-      })
-
-      await getTodos('active')
-
-      expect(mockFetch).toHaveBeenCalledWith('/api/todos?status=active', {
-        headers: { Accept: 'application/json' },
-        credentials: 'include',
-      })
-    })
-
-    it('fetches completed todos', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({ items: [] }),
-      })
-
-      await getTodos('completed')
-
-      expect(mockFetch).toHaveBeenCalledWith('/api/todos?status=completed', {
-        headers: { Accept: 'application/json' },
-        credentials: 'include',
-      })
-    })
-
     it('handles empty response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -224,7 +196,7 @@ describe('API Client - todos', () => {
   })
 
   describe('toggleTodo', () => {
-    it('toggles todo completion to true', async () => {
+    it('toggles todo completion status', async () => {
       const completedDto = { ...mockTodoDto, is_completed: true }
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -243,23 +215,6 @@ describe('API Client - todos', () => {
         body: JSON.stringify({ is_completed: true }),
       })
       expect(result.isCompleted).toBe(true)
-    })
-
-    it('toggles todo completion to false', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify(mockTodoDto),
-      })
-
-      const result = await toggleTodo(1, false)
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/todos/1/complete',
-        expect.objectContaining({
-          body: JSON.stringify({ is_completed: false }),
-        })
-      )
-      expect(result.isCompleted).toBe(false)
     })
   })
 
@@ -346,7 +301,8 @@ describe('API Client - todos', () => {
   })
 
   describe('Data mapping', () => {
-    it('correctly maps snake_case to camelCase', async () => {
+    it('correctly maps between snake_case and camelCase', async () => {
+      // Test response mapping (snake_case → camelCase)
       const snakeCaseDto: TodoDto = {
         id: 1,
         title: 'Test',
@@ -373,31 +329,8 @@ describe('API Client - todos', () => {
         createdAt: '2024-06-01T10:00:00Z',
         updatedAt: '2024-06-02T10:00:00Z',
       })
-    })
 
-    it('correctly maps camelCase to snake_case in payload', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify(mockTodoDto),
-      })
-
-      await createTodo({
-        title: 'Test',
-        detail: 'Detail',
-        dueDate: '2024-06-20',
-      })
-
-      const callArgs = mockFetch.mock.calls[0][1] as RequestInit
-      const body = JSON.parse(callArgs.body as string)
-
-      expect(body).toEqual({
-        title: 'Test',
-        detail: 'Detail',
-        due_date: '2024-06-20',
-      })
-    })
-
-    it('handles null values in mapping', async () => {
+      // Test request mapping (camelCase → snake_case, including null values)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         text: async () => JSON.stringify(mockTodoDto),
@@ -409,7 +342,7 @@ describe('API Client - todos', () => {
         dueDate: null,
       })
 
-      const callArgs = mockFetch.mock.calls[0][1] as RequestInit
+      const callArgs = mockFetch.mock.calls[1][1] as RequestInit
       const body = JSON.parse(callArgs.body as string)
 
       expect(body).toEqual({

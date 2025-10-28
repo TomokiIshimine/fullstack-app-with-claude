@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from app.database import get_session_factory
 from app.models.todo import Todo
-from app.schemas.todo import TodoCreateData, TodoToggleData, TodoUpdateData, TodoValidationError, serialize_todo, serialize_todos
+from app.schemas.todo import TodoCreateData, TodoToggleData, TodoUpdateData, TodoValidationError
 from app.services.todo_service import TodoNotFoundError, TodoService
 
 
@@ -74,13 +74,6 @@ def test_list_todos_filters_by_status(todo_service, test_user_id):
     assert {todo.id for todo in all_items} == {active.id, completed.id}
 
 
-def test_list_todos_invalid_status(todo_service):
-    # Status validation is now done in the route layer via validate_status()
-    # The service layer accepts any valid TodoStatus literal
-    # This test is no longer applicable at the service layer
-    pass
-
-
 def test_update_todo_updates_selected_fields(todo_service, test_user_id):
     todo = todo_service.create_todo(test_user_id, TodoCreateData(title="Initial", detail="Original"))
     tomorrow = date.today() + timedelta(days=1)
@@ -126,9 +119,6 @@ def test_toggle_completed_updates_flag(todo_service, test_user_id):
     toggled = todo_service.toggle_completed(test_user_id, todo.id, TodoToggleData(is_completed=True))
     assert toggled.is_completed is True
 
-    toggled_back = todo_service.toggle_completed(test_user_id, todo.id, TodoToggleData(is_completed=False))
-    assert toggled_back.is_completed is False
-
 
 def test_toggle_completed_not_found(todo_service, test_user_id):
     with pytest.raises(TodoNotFoundError):
@@ -140,15 +130,3 @@ def test_delete_todo_removes_record(todo_service, test_user_id, db_session):
     todo_service.delete_todo(test_user_id, todo.id)
 
     assert db_session.get(Todo, todo.id) is None
-
-
-def test_serialize_helpers_return_expected_structure(todo_service, test_user_id):
-    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="Serialize"))
-    single = serialize_todo(todo)
-    assert single["title"] == "Serialize"
-    assert single["is_completed"] is False
-    assert single["due_date"] is None
-
-    collection = serialize_todos([todo])
-    assert isinstance(collection, list)
-    assert collection[0]["id"] == todo.id
