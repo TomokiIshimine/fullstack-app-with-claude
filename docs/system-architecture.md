@@ -102,8 +102,8 @@ app/
 │   ├── todo.py
 │   └── refresh_token.py
 ├── schemas/            # Pydantic スキーマ (バリデーション)
-│   ├── auth_schemas.py
-│   └── todo_schemas.py
+│   ├── auth.py
+│   └── todo.py
 ├── database.py         # データベース接続管理
 ├── logger.py           # ロギング設定
 ├── config.py           # 設定管理
@@ -120,8 +120,8 @@ app/
 |----------------------|-------------------------|-----------|-------------------------------|
 | UI フレームワーク      | React                   | 18.x      | ユーザーインターフェース構築    |
 | 言語                  | TypeScript              | 5.x       | 型安全な開発                   |
-| ビルドツール          | Vite                    | 5.x       | 高速な開発サーバー・ビルド      |
-| ルーティング          | React Router            | 6.x       | SPAのページ遷移管理             |
+| ビルドツール          | Vite                    | 7.x       | 高速な開発サーバー・ビルド      |
+| ルーティング          | React Router            | 7.x       | SPAのページ遷移管理             |
 | 状態管理              | React Context + Hooks   | -         | グローバル状態管理              |
 | スタイリング          | CSS                     | -         | コンポーネントスタイリング       |
 | テスト                | Vitest + Testing Library| -         | ユニット・統合テスト            |
@@ -132,7 +132,7 @@ app/
 
 | カテゴリ               | 技術/ライブラリ          | バージョン | 用途                          |
 |----------------------|-------------------------|-----------|-------------------------------|
-| Web フレームワーク     | Flask                   | 3.x       | RESTful API サーバー          |
+| Web フレームワーク     | Flask                   | 2.3.x     | RESTful API サーバー          |
 | 言語                  | Python                  | 3.12      | バックエンドロジック            |
 | ORM                   | SQLAlchemy              | 2.x       | データベース操作                |
 | バリデーション        | Pydantic                | 2.x       | リクエスト/レスポンス検証       |
@@ -347,8 +347,6 @@ make down                 # Docker コンテナ停止
 
 # テスト
 make test                 # 全テスト実行
-make test-frontend        # フロントエンドテスト
-make test-backend         # バックエンドテスト
 
 # コード品質
 make lint                 # リンター実行

@@ -17,7 +17,7 @@
 | **認証方式** | JWT (JSON Web Token) ベース認証 |
 | **トークン管理** | httpOnly Cookie によるセキュアな管理 |
 | **トークン種類** | アクセストークン + リフレッシュトークン |
-| **パスワード管理** | bcrypt によるハッシュ化 (コスト係数: 12) |
+| **パスワード管理** | bcrypt によるハッシュ化 (コスト係数: デフォルト 12) |
 
 ### 1.2 主要な特徴
 
@@ -47,7 +47,7 @@ sequenceDiagram
     UI->>API: POST /api/auth/login
     API->>DB: ユーザー検索 (email)
     DB-->>API: ユーザー情報
-    API->>API: パスワード検証 (bcrypt.compare)
+    API->>API: パスワード検証 (bcrypt.checkpw)
     API->>API: JWT生成 (access_token, refresh_token)
     API->>DB: refresh_token を保存
     API-->>UI: 200 OK + Set-Cookie (httpOnly)
@@ -61,7 +61,7 @@ sequenceDiagram
 |---------|---------|
 | 1. 入力検証 | メールアドレス形式チェック、パスワード必須チェック |
 | 2. ユーザー検索 | データベースから email でユーザーを検索 |
-| 3. パスワード検証 | bcrypt.compare でハッシュと比較 |
+| 3. パスワード検証 | bcrypt.checkpw でハッシュと比較 |
 | 4. トークン生成 | access_token (1日), refresh_token (7日) を生成 |
 | 5. トークン保存 | refresh_token をデータベースに保存 |
 | 6. Cookie設定 | httpOnly Cookie に両トークンを設定 |
@@ -149,7 +149,7 @@ sequenceDiagram
 | **有効期限** | 7日 (168時間) |
 | **保存場所** | httpOnly Cookie (path: /api) + データベース (refresh_tokens テーブル) |
 | **用途** | アクセストークンの更新 |
-| **ペイロード** | `{user_id: number, token_id: string, exp: timestamp}` |
+| **ペイロード** | `{user_id: number, jti: string, exp: timestamp}` |
 | **無効化** | ログアウト時またはトークン更新時 (is_revoked=1) |
 
 ### 3.3 Cookie 設定
@@ -163,10 +163,12 @@ sequenceDiagram
 | **domain** | (未設定) | (設定可能) | Cookie の有効ドメイン |
 
 **環境変数:**
-- `COOKIE_SECURE`: "true" で secure 属性を有効化
+- `JWT_SECRET_KEY`: JWT 署名用の秘密鍵（本番環境では必ず変更すること）
+- `JWT_ALGORITHM`: JWT アルゴリズム（デフォルト: HS256）
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: アクセストークン有効期限 (分、デフォルト: 1440)
+- `REFRESH_TOKEN_EXPIRE_DAYS`: リフレッシュトークン有効期限 (日、デフォルト: 7)
+- `COOKIE_SECURE`: "true" で secure 属性を有効化（本番環境推奨）
 - `COOKIE_DOMAIN`: Cookie のドメイン指定
-- `ACCESS_TOKEN_EXPIRE_MINUTES`: アクセストークン有効期限 (分)
-- `REFRESH_TOKEN_EXPIRE_DAYS`: リフレッシュトークン有効期限 (日)
 
 ---
 
@@ -179,7 +181,7 @@ sequenceDiagram
 | **XSS (Cross-Site Scripting)** | - httpOnly Cookie (JavaScript アクセス不可)<br/>- 入力サニタイズ | BE: `auth_routes.py`<br/>FE: React自動エスケープ |
 | **CSRF (Cross-Site Request Forgery)** | - SameSite=Lax Cookie 属性<br/>- Origin/Referer チェック (将来的) | BE: Cookie設定 |
 | **SQL インジェクション** | - SQLAlchemy ORM のパラメータ化クエリ<br/>- プリペアドステートメント | BE: `repositories/` |
-| **ブルートフォース攻撃** | - bcrypt による遅いハッシュ化 (コスト: 12)<br/>- レート制限 (将来的) | BE: `utils/password.py` |
+| **ブルートフォース攻撃** | - bcrypt による遅いハッシュ化 (コスト: デフォルト 12)<br/>- レート制限 (将来的) | BE: `utils/password.py` |
 | **トークン盗聴** | - HTTPS による通信暗号化 (本番環境)<br/>- Secure Cookie 属性 | Infra設定 |
 | **トークン再利用** | - トークンローテーション<br/>- 使用済みトークンの無効化 | BE: `auth_service.py` |
 
@@ -188,7 +190,7 @@ sequenceDiagram
 | 項目 | 仕様 |
 |------|------|
 | **ハッシュアルゴリズム** | bcrypt |
-| **コスト係数** | 12 (2^12 = 4096 ラウンド) |
+| **コスト係数** | デフォルト 12 (2^12 = 4096 ラウンド) |
 | **ソルト** | bcrypt が自動生成 (ハッシュに含まれる) |
 | **検証方法** | `bcrypt.checkpw(password, hashed_password)` |
 | **実装箇所** | `backend/app/utils/password.py` |
@@ -364,10 +366,10 @@ Set-Cookie: refresh_token=; HttpOnly; SameSite=Lax; Path=/api; Max-Age=0
 
 | 機能 | ファイル | 説明 |
 |------|---------|------|
-| 認証コンテキスト | `contexts/AuthContext.tsx` | グローバル認証状態管理、ログイン・ログアウト処理 |
-| ログイン画面 | `pages/LoginPage.tsx` | ログインフォームとUI |
-| 保護ルート | `components/ProtectedRoute.tsx` | 認証必須ルートのガード |
-| API クライアント | `lib/api/auth.ts` | 認証API呼び出し (fetch ラッパー) |
+| 認証コンテキスト | `src/contexts/AuthContext.tsx` | グローバル認証状態管理、ログイン・ログアウト処理 |
+| ログイン画面 | `src/pages/LoginPage.tsx` | ログインフォームとUI |
+| 保護ルート | `src/components/ProtectedRoute.tsx` | 認証必須ルートのガード |
+| API クライアント | `src/lib/api/auth.ts` | 認証API呼び出し (fetch ラッパー) |
 
 ---
 

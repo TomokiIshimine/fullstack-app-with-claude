@@ -136,27 +136,35 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 
 #### 成功レスポンス（一覧取得）
 ```json
-[
-  {
-    "id": 123,
-    "title": "買い物リスト作成",
-    ...
-  },
-  {
-    "id": 124,
-    "title": "レポート提出",
-    ...
+{
+  "items": [
+    {
+      "id": 123,
+      "title": "買い物リスト作成",
+      ...
+    },
+    {
+      "id": 124,
+      "title": "レポート提出",
+      ...
+    }
+  ],
+  "meta": {
+    "count": 2
   }
-]
+}
 ```
 
-**注:** 現在はページネーション未実装のため配列をそのまま返します。将来的には以下の形式を検討:
+**注:** 将来的にはページネーション対応を検討:
 ```json
 {
   "items": [...],
-  "total": 100,
-  "page": 1,
-  "per_page": 20
+  "meta": {
+    "count": 100,
+    "page": 1,
+    "per_page": 20,
+    "total_pages": 5
+  }
 }
 ```
 
@@ -189,44 +197,44 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 #### 基本形式
 ```json
 {
-  "error": "Validation Error",
-  "message": "タイトルは1文字以上120文字以下である必要があります"
+  "error": {
+    "code": 400,
+    "message": "タイトルは1文字以上120文字以下である必要があります"
+  }
 }
 ```
 
-#### バリデーションエラー（詳細付き）
+#### バリデーションエラー（詳細）
 ```json
 {
-  "error": "Validation Error",
-  "message": "入力値に誤りがあります",
-  "details": [
-    {
-      "field": "title",
-      "message": "タイトルは必須です"
-    },
-    {
-      "field": "due_date",
-      "message": "期限日は今日以降の日付を指定してください"
-    }
-  ]
+  "error": {
+    "code": 400,
+    "message": "Request must contain application/json body."
+  }
 }
 ```
 
 #### 認証エラー
 ```json
 {
-  "error": "Unauthorized",
-  "message": "認証が必要です"
+  "error": {
+    "code": 401,
+    "message": "認証が必要です"
+  }
 }
 ```
 
 #### 認可エラー
 ```json
 {
-  "error": "Forbidden",
-  "message": "このリソースへのアクセス権限がありません"
+  "error": {
+    "code": 403,
+    "message": "このリソースへのアクセス権限がありません"
+  }
 }
 ```
+
+**注:** 一部の認証エンドポイント（`/api/auth/login`, `/api/auth/logout`）では、簡易形式のエラーレスポンス `{"error": "エラーメッセージ"}` を返す場合があります。
 
 ### 5.3 エラー実装例
 
@@ -412,8 +420,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - エラーメッセージは日本語で分かりやすく
 
 **実装箇所:**
-- `backend/app/schemas/todo_schemas.py` - TODO API
-- `backend/app/schemas/auth_schemas.py` - 認証 API
+- `backend/app/schemas/todo.py` - TODO API
+- `backend/app/schemas/auth.py` - 認証 API
 
 ### 10.2 エラーメッセージ
 

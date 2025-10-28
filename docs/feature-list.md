@@ -75,7 +75,7 @@ graph TB
 | 機能 | エンドポイント | 実装箇所 | 主な仕様 |
 |------|--------------|---------|---------|
 | **一覧取得** | `GET /api/todos` | FE: `useTodos.ts`<br/>BE: `todo_routes.py:20-39` | - クエリパラメータ: `status=all\|active\|completed`<br/>- 認証必須 (自分のTODOのみ)<br/>- FEでソート (期限昇順/降順) |
-| **作成** | `POST /api/todos` | FE: `TodoForm.tsx`<br/>BE: `todo_routes.py:42-67` | - バリデーション: title必須(1-120文字), detail(最大500文字), due_date(今日以降)<br/>- Pydanticによる検証 |
+| **作成** | `POST /api/todos` | FE: `TodoForm.tsx`<br/>BE: `todo_routes.py:42-67` | - バリデーション: title必須(1-120文字), detail(最大1000文字), due_date(今日以降)<br/>- Pydanticによる検証 |
 | **編集** | `PATCH /api/todos/{id}` | FE: `TodoForm.tsx`<br/>BE: `todo_routes.py:70-94` | - 作成と同じバリデーション<br/>- 他ユーザーのTODO編集不可 |
 | **削除** | `DELETE /api/todos/{id}` | FE: `TodoList.tsx`<br/>BE: `todo_routes.py:128-138` | - レスポンス: 204 No Content<br/>- 他ユーザーのTODO削除不可 |
 | **完了トグル** | `PATCH /api/todos/{id}/complete` | FE: `TodoList.tsx`<br/>BE: `todo_routes.py:97-125` | - リクエスト: `{is_completed: boolean}`<br/>- チェックボックスで操作 |
@@ -101,20 +101,26 @@ graph TB
 
 | 機能カテゴリ | 機能名 | バックエンド | フロントエンド | テスト |
 |------------|-------|------------|-------------|-------|
-| 認証 | ログイン | ✓ | ✓ | ✓ |
-| 認証 | ログアウト | ✓ | ✓ | ✓ |
-| 認証 | トークン自動更新 | ✓ | ✓ | ✓ |
-| TODO管理 | TODO一覧取得 | ✓ | ✓ | ✓ |
-| TODO管理 | TODO作成 | ✓ | ✓ | ✓ |
-| TODO管理 | TODO編集 | ✓ | ✓ | ✓ |
-| TODO管理 | TODO削除 | ✓ | ✓ | ✓ |
-| TODO管理 | 完了/未完了切替 | ✓ | ✓ | ✓ |
-| TODO管理 | フィルタリング | ✓ | ✓ | ✓ |
-| TODO管理 | ソート | - | ✓ | ✓ |
+| 認証 | ログイン | ✓ | ✓ | BE: ✓ |
+| 認証 | ログアウト | ✓ | ✓ | BE: ✓ |
+| 認証 | トークン自動更新 | ✓ | ✓ | BE: ✓ |
+| TODO管理 | TODO一覧取得 | ✓ | ✓ | BE: ✓, FE: API層 |
+| TODO管理 | TODO作成 | ✓ | ✓ | BE: ✓, FE: API層 |
+| TODO管理 | TODO編集 | ✓ | ✓ | BE: ✓, FE: API層 |
+| TODO管理 | TODO削除 | ✓ | ✓ | BE: ✓, FE: API層 |
+| TODO管理 | 完了/未完了切替 | ✓ | ✓ | BE: ✓, FE: API層 |
+| TODO管理 | フィルタリング | ✓ | ✓ | BE: ✓, FE: ✓ |
+| TODO管理 | ソート | - | ✓ | FE: ✓ |
 | 共通 | ロギング | ✓ | ✓ | - |
-| 共通 | エラーハンドリング | ✓ | ✓ | ✓ |
-| 共通 | バリデーション | ✓ | ✓ | ✓ |
-| 共通 | セキュリティ | ✓ | ✓ | ✓ |
+| 共通 | エラーハンドリング | ✓ | ✓ | BE: ✓ |
+| 共通 | バリデーション | ✓ | ✓ | BE: ✓, FE: ✓ |
+| 共通 | セキュリティ | ✓ | ✓ | BE: ✓ |
+
+**凡例:**
+- BE: バックエンドテスト（pytest）
+- FE: フロントエンドテスト（Vitest）
+- FE「API層」: API関数のユニットテストのみ実装、コンポーネント・フックのテストなし
+- FE「✓」: ユーティリティ層またはバリデーション層のテストが実装済み
 
 ---
 

@@ -79,22 +79,21 @@ graph TB
 | **バックエンド** | pytest | Python標準のテストフレームワーク |
 | **フロントエンド** | Vitest + Testing Library | React向け高速テストランナー |
 
-### 3.3 カバレッジ目標
+### 3.3 カバレッジ目標（実装済み項目）
 
 | レイヤー | カバレッジ目標 | 重要度 |
 |---------|-------------|-------|
-| **Serviceレイヤー** | 90%以上 | ★★★ |
-| **Repositoryレイヤー** | 80%以上 | ★★★ |
-| **ユーティリティ** | 100% | ★★★ |
-| **Reactコンポーネント** | 70%以上 | ★★☆ |
-| **カスタムフック** | 90%以上 | ★★★ |
+| **Serviceレイヤー（バックエンド）** | 90%以上 | ★★★ |
+| **Repositoryレイヤー（バックエンド）** | 80%以上 | ★★★ |
+| **ユーティリティ（フロントエンド）** | 100% | ★★★ |
+| **API層（フロントエンド）** | 90%以上 | ★★★ |
 
 ### 3.4 実装例
 
 #### バックエンド（pytest）
 
 ```python
-# tests/test_todo_service.py
+# tests/services/test_todo_service.py
 import pytest
 from app.services.todo_service import TodoService
 
@@ -126,44 +125,71 @@ def test_create_todo_with_invalid_date():
         service.create_todo(1, todo_data)
 ```
 
-#### フロントエンド（Vitest + Testing Library）
+#### フロントエンド（Vitest）
 
 ```typescript
-// src/hooks/useTodos.test.ts
-import { renderHook, waitFor } from '@testing-library/react';
-import { useTodos } from './useTodos';
+// src/lib/utils/todoFilters.test.ts
+import { describe, it, expect } from 'vitest'
+import { filterByStatus, sortTodos } from './todoFilters'
+import type { Todo } from '@/types/todo'
 
-describe('useTodos', () => {
-  it('should fetch todos on mount', async () => {
-    const { result } = renderHook(() => useTodos());
+describe('todoFilters', () => {
+  const mockTodos: Todo[] = [
+    {
+      id: 1,
+      title: 'Active Todo 1',
+      dueDate: '2024-06-20',
+      isCompleted: false,
+    },
+    {
+      id: 2,
+      title: 'Completed Todo',
+      dueDate: '2024-06-15',
+      isCompleted: true,
+    },
+  ]
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+  it('returns only active todos when status is "active"', () => {
+    const result = filterByStatus(mockTodos, 'active')
+    expect(result).toHaveLength(1)
+    expect(result.every(todo => !todo.isCompleted)).toBe(true)
+  })
 
-    expect(result.current.todos).toHaveLength(3);
-  });
-
-  it('should filter todos by status', async () => {
-    const { result } = renderHook(() => useTodos());
-
-    result.current.setFilter('active');
-
-    await waitFor(() => {
-      expect(result.current.filteredTodos.every(t => !t.is_completed)).toBe(true);
-    });
-  });
-});
+  it('sorts todos by due date in ascending order', () => {
+    const result = sortTodos(mockTodos, 'asc')
+    expect(result[0].dueDate).toBe('2024-06-15')
+    expect(result[1].dueDate).toBe('2024-06-20')
+  })
+})
 ```
 
-### 3.5 モック戦略
+### 3.5 フロントエンドの実装状況
+
+**実装済みのテスト:**
+
+| ファイル | 対象 | テスト内容 |
+|---------|------|-----------|
+| `src/lib/api/todos.test.ts` | API関数 | getTodos, createTodo, updateTodo, toggleTodo, deleteTodo, エラーハンドリング |
+| `src/lib/utils/dateFormat.test.ts` | 日付フォーマット | formatDate, isValidDate, isPastDate |
+| `src/lib/utils/todoFilters.test.ts` | フィルタリング・ソート | filterByStatus, sortTodos |
+| `src/lib/validation/todoValidation.test.ts` | バリデーション | validateTodoForm（title, detail, dueDate） |
+
+**テスト対象範囲:**
+- ✓ API層（src/lib/api/）
+- ✓ ユーティリティ層（src/lib/utils/）
+- ✓ バリデーション層（src/lib/validation/）
+- ✗ コンポーネント層（src/components/）
+- ✗ カスタムフック層（src/hooks/）
+- ✗ ページ層（src/pages/）
+
+### 3.6 モック戦略
 
 **バックエンド:**
 - データベースアクセス: `pytest-mock` でRepositoryレイヤーをモック
-- 外部API: `responses` ライブラリでHTTPレスポンスをモック
+- テスト用データベース: SQLite in-memoryデータベースを使用
 
 **フロントエンド:**
-- API呼び出し: `vi.mock()` でfetchをモック
+- API呼び出し: `vi.mock()` でAPIモジュールをモック
 - React Context: テスト用のProviderでラップ
 
 ---
@@ -174,19 +200,17 @@ describe('useTodos', () => {
 
 **対象:**
 - **バックエンド**: APIエンドポイント（リクエスト → レスポンス）
-- **フロントエンド**: コンポーネント統合（ページレベル）
 
 **目的:**
 - レイヤー間の連携を検証
 - API仕様の正確性を確認
-- ユーザーフロー全体の動作確認
 
 ### 4.2 実装例
 
 #### バックエンドAPI統合テスト
 
 ```python
-# tests/test_todo_api.py
+# tests/routes/test_todo_routes.py
 import pytest
 from flask import Flask
 
@@ -218,35 +242,6 @@ def test_create_todo_without_auth(client):
     assert "認証が必要" in response.get_json()["message"]
 ```
 
-#### フロントエンドコンポーネント統合テスト
-
-```typescript
-// src/pages/TodoListPage.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { TodoListPage } from './TodoListPage';
-
-describe('TodoListPage', () => {
-  it('should display todos and allow creating new one', async () => {
-    render(<TodoListPage />);
-
-    // 既存TODOが表示される
-    await waitFor(() => {
-      expect(screen.getByText('買い物')).toBeInTheDocument();
-    });
-
-    // 新規TODO作成
-    const titleInput = screen.getByPlaceholderText('タイトル');
-    fireEvent.change(titleInput, { target: { value: 'レポート提出' } });
-    fireEvent.click(screen.getByText('追加'));
-
-    // 作成されたTODOが表示される
-    await waitFor(() => {
-      expect(screen.getByText('レポート提出')).toBeInTheDocument();
-    });
-  });
-});
-```
-
 ### 4.3 テストデータ
 
 **バックエンド:**
@@ -268,150 +263,69 @@ def auth_headers(sample_user):
 ```
 
 **フロントエンド:**
-- MSW (Mock Service Worker): APIレスポンスをモック
+- Vitest `vi.mock()`: APIモジュールをモック
 
 ```typescript
-// src/mocks/handlers.ts
-import { rest } from 'msw';
+// テストファイル内でAPIをモック
+import { vi } from 'vitest';
+import * as todosApi from '../lib/api/todos';
 
-export const handlers = [
-  rest.get('/api/todos', (req, res, ctx) => {
-    return res(
-      ctx.json([
-        { id: 1, title: '買い物', is_completed: false },
-        { id: 2, title: 'レポート', is_completed: true },
-      ])
-    );
-  }),
-];
-```
-
----
-
-## 5. E2Eテスト
-
-### 5.1 対象と目的
-
-**対象:**
-- ユーザーシナリオ全体（ブラウザ自動化）
-
-**目的:**
-- 本番環境に近い環境での動作確認
-- クリティカルなユーザーフローの保証
-
-### 5.2 ツール
-
-| ツール | 説明 |
-|-------|------|
-| **Playwright** | ブラウザ自動化ツール（Chromium, Firefox, WebKit） |
-
-### 5.3 対象シナリオ（最小限）
-
-| シナリオ | 優先度 | 説明 |
-|---------|-------|------|
-| **ログイン → TODO作成 → ログアウト** | ★★★ | 最も重要なユーザーフロー |
-| **TODO編集 → 完了トグル** | ★★☆ | TODO管理の基本操作 |
-| **フィルタリング → ソート** | ★☆☆ | 補助的な機能 |
-
-### 5.4 実装例
-
-```typescript
-// e2e/todo.spec.ts
-import { test, expect } from '@playwright/test';
-
-test('should create and complete a todo', async ({ page }) => {
-  // ログイン
-  await page.goto('http://localhost:5173/login');
-  await page.fill('input[name="email"]', 'test@example.com');
-  await page.fill('input[name="password"]', 'password123');
-  await page.click('button[type="submit"]');
-
-  // TODOページに遷移
-  await expect(page).toHaveURL(/.*todos/);
-
-  // 新規TODO作成
-  await page.fill('input[placeholder="タイトル"]', '買い物');
-  await page.fill('textarea[placeholder="詳細"]', '野菜を買う');
-  await page.click('button:has-text("追加")');
-
-  // 作成されたTODOが表示される
-  await expect(page.locator('text=買い物')).toBeVisible();
-
-  // 完了状態にする
-  await page.click('input[type="checkbox"]:near(:text("買い物"))');
-
-  // 完了マークが付く
-  await expect(page.locator('.todo-item.completed:has-text("買い物")')).toBeVisible();
+vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
+  items: [
+    { id: 1, title: '買い物', is_completed: false },
+    { id: 2, title: 'レポート', is_completed: true },
+  ],
+  meta: { count: 2 }
 });
 ```
 
 ---
 
-## 6. テスト実行環境
+## 5. テスト実行環境
 
-### 6.1 ローカル環境
+### 5.1 ローカル環境
 
-**バックエンド:**
+**統合コマンド:**
 ```bash
-make test-backend             # すべてのバックエンドテストを実行
-poetry -C backend run pytest  # 直接実行
-poetry -C backend run pytest --cov  # カバレッジ付き
+make test                     # すべてのテストを実行（フロントエンド + バックエンド）
+make test-cov                 # カバレッジ付きでテスト実行
 ```
 
-**フロントエンド:**
+**個別実行:**
 ```bash
-make test-frontend            # すべてのフロントエンドテストを実行
+# バックエンド
+poetry -C backend run pytest  # 直接実行
+poetry -C backend run pytest --cov  # カバレッジ付き
+
+# フロントエンド
 pnpm --dir frontend run test  # 直接実行
 pnpm --dir frontend run test:coverage  # カバレッジ付き
 ```
 
-### 6.2 CI/CD環境
+### 5.2 CI/CD環境
 
 **GitHub Actions:**
 - プルリクエスト作成時: すべてのテストを自動実行
 - mainブランチマージ時: カバレッジレポート生成
 
 ```yaml
-# .github/workflows/test.yml
-name: Tests
+# .github/workflows/ci.yml
+name: CI
 on: [push, pull_request]
 jobs:
-  test-backend:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run backend tests
-        run: make test-backend
-
-  test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run frontend tests
-        run: make test-frontend
+      - name: Run all tests
+        run: make test
 ```
 
 ---
 
-## 7. カバレッジ目標
+## 6. カバレッジレポート
 
-### 7.1 全体目標
-
-| カテゴリ | 目標カバレッジ | 現状 |
-|---------|-------------|------|
-| **バックエンド全体** | 80%以上 | 実装中 |
-| **フロントエンド全体** | 70%以上 | 実装中 |
-
-### 7.2 重要度別カバレッジ
-
-| 重要度 | 対象 | 目標 |
-|-------|------|------|
-| **Critical** | 認証ロジック、データアクセス | 100% |
-| **High** | ビジネスロジック（Service層） | 90%以上 |
-| **Medium** | UIコンポーネント、バリデーション | 70%以上 |
-| **Low** | ユーティリティ、スタイル関連 | 50%以上 |
-
-### 7.3 カバレッジレポート
+### 6.1 カバレッジレポートの生成
 
 **バックエンド:**
 ```bash
@@ -427,18 +341,17 @@ pnpm --dir frontend run test:coverage
 
 ---
 
-## 8. テストデータ管理
+## 7. テストデータ管理
 
-### 8.1 テストデータ戦略
+### 7.1 テストデータ戦略
 
 | 戦略 | 説明 | 使用場面 |
 |------|------|---------|
 | **Fixture** | 事前定義されたテストデータ | ユニットテスト |
 | **Factory** | プログラムで動的生成 | 統合テスト |
-| **Seed Data** | データベース初期データ | E2Eテスト |
 | **Mock** | 偽のデータ・レスポンス | フロントエンドテスト |
 
-### 8.2 テストデータの原則
+### 7.2 テストデータの原則
 
 **独立性:**
 - 各テストは独自のデータを使用
@@ -452,7 +365,7 @@ pnpm --dir frontend run test:coverage
 - 実際のユースケースに近いデータ
 - 境界値、特殊文字を含むケース
 
-### 8.3 実装例
+### 7.3 実装例
 
 **バックエンド（Fixture）:**
 ```python
@@ -482,27 +395,26 @@ def sample_todos(db_session, sample_user):
     return todos
 ```
 
-**フロントエンド（MSW）:**
+**フロントエンド（Vitest モック）:**
 ```typescript
-// src/mocks/handlers.ts
-export const handlers = [
-  rest.get('/api/todos', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json([
-        { id: 1, title: '買い物', is_completed: false },
-        { id: 2, title: 'レポート', is_completed: true },
-      ])
-    );
-  }),
-];
+// テストファイル内でAPIをモック
+import { vi } from 'vitest';
+import * as todosApi from '../lib/api/todos';
+
+vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
+  items: [
+    { id: 1, title: '買い物', is_completed: false },
+    { id: 2, title: 'レポート', is_completed: true },
+  ],
+  meta: { count: 2 }
+});
 ```
 
 ---
 
-## 9. モック・スタブ戦略
+## 8. モック・スタブ戦略
 
-### 9.1 モック対象
+### 8.1 モック対象
 
 | レイヤー | モック対象 | 理由 |
 |---------|-----------|------|
@@ -511,7 +423,7 @@ export const handlers = [
 | **時間** | `datetime.now()` | 時刻に依存しないテスト |
 | **ファイルシステム** | ログファイル書き込み | I/Oを避ける |
 
-### 9.2 実装例
+### 8.2 実装例
 
 **バックエンド（pytest-mock）:**
 ```python
@@ -533,26 +445,27 @@ def test_create_todo_with_mock(mocker):
 
 **フロントエンド（Vitest）:**
 ```typescript
-// src/hooks/useTodos.test.ts
+// src/lib/api/todos.test.ts
 import { vi } from 'vitest';
 
-vi.mock('../lib/api/todos', () => ({
-  fetchTodos: vi.fn(() => Promise.resolve([
-    { id: 1, title: '買い物', is_completed: false },
-  ])),
-}));
-
-test('should fetch todos', async () => {
-  const { result } = renderHook(() => useTodos());
-  await waitFor(() => expect(result.current.todos).toHaveLength(1));
-});
+// APIモジュールのモック
+global.fetch = vi.fn(() =>
+  Promise.resolve({
+    ok: true,
+    text: async () => JSON.stringify({
+      items: [
+        { id: 1, title: '買い物', is_completed: false },
+      ]
+    }),
+  })
+) as any;
 ```
 
 ---
 
-## 10. テストの保守性
+## 9. テストの保守性
 
-### 10.1 テストコードの品質
+### 9.1 テストコードの品質
 
 **原則:**
 - **可読性**: テスト名で何をテストしているか明確にする
@@ -560,7 +473,7 @@ test('should fetch todos', async () => {
 - **高速性**: ユニットテストは1秒以内、統合テストは数秒以内
 - **DRY原則**: 共通のセットアップはFixture/Helperに抽出
 
-### 10.2 良いテストの例
+### 9.2 良いテストの例
 
 ```python
 def test_todo_cannot_be_created_with_past_due_date():
@@ -577,7 +490,7 @@ def test_todo_cannot_be_created_with_past_due_date():
 - 1つのテストで1つのケースのみ検証
 - エラーメッセージまで検証
 
-### 10.3 避けるべきパターン
+### 9.3 避けるべきパターン
 
 **❌ 悪い例:**
 ```python
@@ -601,17 +514,17 @@ def test_create_todo_returns_todo_with_generated_id():
 
 ---
 
-## 11. 継続的テスト改善
+## 10. 継続的テスト改善
 
-### 11.1 定期レビュー
+### 10.1 定期レビュー
 
 | タイミング | レビュー内容 |
 |-----------|------------|
 | **スプリントごと** | カバレッジ確認、テスト追加計画 |
-| **リリース前** | E2Eテスト全実行、クリティカルパス確認 |
+| **リリース前** | 全テスト実行、クリティカルパス確認 |
 | **四半期ごと** | テスト戦略見直し、新しいツール検討 |
 
-### 11.2 テスト追加のトリガー
+### 10.2 テスト追加のトリガー
 
 | イベント | アクション |
 |---------|-----------|
@@ -621,30 +534,29 @@ def test_create_todo_returns_todo_with_generated_id():
 
 ---
 
-## 12. ツール・ライブラリ一覧
+## 11. ツール・ライブラリ一覧
 
-### 12.1 バックエンド
+### 11.1 バックエンド
 
-| ツール | 用途 |
-|-------|------|
-| **pytest** | テストフレームワーク |
-| **pytest-cov** | カバレッジ測定 |
-| **pytest-mock** | モック・スタブ |
-| **factory-boy** | テストデータFactory |
-| **Faker** | ダミーデータ生成 |
+| ツール | 用途 | 実装状況 |
+|-------|------|---------|
+| **pytest** | テストフレームワーク | ✓ |
+| **pytest-cov** | カバレッジ測定 | ✓ |
+| **pytest-mock** | モック・スタブ | ✓ |
+| **pytest-xdist** | 並列テスト実行 | ✓ |
+| **pytest-sugar** | テスト出力の視覚化 | ✓ |
 
-### 12.2 フロントエンド
+### 11.2 フロントエンド
 
-| ツール | 用途 |
-|-------|------|
-| **Vitest** | テストランナー |
-| **Testing Library** | Reactコンポーネントテスト |
-| **MSW** | APIモック |
-| **Playwright** | E2Eテスト |
+| ツール | 用途 | 実装状況 | 備考 |
+|-------|------|---------|------|
+| **Vitest** | テストランナー | ✓ | ユーティリティ・API層のテストで使用中 |
+| **Testing Library** | Reactコンポーネントテスト | インストール済み | コンポーネントテストは未実装 |
+| **happy-dom** | DOM環境シミュレーション | 設定済み | vitest.configで設定済み |
 
 ---
 
-## 13. 関連ドキュメント
+## 12. 関連ドキュメント
 
 - [システム構成設計書](./system-architecture.md) - テスト環境、技術スタック
 - [API設計ガイド](./api-design-guide.md) - APIテスト観点、エラーケース

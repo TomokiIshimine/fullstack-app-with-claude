@@ -20,7 +20,7 @@
 | RDBMS             | MySQL 8.0                    |
 | ストレージエンジン | InnoDB                       |
 | 文字セット         | UTF8MB4                      |
-| 照合順序           | utf8mb4_unicode_ci           |
+| 照合順序           | utf8mb4_general_ci           |
 
 ### 1.2 テーブル一覧
 
@@ -226,7 +226,7 @@ poetry -C backend run python scripts/create_user.py test@example.com password123
 
 ### 6.1 データ暗号化
 
-- **パスワード**: bcrypt によるハッシュ化（コスト係数: 12）
+- **パスワード**: bcrypt によるハッシュ化（コスト係数: デフォルト 12）
 - **トークン**: JWT 署名による改ざん検知
 - **通信**: HTTPS による暗号化（本番環境）
 
