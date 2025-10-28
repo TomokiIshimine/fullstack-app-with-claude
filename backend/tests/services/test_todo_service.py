@@ -24,13 +24,25 @@ def db_session(app):
 
 
 @pytest.fixture()
+def test_user_id(app, db_session):
+    """Create a test user and return its ID."""
+    from app.models.user import User
+    from app.utils.password import hash_password
+
+    user = User(email="test@example.com", password_hash=hash_password("password123"))
+    db_session.add(user)
+    db_session.commit()
+    return user.id
+
+
+@pytest.fixture()
 def todo_service(db_session):
     return TodoService(db_session)
 
 
-def test_create_todo_success(todo_service):
+def test_create_todo_success(todo_service, test_user_id):
     data = TodoCreateData(title="  Write tests  ", detail="  Ensure coverage ", due_date=date.today())
-    todo = todo_service.create_todo(data)
+    todo = todo_service.create_todo(test_user_id, data)
 
     assert todo.id is not None
     assert todo.title == "Write tests"
@@ -47,18 +59,18 @@ def test_create_todo_rejects_past_due_date(todo_service):
         TodoCreateData(title="Past due", due_date=past_due)
 
 
-def test_list_todos_filters_by_status(todo_service):
-    active = todo_service.create_todo(TodoCreateData(title="Active task"))
-    completed = todo_service.create_todo(TodoCreateData(title="Completed task"))
-    todo_service.toggle_completed(completed.id, TodoToggleData(is_completed=True))
+def test_list_todos_filters_by_status(todo_service, test_user_id):
+    active = todo_service.create_todo(test_user_id, TodoCreateData(title="Active task"))
+    completed = todo_service.create_todo(test_user_id, TodoCreateData(title="Completed task"))
+    todo_service.toggle_completed(test_user_id, completed.id, TodoToggleData(is_completed=True))
 
-    active_items = todo_service.list_todos("active")
+    active_items = todo_service.list_todos(test_user_id, "active")
     assert [todo.id for todo in active_items] == [active.id]
 
-    completed_items = todo_service.list_todos("completed")
+    completed_items = todo_service.list_todos(test_user_id, "completed")
     assert [todo.id for todo in completed_items] == [completed.id]
 
-    all_items = todo_service.list_todos("all")
+    all_items = todo_service.list_todos(test_user_id, "all")
     assert {todo.id for todo in all_items} == {active.id, completed.id}
 
 
@@ -69,11 +81,12 @@ def test_list_todos_invalid_status(todo_service):
     pass
 
 
-def test_update_todo_updates_selected_fields(todo_service):
-    todo = todo_service.create_todo(TodoCreateData(title="Initial", detail="Original"))
+def test_update_todo_updates_selected_fields(todo_service, test_user_id):
+    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="Initial", detail="Original"))
     tomorrow = date.today() + timedelta(days=1)
 
     updated = todo_service.update_todo(
+        test_user_id,
         todo.id,
         TodoUpdateData(title=" Updated ", due_date=tomorrow),
     )
@@ -83,10 +96,11 @@ def test_update_todo_updates_selected_fields(todo_service):
     assert updated.due_date == tomorrow
 
 
-def test_update_todo_clears_detail(todo_service):
-    todo = todo_service.create_todo(TodoCreateData(title="With detail", detail="Something"))
+def test_update_todo_clears_detail(todo_service, test_user_id):
+    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="With detail", detail="Something"))
 
     updated = todo_service.update_todo(
+        test_user_id,
         todo.id,
         TodoUpdateData(detail="   "),
     )
@@ -94,42 +108,42 @@ def test_update_todo_clears_detail(todo_service):
     assert updated.detail is None
 
 
-def test_update_todo_requires_fields(todo_service):
-    todo = todo_service.create_todo(TodoCreateData(title="No updates"))
+def test_update_todo_requires_fields(todo_service, test_user_id):
+    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="No updates"))
 
     with pytest.raises(TodoValidationError):
-        todo_service.update_todo(todo.id, TodoUpdateData())
+        todo_service.update_todo(test_user_id, todo.id, TodoUpdateData())
 
 
-def test_update_todo_not_found(todo_service):
+def test_update_todo_not_found(todo_service, test_user_id):
     with pytest.raises(TodoNotFoundError):
-        todo_service.update_todo(9999, TodoUpdateData(title="Missing"))
+        todo_service.update_todo(test_user_id, 9999, TodoUpdateData(title="Missing"))
 
 
-def test_toggle_completed_updates_flag(todo_service):
-    todo = todo_service.create_todo(TodoCreateData(title="Toggle me"))
+def test_toggle_completed_updates_flag(todo_service, test_user_id):
+    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="Toggle me"))
 
-    toggled = todo_service.toggle_completed(todo.id, TodoToggleData(is_completed=True))
+    toggled = todo_service.toggle_completed(test_user_id, todo.id, TodoToggleData(is_completed=True))
     assert toggled.is_completed is True
 
-    toggled_back = todo_service.toggle_completed(todo.id, TodoToggleData(is_completed=False))
+    toggled_back = todo_service.toggle_completed(test_user_id, todo.id, TodoToggleData(is_completed=False))
     assert toggled_back.is_completed is False
 
 
-def test_toggle_completed_not_found(todo_service):
+def test_toggle_completed_not_found(todo_service, test_user_id):
     with pytest.raises(TodoNotFoundError):
-        todo_service.toggle_completed(42, TodoToggleData(is_completed=True))
+        todo_service.toggle_completed(test_user_id, 42, TodoToggleData(is_completed=True))
 
 
-def test_delete_todo_removes_record(todo_service, db_session):
-    todo = todo_service.create_todo(TodoCreateData(title="Delete me"))
-    todo_service.delete_todo(todo.id)
+def test_delete_todo_removes_record(todo_service, test_user_id, db_session):
+    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="Delete me"))
+    todo_service.delete_todo(test_user_id, todo.id)
 
     assert db_session.get(Todo, todo.id) is None
 
 
-def test_serialize_helpers_return_expected_structure(todo_service):
-    todo = todo_service.create_todo(TodoCreateData(title="Serialize"))
+def test_serialize_helpers_return_expected_structure(todo_service, test_user_id):
+    todo = todo_service.create_todo(test_user_id, TodoCreateData(title="Serialize"))
     single = serialize_todo(todo)
     assert single["title"] == "Serialize"
     assert single["is_completed"] is False

@@ -7,8 +7,8 @@ def test_health_endpoint(client) -> None:
     assert response.get_json() == {"status": "ok"}
 
 
-def test_todos_endpoint_available(client) -> None:
-    response = client.get("/api/todos")
+def test_todos_endpoint_available(auth_client) -> None:
+    response = auth_client.get("/api/todos")
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["items"] == []
