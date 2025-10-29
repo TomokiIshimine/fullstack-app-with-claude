@@ -1,27 +1,27 @@
-# Full Stack App Monorepo
+# フルスタックアプリケーション モノレポ
 
-This repository is organized as a monorepo hosting the frontend, backend, and infrastructure code for the project. Shared development standards live at the repository root to keep all packages consistent.
+このリポジトリは、フロントエンド、バックエンド、インフラストラクチャコードをホストするモノレポとして構成されています。共通の開発標準はリポジトリルートに配置され、すべてのパッケージの一貫性を保ちます。
 
-## Directory Structure
-- `frontend/` – client application source and tooling.
-- `backend/` – API services, background workers, and related backend code.
-- `infra/` – infrastructure-as-code definitions, deployment scripts, and ops tooling.
+## ディレクトリ構造
+- `frontend/` – クライアントアプリケーションのソースとツール
+- `backend/` – APIサービス、バックグラウンドワーカー、関連するバックエンドコード
+- `infra/` – Infrastructure as Code定義、デプロイスクリプト、運用ツール
 
-## Getting Started
-1. Ensure the language runtimes and tooling described in `docs/\u74b0\u5883\u69cb\u7bc9\u5177\u4f53\u5316.md` are installed.
-2. Install dependencies inside `frontend/` and `backend/` using the package managers defined for each workspace.
-3. Follow the environment setup instructions in the documentation to configure environment variables, containers, and supporting services.
+## はじめに
+1. `docs/development.md` に記載されている言語ランタイムとツールがインストールされていることを確認してください
+2. `frontend/` および `backend/` 内で、各ワークスペース用に定義されたパッケージマネージャーを使用して依存関係をインストールします
+3. ドキュメントの環境セットアップ手順に従って、環境変数、コンテナ、およびサポートサービスを設定します
 
-## Shared Configuration
-Common editor and ignore rules are defined in `.editorconfig` and `.gitignore` respectively. Adjust these files when adding new packages or tooling so that formatting and repository hygiene stay consistent across the monorepo.
+## 共通設定
+共通のエディタ設定と無視ルールは、それぞれ `.editorconfig` と `.gitignore` で定義されています。新しいパッケージやツールを追加する際は、これらのファイルを調整して、モノレポ全体でフォーマットとリポジトリ衛生を一貫して保ちます。
 
-## Setup & Run
+## セットアップと実行
 
-1. 依存関係インストール:
+1. 依存関係のインストール:
    ```bash
    make install
    ```
-2. 開発用コンテナの起動 (MySQL など):
+2. 開発用コンテナの起動（MySQL など）:
    ```bash
    docker compose -f infra/docker-compose.yml --env-file infra/.env.development up -d
    ```
@@ -36,20 +36,20 @@ Common editor and ignore rules are defined in `.editorconfig` and `.gitignore` r
    ```
 5. 終了時は `make down` もしくは `docker compose ... down` を実行してリソースを解放してください。
 
-## Commit Message Guidelines
+## コミットメッセージガイドライン
 
-This repository follows [Conventional Commits](https://www.conventionalcommits.org/) to keep history readable and automation-friendly. Use the `<type>(<scope>): <subject>` format, for example:
+このリポジトリは、履歴を読みやすく自動化に適したものにするため、[Conventional Commits](https://www.conventionalcommits.org/) に従います。`<type>(<scope>): <subject>` の形式を使用してください。例：
 
-- `feat(frontend): add user dashboard`
-- `fix(backend): handle empty payload`
+- `feat(frontend): ユーザーダッシュボードを追加`
+- `fix(backend): 空のペイロードを処理`
 
 ### commitlint
 
-To lint commit messages locally, install dependencies and then run commitlint via pnpm:
+コミットメッセージをローカルで検証するには、依存関係をインストールしてから pnpm 経由で commitlint を実行します：
 
 ```bash
 pnpm -C frontend install
 pnpm -C frontend run commitlint -- --help
 ```
 
-You can wire commitlint to the `commit-msg` hook using tools like Husky, or run `pnpm -C frontend exec commitlint --edit .git/COMMIT_EDITMSG` after crafting a commit message.
+Husky のようなツールを使用して commitlint を `commit-msg` フックに接続するか、コミットメッセージを作成した後に `pnpm -C frontend exec commitlint --edit .git/COMMIT_EDITMSG` を実行できます。
