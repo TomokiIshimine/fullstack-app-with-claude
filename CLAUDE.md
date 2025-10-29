@@ -10,6 +10,22 @@ This is a full-stack monorepo containing a React + TypeScript frontend and a Fla
 - Backend: See [backend/CLAUDE.md](backend/CLAUDE.md)
 - Frontend: See [frontend/CLAUDE.md](frontend/CLAUDE.md)
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+**For new developers, recommended reading order:**
+1. **[Development Guide](docs/development.md)** - Start here: setup, commands, troubleshooting
+2. **[System Architecture](docs/system-architecture.md)** - Overall system design and tech stack
+3. **[Authentication & Authorization](docs/authentication-authorization.md)** - Security fundamentals
+4. **[Feature List](docs/feature-list.md)** - Implemented features and API endpoints
+
+**Specialized documentation:**
+- **[Database Design](docs/database-design.md)** - Schema, ER diagrams, table definitions
+- **[API Design Guide](docs/api-design-guide.md)** - REST API conventions and best practices
+- **[Testing Strategy](docs/testing-strategy.md)** - Test levels, coverage goals, test data management
+- **[Documentation Guide](docs/documentation-guide.md)** - Overview of all documentation (meta-document)
+
 ## Quick Start
 
 ### Setup and Installation
@@ -24,93 +40,83 @@ make up                   # Start Docker containers (MySQL, frontend, backend)
 make down                 # Stop Docker containers
 ```
 
-### Testing
-```bash
-make test                 # Run all tests (frontend and backend)
-```
-
 ### Linting and Formatting
 ```bash
 make lint                 # Lint both frontend and backend
 make format               # Format both frontend and backend
 ```
 
-## Database Setup
+## Testing
 
-### Initial Setup (New Environment)
-
-When starting a new environment, Docker Compose automatically initializes the database:
-
+### Run All Tests
 ```bash
-make up                   # Start all services including MySQL
+make test                 # Run all tests (frontend and backend) with coverage
 ```
 
-The MySQL container executes `infra/mysql/init/001_init.sql` on first startup, creating:
-- `users` table - User authentication
-- `refresh_tokens` table - JWT token management
-- `todos` table - TODO items with user associations
-
-### Manual Schema Management
-
-For existing environments or schema updates:
-
-**Initialize/recreate all tables:**
+### Test Variants
 ```bash
-make db-init
-# Or directly:
-poetry -C backend run python scripts/create_tables.py
+make test-frontend        # Run only frontend tests
+make test-backend         # Run only backend tests
+make test-fast            # Run tests without coverage (faster)
+make test-cov             # Run tests with coverage and generate HTML report
+make test-parallel        # Run backend tests in parallel
 ```
 
-**Create a test user:**
+### Run Individual Tests
 ```bash
-make db-create-user EMAIL=user@example.com PASSWORD=password123
-# Or directly:
-poetry -C backend run python scripts/create_user.py user@example.com password123
+# Frontend - run specific test file
+pnpm --dir frontend run test src/lib/api/todos.test.ts
+
+# Backend - run specific test file
+poetry -C backend run pytest backend/tests/routes/test_todo_routes.py
+
+# Backend - run specific test function
+poetry -C backend run pytest backend/tests/routes/test_todo_routes.py::test_create_todo
 ```
 
-**Reset database (⚠️ destructive):**
+**For detailed testing strategy, see [docs/testing-strategy.md](docs/testing-strategy.md)**
+
+## Database Management
+
+### Quick Commands
 ```bash
-make db-reset             # Drops all data and recreates database
+make db-init              # Initialize/recreate all tables
+make db-create-user EMAIL=user@example.com PASSWORD=password123  # Create test user
+make db-reset             # Reset database (⚠️ destructive - drops all data)
 ```
 
-**Notes:**
-- `create_tables.py` uses SQLAlchemy models as the source of truth
-- Schema changes require updating both SQLAlchemy models and `001_init.sql`
-- The init SQL file is only executed when the Docker volume is empty
+**For detailed database schema and management, see:**
+- [docs/database-design.md](docs/database-design.md) - Complete schema documentation
+- [docs/development.md](docs/development.md) - Database setup workflows
 
-## Pre-commit Hooks (Lightweight)
+## Pre-commit Hooks
 
-Pre-commit hooks automatically run **lightweight checks** on staged files before each commit. Heavy checks (mypy, pytest, vitest) are intentionally excluded for fast commits.
+Pre-commit hooks run lightweight checks (formatting, linting) before each commit. Heavy checks (mypy, pytest, vitest) are excluded for fast commits.
 
-**What runs automatically on commit:**
-- Code formatting (Prettier for frontend, black/isort for backend)
-- Linting (ESLint for frontend, flake8 for backend)
-- Common issues (trailing whitespace, merge conflicts, large files)
-
-**Manual commands:**
 ```bash
 make pre-commit-install   # Install hooks (run once after clone)
 make pre-commit-run       # Manually run hooks on all files
 make pre-commit-update    # Update hook versions
 ```
 
-**Important:** Type checking (mypy) and tests (pytest, vitest) are NOT run on commit for performance. Run them manually:
-```bash
-make lint                 # Run mypy + flake8 + ESLint
-make test                 # Run tests with coverage
-```
+**Note:** Type checking and tests are NOT run on commit. Run them manually with `make lint` and `make test`.
+
+**For detailed setup and troubleshooting, see [docs/development.md](docs/development.md)**
 
 ## Docker Compose Setup
 
-Three services: `frontend` (Node 20), `backend` (Python 3.12), `db` (MySQL 8.0). All services share the `app-network` bridge network. The backend service waits for database via health checks. MySQL data persists in named volume `mysql-data`.
+Three services run in Docker: `frontend` (Node 20), `backend` (Python 3.12), `db` (MySQL 8.0). Services communicate via the `app-network` bridge network.
+
+**For detailed architecture and configuration, see [docs/system-architecture.md](docs/system-architecture.md)**
 
 ## Project Conventions
 
 ### Commit Messages
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/) with format `<type>(<scope>): <subject>`. Use `commitlint` via:
+Follow [Conventional Commits](https://www.conventionalcommits.org/) with format `<type>(<scope>): <subject>`.
+
 ```bash
-pnpm -C frontend run commitlint -- --help
+pnpm -C frontend run commitlint -- --help  # Check commit message format
 ```
 
 ### Code Organization
@@ -119,3 +125,8 @@ pnpm -C frontend run commitlint -- --help
 - **Frontend**: React + TypeScript with Vite, organized by pages and components
 - All API routes use `/api` prefix
 - Frontend proxies API requests to backend in development
+
+**For detailed conventions and best practices, see:**
+- [docs/api-design-guide.md](docs/api-design-guide.md) - API design principles
+- [backend/CLAUDE.md](backend/CLAUDE.md) - Backend conventions
+- [frontend/CLAUDE.md](frontend/CLAUDE.md) - Frontend conventions
