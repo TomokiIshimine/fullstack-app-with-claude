@@ -19,9 +19,9 @@
 - テックリード、アーキテクト
 
 **関連ドキュメント:**
-- [システム構成設計書](./system-architecture.md) - テスト環境、技術スタック
-- [API設計ガイド](./api-design-guide.md) - APIテスト観点
-- [機能一覧](./feature-list.md) - テスト対象機能
+- [システム構成設計書](./01_system-architecture.md) - テスト環境、技術スタック
+- [API設計ガイド](./05_api-design-guide.md) - APIテスト観点
+- [機能一覧](./03_feature-list.md) - テスト対象機能
 
 ---
 
@@ -1281,10 +1281,10 @@ def test_filter_by_status(auth_client, status, expected_condition):
 
 ## 13. 関連ドキュメント
 
-- [システム構成設計書](./system-architecture.md) - テスト環境、技術スタック
-- [API設計ガイド](./api-design-guide.md) - APIテスト観点、エラーケース
-- [機能一覧](./feature-list.md) - テスト対象機能一覧
-- [開発環境ガイド](./development.md) - テスト実行コマンド、トラブルシューティング
+- [システム構成設計書](./01_system-architecture.md) - テスト環境、技術スタック
+- [API設計ガイド](./05_api-design-guide.md) - APIテスト観点、エラーケース
+- [機能一覧](./03_feature-list.md) - テスト対象機能一覧
+- [開発環境ガイド](./00_development.md) - テスト実行コマンド、トラブルシューティング
 
 ---
 

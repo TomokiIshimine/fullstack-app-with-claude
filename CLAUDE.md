@@ -15,16 +15,17 @@ This is a full-stack monorepo containing a React + TypeScript frontend and a Fla
 Comprehensive documentation is available in the `docs/` directory:
 
 **For new developers, recommended reading order:**
-1. **[Development Guide](docs/development.md)** - Start here: setup, commands, troubleshooting
-2. **[System Architecture](docs/system-architecture.md)** - Overall system design and tech stack
-3. **[Authentication & Authorization](docs/authentication-authorization.md)** - Security fundamentals
-4. **[Feature List](docs/feature-list.md)** - Implemented features and API endpoints
+1. **[Development Guide](docs/00_development.md)** - Start here: setup, commands, troubleshooting
+2. **[System Architecture](docs/01_system-architecture.md)** - Overall system design and tech stack
+3. **[Authentication & Authorization](docs/02_authentication-authorization.md)** - Security fundamentals
+4. **[Feature List](docs/03_feature-list.md)** - Implemented features and API endpoints
 
 **Specialized documentation:**
-- **[Database Design](docs/database-design.md)** - Schema, ER diagrams, table definitions
-- **[API Design Guide](docs/api-design-guide.md)** - REST API conventions and best practices
-- **[Testing Strategy](docs/testing-strategy.md)** - Test levels, coverage goals, test data management
-- **[Documentation Guide](docs/documentation-guide.md)** - Overview of all documentation (meta-document)
+- **[Database Design](docs/04_database-design.md)** - Schema, ER diagrams, table definitions
+- **[API Design Guide](docs/05_api-design-guide.md)** - REST API conventions and best practices
+- **[Testing Strategy](docs/06_testing-strategy.md)** - Test levels, coverage goals, test data management
+- **[Documentation Guide](docs/07_documentation-guide.md)** - Overview of all documentation (meta-document)
+- **[E2E Test List](docs/08_e2e-test-list.md)** - E2E test scenarios and implementation guide
 
 ## Quick Start
 
@@ -74,7 +75,7 @@ poetry -C backend run pytest backend/tests/routes/test_todo_routes.py
 poetry -C backend run pytest backend/tests/routes/test_todo_routes.py::test_create_todo
 ```
 
-**For detailed testing strategy, see [docs/testing-strategy.md](docs/testing-strategy.md)**
+**For detailed testing strategy, see [docs/06_testing-strategy.md](docs/06_testing-strategy.md)**
 
 ## Database Management
 
@@ -86,8 +87,8 @@ make db-reset             # Reset database (⚠️ destructive - drops all data)
 ```
 
 **For detailed database schema and management, see:**
-- [docs/database-design.md](docs/database-design.md) - Complete schema documentation
-- [docs/development.md](docs/development.md) - Database setup workflows
+- [docs/04_database-design.md](docs/04_database-design.md) - Complete schema documentation
+- [docs/00_development.md](docs/00_development.md) - Database setup workflows
 
 ## Pre-commit Hooks
 
@@ -101,13 +102,13 @@ make pre-commit-update    # Update hook versions
 
 **Note:** Type checking and tests are NOT run on commit. Run them manually with `make lint` and `make test`.
 
-**For detailed setup and troubleshooting, see [docs/development.md](docs/development.md)**
+**For detailed setup and troubleshooting, see [docs/00_development.md](docs/00_development.md)**
 
 ## Docker Compose Setup
 
 Three services run in Docker: `frontend` (Node 20), `backend` (Python 3.12), `db` (MySQL 8.0). Services communicate via the `app-network` bridge network.
 
-**For detailed architecture and configuration, see [docs/system-architecture.md](docs/system-architecture.md)**
+**For detailed architecture and configuration, see [docs/01_system-architecture.md](docs/01_system-architecture.md)**
 
 ## Project Conventions
 
@@ -127,6 +128,6 @@ pnpm -C frontend run commitlint -- --help  # Check commit message format
 - Frontend proxies API requests to backend in development
 
 **For detailed conventions and best practices, see:**
-- [docs/api-design-guide.md](docs/api-design-guide.md) - API design principles
+- [docs/05_api-design-guide.md](docs/05_api-design-guide.md) - API design principles
 - [backend/CLAUDE.md](backend/CLAUDE.md) - Backend conventions
 - [frontend/CLAUDE.md](frontend/CLAUDE.md) - Frontend conventions

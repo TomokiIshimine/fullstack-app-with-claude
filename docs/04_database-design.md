@@ -9,9 +9,9 @@
 ## 1. データベース概要
 
 **関連ドキュメント:**
-- [認証・認可設計書](./authentication-authorization.md) - 認証フロー、users/refresh_tokensテーブル詳細
-- [システム構成設計書](./system-architecture.md) - アーキテクチャ、技術スタック
-- [機能一覧](./feature-list.md) - 実装済み機能の一覧
+- [認証・認可設計書](./02_authentication-authorization.md) - 認証フロー、users/refresh_tokensテーブル詳細
+- [システム構成設計書](./01_system-architecture.md) - アーキテクチャ、技術スタック
+- [機能一覧](./03_feature-list.md) - 実装済み機能の一覧
 
 ### 1.1 データベース管理システム
 

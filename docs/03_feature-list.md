@@ -11,8 +11,8 @@
 本ドキュメントでは、TODO アプリケーションに実装されている全機能を一覧化します。
 
 **関連ドキュメント:**
-- [システム構成設計書](./system-architecture.md) - アーキテクチャ、技術スタック
-- [データベース設計書](./database-design.md) - データベーススキーマ、ER図
+- [システム構成設計書](./01_system-architecture.md) - アーキテクチャ、技術スタック
+- [データベース設計書](./04_database-design.md) - データベーススキーマ、ER図
 
 ---
 
@@ -88,10 +88,10 @@ graph TB
 
 | 機能 | 実装箇所 | 主な仕様 |
 |------|---------|---------|
-| **ロギング** | BE: `logger.py`<br/>FE: `lib/logger.ts` | - リクエストトレーシング (UUID)<br/>- センシティブデータマスキング<br/>- 環境別ログレベル設定<br/>- 詳細は [システム構成設計書](./system-architecture.md) セクション6参照 |
+| **ロギング** | BE: `logger.py`<br/>FE: `lib/logger.ts` | - リクエストトレーシング (UUID)<br/>- センシティブデータマスキング<br/>- 環境別ログレベル設定<br/>- 詳細は [システム構成設計書](./01_system-architecture.md) セクション6参照 |
 | **エラーハンドリング** | BE: `main.py`<br/>FE: `ErrorBoundary.tsx` | **バックエンド:** HTTP例外の統一処理 (400/401/403/404/500)<br/>**フロントエンド:** React Error Boundary、フォールバックUI |
 | **バリデーション** | BE: `schemas/`<br/>FE: `hooks/useTodoForm.ts` | **バックエンド:** Pydantic による厳格な入力検証<br/>**フロントエンド:** リアルタイムバリデーション、HTML5属性 |
-| **セキュリティ** | BE: `utils/`, `auth_routes.py`<br/>FE: `AuthContext.tsx` | - JWT認証 (httpOnly Cookie)<br/>- bcryptハッシュ化<br/>- トークンローテーション<br/>- 詳細は [認証・認可設計書](./authentication-authorization.md) 参照 |
+| **セキュリティ** | BE: `utils/`, `auth_routes.py`<br/>FE: `AuthContext.tsx` | - JWT認証 (httpOnly Cookie)<br/>- bcryptハッシュ化<br/>- トークンローテーション<br/>- 詳細は [認証・認可設計書](./02_authentication-authorization.md) 参照 |
 
 ---
 
@@ -171,9 +171,9 @@ stateDiagram-v2
 
 ## 7. 関連ドキュメント
 
-- [認証・認可設計書](./authentication-authorization.md) - 認証フロー、トークン仕様、セキュリティ対策
-- [システム構成設計書](./system-architecture.md) - アーキテクチャ、技術スタック、開発環境
-- [データベース設計書](./database-design.md) - データベーススキーマ、ER図、テーブル定義
+- [認証・認可設計書](./02_authentication-authorization.md) - 認証フロー、トークン仕様、セキュリティ対策
+- [システム構成設計書](./01_system-architecture.md) - アーキテクチャ、技術スタック、開発環境
+- [データベース設計書](./04_database-design.md) - データベーススキーマ、ER図、テーブル定義
 - [バックエンドガイド](../backend/CLAUDE.md) - バックエンド実装ガイド
 - [フロントエンドガイド](../frontend/CLAUDE.md) - フロントエンド実装ガイド
 
