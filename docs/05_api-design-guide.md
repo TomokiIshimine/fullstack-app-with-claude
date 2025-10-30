@@ -19,9 +19,9 @@
 - アーキテクト（API設計レビュー）
 
 **関連ドキュメント:**
-- [システム構成設計書](./system-architecture.md) - 技術スタック、アーキテクチャ
-- [認証・認可設計書](./authentication-authorization.md) - 認証API詳細
-- [機能一覧](./feature-list.md) - 実装済みAPIエンドポイント一覧
+- [システム構成設計書](./01_system-architecture.md) - 技術スタック、アーキテクチャ
+- [認証・認可設計書](./02_authentication-authorization.md) - 認証API詳細
+- [機能一覧](./03_feature-list.md) - 実装済みAPIエンドポイント一覧
 
 ---
 
@@ -388,7 +388,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 **実装方法:** `@require_auth` デコレータ（`backend/app/utils/auth_decorator.py`）
 
-詳細は [認証・認可設計書](./authentication-authorization.md) を参照してください。
+詳細は [認証・認可設計書](./02_authentication-authorization.md) を参照してください。
 
 ---
 
@@ -484,7 +484,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### 11.3 テストカバレッジ
 
-APIエンドポイントの包括的なテストカバレッジとテスト戦略の詳細については、[テスト戦略書](./testing-strategy.md) を参照してください。
+APIエンドポイントの包括的なテストカバレッジとテスト戦略の詳細については、[テスト戦略書](./06_testing-strategy.md) を参照してください。
 
 ---
 
@@ -510,11 +510,11 @@ APIエンドポイントの包括的なテストカバレッジとテスト戦�
 
 ## 13. 関連ドキュメント
 
-- [システム構成設計書](./system-architecture.md) - 技術スタック、アーキテクチャ
-- [認証・認可設計書](./authentication-authorization.md) - 認証API詳細、セキュリティ対策
-- [データベース設計書](./database-design.md) - データモデル、テーブル定義
-- [機能一覧](./feature-list.md) - 実装済みAPIエンドポイント一覧
-- [テスト戦略書](./testing-strategy.md) - テスト方針、カバレッジ目標
+- [システム構成設計書](./01_system-architecture.md) - 技術スタック、アーキテクチャ
+- [認証・認可設計書](./02_authentication-authorization.md) - 認証API詳細、セキュリティ対策
+- [データベース設計書](./04_database-design.md) - データモデル、テーブル定義
+- [機能一覧](./03_feature-list.md) - 実装済みAPIエンドポイント一覧
+- [テスト戦略書](./06_testing-strategy.md) - テスト方針、カバレッジ目標
 
 ---
 

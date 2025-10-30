@@ -27,8 +27,8 @@
 - **トークン無効化**: ログアウト時のリフレッシュトークン無効化
 
 **関連ドキュメント:**
-- [機能一覧](./feature-list.md) - 全機能の概要
-- [データベース設計書](./database-design.md) - users, refresh_tokens テーブル定義
+- [機能一覧](./03_feature-list.md) - 全機能の概要
+- [データベース設計書](./04_database-design.md) - users, refresh_tokens テーブル定義
 
 ---
 
@@ -336,7 +336,7 @@ Set-Cookie: refresh_token=; HttpOnly; SameSite=Lax; Path=/api; Max-Age=0
 
 ### 6.3 セキュリティテストカバレッジ
 
-認証・認可機能の包括的なテストカバレッジについては、[テスト戦略書 - 5. 認証・認可の包括的なテストカバレッジ](./testing-strategy.md#5-認証認可の包括的なテストカバレッジ) を参照してください。
+認証・認可機能の包括的なテストカバレッジについては、[テスト戦略書 - 5. 認証・認可の包括的なテストカバレッジ](./06_testing-strategy.md#5-認証認可の包括的なテストカバレッジ) を参照してください。
 
 **主なテストカテゴリ:**
 - クロスユーザーアクセス制御テスト（ユーザー間データ隔離）
@@ -349,7 +349,7 @@ Set-Cookie: refresh_token=; HttpOnly; SameSite=Lax; Path=/api; Max-Age=0
 
 ## 7. データベーススキーマ
 
-認証・認可に関連するテーブル定義（users、refresh_tokens）の詳細については [データベース設計書](./database-design.md) を参照してください。
+認証・認可に関連するテーブル定義（users、refresh_tokens）の詳細については [データベース設計書](./04_database-design.md) を参照してください。
 
 **関連テーブル:**
 - `users` テーブル: ユーザー情報、パスワードハッシュ
@@ -386,9 +386,9 @@ Set-Cookie: refresh_token=; HttpOnly; SameSite=Lax; Path=/api; Max-Age=0
 
 ## 9. 関連ドキュメント
 
-- [機能一覧](./feature-list.md) - 全機能の概要、実装状況
-- [システム構成設計書](./system-architecture.md) - アーキテクチャ、技術スタック
-- [データベース設計書](./database-design.md) - データベーススキーマ、ER図
+- [機能一覧](./03_feature-list.md) - 全機能の概要、実装状況
+- [システム構成設計書](./01_system-architecture.md) - アーキテクチャ、技術スタック
+- [データベース設計書](./04_database-design.md) - データベーススキーマ、ER図
 - [バックエンドガイド](../backend/CLAUDE.md) - バックエンド実装ガイド
 - [フロントエンドガイド](../frontend/CLAUDE.md) - フロントエンド実装ガイド
 

@@ -6,11 +6,11 @@
 
 本プロジェクトは以下のドキュメント構成で管理されています:
 
-- **[システム構成設計書](./system-architecture.md)** - アーキテクチャ、技術スタック、システム全体の設計
-- **[データベース設計書](./database-design.md)** - データベーススキーマ、ER図、テーブル定義
-- **[認証・認可設計書](./authentication-authorization.md)** - JWT認証フロー、トークン仕様、セキュリティ対策
-- **[機能一覧](./feature-list.md)** - 実装済み機能の一覧と実装状況
-- **[開発環境ガイド](./development.md)** - 本ドキュメント（開発手順、環境設定）
+- **[システム構成設計書](./01_system-architecture.md)** - アーキテクチャ、技術スタック、システム全体の設計
+- **[データベース設計書](./04_database-design.md)** - データベーススキーマ、ER図、テーブル定義
+- **[認証・認可設計書](./02_authentication-authorization.md)** - JWT認証フロー、トークン仕様、セキュリティ対策
+- **[機能一覧](./03_feature-list.md)** - 実装済み機能の一覧と実装状況
+- **[開発環境ガイド](./00_development.md)** - 本ドキュメント（開発手順、環境設定）
 
 詳細な実装ガイドは各ディレクトリの `CLAUDE.md` を参照してください:
 - [backend/CLAUDE.md](../backend/CLAUDE.md) - バックエンド実装ガイド
@@ -47,7 +47,7 @@ make setup                # インストール後の完了メッセージを表�
 | `COOKIE_SECURE` | false | HTTPS限定Cookie（本番環境では`true`を推奨） |
 | `COOKIE_DOMAIN` | (未設定) | Cookieの有効ドメイン |
 
-詳細は [認証・認可設計書](./authentication-authorization.md) を参照してください。
+詳細は [認証・認可設計書](./02_authentication-authorization.md) を参照してください。
 
 ### バックエンドローカル環境変数（オプション）
 
@@ -72,7 +72,7 @@ JWT_SECRET_KEY=your-secret-key-here
 | フォーマット      | `make format`       | Prettier / isort / black                 |
 
 **テストインフラ:**
-テストファクトリー・ヘルパー関数・セキュリティテストなどの詳細については、[テスト戦略書](./testing-strategy.md) を参照してください。
+テストファクトリー・ヘルパー関数・セキュリティテストなどの詳細については、[テスト戦略書](./06_testing-strategy.md) を参照してください。
 
 ## データベース管理
 
@@ -127,7 +127,7 @@ make db-reset             # Docker ボリュームを削除してデータベー
 - 現在プロジェクトでは Alembic マイグレーションを使用していません
 - 本番デプロイでは適切なマイグレーションツールの導入を検討してください
 
-詳細は [データベース設計書](./database-design.md) を参照してください。
+詳細は [データベース設計書](./04_database-design.md) を参照してください。
 
 ## Pre-commit フック（軽量チェック）
 
@@ -254,5 +254,5 @@ make format               # Prettier / isort / black を実行
 ## 参考
 
 - 追加のサービスを導入する場合は `infra/docker-compose.yml` の `# Alembic` コメントを基にマイグレーション用コンテナを検討してください。
-- システム全体の構成については [システム構成設計書](./system-architecture.md) を参照してください。
+- システム全体の構成については [システム構成設計書](./01_system-architecture.md) を参照してください。
 - API 仕様や実装の詳細は `backend/CLAUDE.md` と `frontend/CLAUDE.md` を参照してください。
