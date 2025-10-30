@@ -8,9 +8,10 @@ React + TypeScript フロントエンドと Flask + SQLAlchemy バックエン�
 .
 ├── frontend/          # React + TypeScript クライアントアプリケーション
 ├── backend/           # Flask API サーバーとバックエンドコード
+│   └── scripts/       # データベース管理などの運用スクリプト
 ├── infra/             # Infrastructure as Code、デプロイスクリプト、運用ツール
 ├── docs/              # プロジェクトドキュメント
-└── scripts/           # 開発・運用スクリプト
+└── specs/             # 仕様書
 ```
 
 ## ドキュメント
