@@ -12,6 +12,10 @@ echo "==> Installing Poetry..."
 curl -sSL https://install.python-poetry.org | python3 -
 export PATH="$HOME/.local/bin:$PATH"
 
+echo "==> Setting up Google Cloud SDK..."
+export PATH="$HOME/google-cloud-sdk/bin:$PATH"
+[ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/google-cloud-sdk/completion.zsh.inc"
+
 echo "==> Installing project dependencies..."
 make install
 

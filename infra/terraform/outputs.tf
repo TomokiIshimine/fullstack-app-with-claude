@@ -1,0 +1,98 @@
+# Terraform outputs
+# デプロイ後にこれらの値を参照できます
+
+# Cloud Storage バケット名
+output "frontend_bucket_name" {
+  description = "Frontend Cloud Storage bucket name"
+  value       = google_storage_bucket.frontend.name
+}
+
+# Cloud Storage ホスティングURL
+output "frontend_url" {
+  description = "Frontend URL (Cloud Storage static hosting)"
+  value       = "https://storage.googleapis.com/${google_storage_bucket.frontend.name}/index.html"
+}
+
+# Cloud Storage バケットURL(gsutil用)
+output "frontend_bucket_url" {
+  description = "Frontend bucket URL for gsutil"
+  value       = "gs://${google_storage_bucket.frontend.name}"
+}
+
+# Cloud SQL インスタンス名
+output "cloud_sql_instance_name" {
+  description = "Cloud SQL instance name"
+  value       = google_sql_database_instance.main.name
+}
+
+# Cloud SQL 接続名
+output "cloud_sql_connection_name" {
+  description = "Cloud SQL connection name for Cloud Run"
+  value       = google_sql_database_instance.main.connection_name
+}
+
+# Cloud SQL データベース名
+output "cloud_sql_database_name" {
+  description = "Cloud SQL database name"
+  value       = google_sql_database.database.name
+}
+
+# Cloud SQL パブリックIPアドレス
+output "cloud_sql_public_ip" {
+  description = "Cloud SQL public IP address"
+  value       = google_sql_database_instance.main.public_ip_address
+}
+
+# Cloud SQL プライベートIPアドレス
+output "cloud_sql_private_ip" {
+  description = "Cloud SQL private IP address"
+  value       = google_sql_database_instance.main.private_ip_address
+}
+
+# VPC Connector名
+output "vpc_connector_name" {
+  description = "VPC Access Connector name for Cloud Run"
+  value       = google_vpc_access_connector.connector.name
+}
+
+# VPC Connector ID (フルパス)
+output "vpc_connector_id" {
+  description = "VPC Access Connector ID for Cloud Run configuration"
+  value       = google_vpc_access_connector.connector.id
+}
+
+# Cloud Run サービス名
+output "cloud_run_service_name" {
+  description = "Cloud Run service name"
+  value       = google_cloud_run_service.backend.name
+}
+
+# Cloud Run サービスURL
+output "cloud_run_url" {
+  description = "Cloud Run service URL"
+  value       = google_cloud_run_service.backend.status[0].url
+}
+
+# Cloud Run サービスロケーション
+output "cloud_run_location" {
+  description = "Cloud Run service location"
+  value       = google_cloud_run_service.backend.location
+}
+
+# GitHub Actions サービスアカウントメール
+output "github_actions_service_account_email" {
+  description = "GitHub Actions service account email"
+  value       = google_service_account.github_actions.email
+}
+
+# Workload Identity Provider名（フルパス）
+output "workload_identity_provider" {
+  description = "Workload Identity Provider for GitHub Actions"
+  value       = google_iam_workload_identity_pool_provider.github_actions.name
+}
+
+# Workload Identity Pool ID
+output "workload_identity_pool_id" {
+  description = "Workload Identity Pool ID"
+  value       = google_iam_workload_identity_pool.github_actions.workload_identity_pool_id
+}
