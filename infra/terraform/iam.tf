@@ -98,6 +98,13 @@ resource "google_project_iam_member" "github_actions_workload_identity_pool_admi
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# Grant Service Account Admin role to GitHub Actions service account (for managing service account IAM policies)
+resource "google_project_iam_member" "github_actions_service_account_admin" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountAdmin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # Workload Identity Pool for GitHub Actions
 resource "google_iam_workload_identity_pool" "github_actions" {
   workload_identity_pool_id = "${var.app_name}-github-pool"
