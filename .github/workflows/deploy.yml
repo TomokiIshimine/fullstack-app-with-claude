@@ -1,0 +1,210 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: fullstack-app-base
+  GCP_REGION: asia-northeast1
+  BACKEND_IMAGE_NAME: backend
+
+jobs:
+  ci:
+    name: CI (Lint & Test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install backend dependencies
+        run: poetry -C backend install --no-interaction
+
+      - name: Run lint checks
+        run: make lint
+
+      - name: Run tests
+        run: make test
+
+  terraform:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: ci
+    defaults:
+      run:
+        working-directory: infra/terraform
+    outputs:
+      cloud_run_url: ${{ steps.outputs.outputs.cloud_run_url }}
+      frontend_bucket_name: ${{ steps.outputs.outputs.frontend_bucket_name }}
+      cloud_run_service_name: ${{ steps.outputs.outputs.cloud_run_service_name }}
+      cloud_run_location: ${{ steps.outputs.outputs.cloud_run_location }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ~1.9.0
+          terraform_wrapper: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="cloud_sql_password=${{ secrets.DATABASE_PASSWORD }}" \
+            -var="flask_secret_key=${{ secrets.FLASK_SECRET_KEY }}"
+
+      - name: Save Terraform Outputs
+        id: outputs
+        run: |
+          echo "cloud_run_url=$(terraform output -raw cloud_run_url)" >> $GITHUB_OUTPUT
+          echo "frontend_bucket_name=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
+          echo "cloud_run_service_name=$(terraform output -raw cloud_run_service_name)" >> $GITHUB_OUTPUT
+          echo "cloud_run_location=$(terraform output -raw cloud_run_location)" >> $GITHUB_OUTPUT
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: pnpm --dir frontend install
+
+      - name: Build frontend
+        env:
+          VITE_API_URL: ${{ needs.terraform.outputs.cloud_run_url }}
+        run: pnpm --dir frontend run build
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Storage
+        run: |
+          gsutil -m rsync -R -d frontend/dist gs://${{ needs.terraform.outputs.frontend_bucket_name }}
+          gsutil -m setmeta -h "Cache-Control:no-cache, max-age=0" gs://${{ needs.terraform.outputs.frontend_bucket_name }}/*.html
+
+      - name: Display Frontend URL
+        run: |
+          echo "🚀 Frontend deployed successfully!"
+          echo "📊 Frontend URL: https://storage.googleapis.com/${{ needs.terraform.outputs.frontend_bucket_name }}/index.html"
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: |
+          gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+            -t gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE_NAME }}:latest \
+            -f backend/Dockerfile \
+            backend
+
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ needs.terraform.outputs.cloud_run_service_name }} \
+            --image=gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ needs.terraform.outputs.cloud_run_location }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --quiet
+
+      - name: Run Health Check
+        run: |
+          echo "Running health check..."
+          sleep 10
+          HEALTH_URL="${{ needs.terraform.outputs.cloud_run_url }}/api/health"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL")
+
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Health check passed (HTTP $HTTP_STATUS)"
+          else
+            echo "❌ Health check failed (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+
+      - name: Display Backend URL
+        run: |
+          echo "🚀 Backend deployed successfully!"
+          echo "📊 Backend URL: ${{ needs.terraform.outputs.cloud_run_url }}"
+          echo "🏥 Health Check: ${{ needs.terraform.outputs.cloud_run_url }}/api/health"
