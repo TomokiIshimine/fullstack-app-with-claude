@@ -20,6 +20,10 @@ permissions:
   pull-requests: write
   id-token: write
 
+concurrency:
+  group: terraform-state-lock
+  cancel-in-progress: false
+
 jobs:
   terraform:
     name: Terraform Plan/Apply
