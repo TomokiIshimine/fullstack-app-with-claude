@@ -3,7 +3,7 @@ import { renderHook, waitFor, render, screen } from '@testing-library/react'
 import { AuthProvider, useAuth } from './AuthContext'
 import * as authApi from '@/lib/api/auth'
 import { createMockUser } from '@/test/helpers/mockData'
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 describe('AuthContext', () => {
   const mockUser = createMockUser({
