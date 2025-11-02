@@ -65,7 +65,8 @@ jobs:
           terraform plan -no-color -input=false \
             -var="cloud_sql_password=${{ secrets.DATABASE_PASSWORD }}" \
             -var="flask_secret_key=${{ secrets.FLASK_SECRET_KEY }}" \
-            -out=tfplan
+            -out=tfplan 2>&1 | tee plan_output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: Comment PR with Plan
@@ -74,6 +75,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('infra/terraform/plan_output.txt', 'utf8');
+
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
@@ -82,7 +86,7 @@ jobs:
             <details><summary>Show Plan</summary>
 
             \`\`\`terraform
-            ${{ steps.plan.outputs.stdout }}
+            ${planOutput}
             \`\`\`
 
             </details>
