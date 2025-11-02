@@ -69,6 +69,20 @@ resource "google_project_iam_member" "github_actions_artifact_registry_admin" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# Grant VPC Access Viewer role to GitHub Actions service account (for VPC Access Connector)
+resource "google_project_iam_member" "github_actions_vpcaccess_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/vpcaccess.viewer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant Security Reviewer role to GitHub Actions service account (for IAM resources)
+resource "google_project_iam_member" "github_actions_security_reviewer" {
+  project = var.gcp_project_id
+  role    = "roles/iam.securityReviewer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # Workload Identity Pool for GitHub Actions
 resource "google_iam_workload_identity_pool" "github_actions" {
   workload_identity_pool_id = "${var.app_name}-github-pool"
