@@ -8,6 +8,7 @@ const backendProxyTarget = process.env.VITE_API_PROXY ?? 'http://localhost:5000'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: './',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
