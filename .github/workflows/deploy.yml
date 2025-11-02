@@ -33,6 +33,7 @@ jobs:
       cloud_run_service_name: ${{ steps.outputs.outputs.cloud_run_service_name }}
       cloud_run_location: ${{ steps.outputs.outputs.cloud_run_location }}
       docker_image_url_base: ${{ steps.outputs.outputs.docker_image_url_base }}
+      db_migrate_job_name: ${{ steps.outputs.outputs.db_migrate_job_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,6 +70,7 @@ jobs:
           echo "cloud_run_service_name=$(terraform output -raw cloud_run_service_name)" >> $GITHUB_OUTPUT
           echo "cloud_run_location=$(terraform output -raw cloud_run_location)" >> $GITHUB_OUTPUT
           echo "docker_image_url_base=$(terraform output -raw docker_image_url_base)" >> $GITHUB_OUTPUT
+          echo "db_migrate_job_name=$(terraform output -raw db_migrate_job_name)" >> $GITHUB_OUTPUT
 
   deploy-frontend:
     name: Deploy Frontend
@@ -148,6 +150,23 @@ jobs:
         run: |
           docker push ${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+
+      - name: Update Migration Job Image
+        run: |
+          gcloud run jobs update ${{ needs.terraform.outputs.db_migrate_job_name }} \
+            --image=${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+            --region=${{ needs.terraform.outputs.cloud_run_location }} \
+            --project=${{ env.GCP_PROJECT_ID }}
+
+      - name: Run Database Migrations
+        run: |
+          echo "🔄 Running database migrations..."
+          gcloud run jobs execute ${{ needs.terraform.outputs.db_migrate_job_name }} \
+            --region=${{ needs.terraform.outputs.cloud_run_location }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --wait
+
+          echo "✅ Database migrations completed successfully"
 
       - name: Deploy to Cloud Run
         run: |
