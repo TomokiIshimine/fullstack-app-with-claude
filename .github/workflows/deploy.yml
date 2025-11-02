@@ -18,40 +18,7 @@ env:
 jobs:
   ci:
     name: CI (Lint & Test)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install frontend dependencies
-        run: pnpm --dir frontend install
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Poetry
-        run: pipx install poetry
-
-      - name: Install backend dependencies
-        run: poetry -C backend install --no-interaction
-
-      - name: Run lint checks
-        run: make lint
-
-      - name: Run tests
-        run: make test
+    uses: ./.github/workflows/ci.yml
 
   terraform:
     name: Terraform Apply
