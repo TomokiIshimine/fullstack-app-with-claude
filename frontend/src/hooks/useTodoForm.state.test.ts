@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
-import { useTodoForm } from './useTodoForm'
+import { useTodoForm, type UseTodoFormOptions } from './useTodoForm'
 import { createMockTodo } from '@/test/helpers/mockData'
 import { TODO_ERROR_MESSAGES } from '@/constants/todo'
 
@@ -123,11 +123,11 @@ describe('useTodoForm', () => {
         dueDate: '2024-06-20',
       })
 
-      const { result, rerender } = renderHook(props => useTodoForm(props), {
+      const { result, rerender } = renderHook((props: UseTodoFormOptions) => useTodoForm(props), {
         initialProps: {
           editingTodo: mockTodo,
           onSubmit: mockOnSubmit,
-        },
+        } as UseTodoFormOptions,
       })
 
       expect(result.current.title).toBe('Original Title')
@@ -175,11 +175,11 @@ describe('useTodoForm', () => {
     })
 
     it('clears errors when editingTodo changes', async () => {
-      const { result, rerender } = renderHook(props => useTodoForm(props), {
+      const { result, rerender } = renderHook((props: UseTodoFormOptions) => useTodoForm(props), {
         initialProps: {
           editingTodo: null,
           onSubmit: mockOnSubmit,
-        },
+        } as UseTodoFormOptions,
       })
 
       // Create validation error

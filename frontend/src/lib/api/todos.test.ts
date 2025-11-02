@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getTodos, createTodo, updateTodo, toggleTodo, deleteTodo, ApiError } from './todos'
 import { createMockTodoDto } from '@/test/helpers/mockData'
 import { createMockResponse, restoreFetch } from '@/test/helpers/mockApi'
+import type { TodoDto } from '@/types/todo'
 
 describe('API Client - todos', () => {
   let originalFetch: typeof global.fetch

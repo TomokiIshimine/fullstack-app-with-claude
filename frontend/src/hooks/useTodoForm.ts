@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Todo } from '@/types/todo'
 import { validateTodoForm, type TodoFieldErrors } from '@/lib/validation/todoValidation'
 
-interface UseTodoFormOptions {
+export interface UseTodoFormOptions {
   editingTodo: Todo | null
   onSubmit: (payload: {
     title: string

@@ -6,6 +6,7 @@ import * as authApi from '@/lib/api/auth'
 import { createMockUser } from '@/test/helpers/mockData'
 import { renderWithAuthAndRouter } from '@/test/helpers/renderHelpers'
 import { AuthProvider } from '@/contexts/AuthContext'
+import type { User } from '@/types/auth'
 
 describe('ProtectedRoute', () => {
   const mockUser = createMockUser({
@@ -264,7 +265,7 @@ describe('ProtectedRoute', () => {
 
   describe('Integration with AuthContext', () => {
     it('uses isLoading from AuthContext', async () => {
-      let resolveRefresh: (value: unknown) => void
+      let resolveRefresh: (value: User | PromiseLike<User>) => void
       vi.spyOn(authApi, 'refreshToken').mockImplementation(
         () =>
           new Promise(resolve => {
