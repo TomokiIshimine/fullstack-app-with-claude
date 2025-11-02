@@ -2,9 +2,11 @@ from __future__ import annotations
 
 
 def test_health_endpoint(client) -> None:
-    response = client.get("/health")
+    response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.get_json() == {"status": "ok"}
+    data = response.get_json()
+    assert data["status"] == "healthy"
+    assert data["database"] == "connected"
 
 
 def test_todos_endpoint_available(auth_client) -> None:
