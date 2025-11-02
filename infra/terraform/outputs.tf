@@ -108,3 +108,9 @@ output "docker_image_url_base" {
   description = "Base URL for Docker images in Artifact Registry"
   value       = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.backend.repository_id}"
 }
+
+# Database Migration Job name
+output "db_migrate_job_name" {
+  description = "Cloud Run Job name for database migrations"
+  value       = google_cloud_run_v2_job.db_migrate.name
+}
