@@ -115,10 +115,6 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
     app.logger.info("API blueprint registered: /api")
 
-    @app.get("/health")
-    def health_check() -> Response:
-        return jsonify(status="ok")
-
     app.logger.info("Application initialization completed successfully")
     return app
 

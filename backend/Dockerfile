@@ -52,9 +52,9 @@ EXPOSE 5000
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=app.main:app
 
-# Health check (will be enabled after Task 12: health endpoint implementation)
-# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-#     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"
 
 # Run gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "app.main:app"]
