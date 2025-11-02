@@ -1,6 +1,5 @@
 # IAM configuration for GitHub Actions
 # This file defines service accounts and IAM roles for GitHub Actions CI/CD
-#
 
 # IAM API (Identity and Access Management API)
 resource "google_project_service" "iam" {
