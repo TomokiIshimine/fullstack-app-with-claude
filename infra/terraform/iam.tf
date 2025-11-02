@@ -122,7 +122,5 @@ resource "google_iam_workload_identity_pool_provider" "github_actions" {
 resource "google_service_account_iam_member" "github_actions_workload_identity" {
   service_account_id = google_service_account.github_actions.name
   role               = "roles/iam.workloadIdentityUser"
-  # You need to replace <YOUR_GITHUB_ORG>/<YOUR_GITHUB_REPO> with your actual repository
-  # Example: "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/octocat/hello-world"
-  member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/*"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/TomokiIshimine/fullstack-app-with-claude"
 }
