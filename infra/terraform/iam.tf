@@ -77,10 +77,10 @@ resource "google_project_iam_member" "github_actions_vpcaccess_viewer" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Security Reviewer role to GitHub Actions service account (for IAM resources)
-resource "google_project_iam_member" "github_actions_security_reviewer" {
+# Grant Project IAM Admin role to GitHub Actions service account (for managing IAM policies)
+resource "google_project_iam_member" "github_actions_project_iam_admin" {
   project = var.gcp_project_id
-  role    = "roles/iam.securityReviewer"
+  role    = "roles/resourcemanager.projectIamAdmin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
