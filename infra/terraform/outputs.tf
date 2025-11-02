@@ -96,3 +96,15 @@ output "workload_identity_pool_id" {
   description = "Workload Identity Pool ID"
   value       = google_iam_workload_identity_pool.github_actions.workload_identity_pool_id
 }
+
+# Artifact Registry Repository
+output "artifact_registry_repository" {
+  description = "Artifact Registry repository name"
+  value       = google_artifact_registry_repository.backend.name
+}
+
+# Docker Image URL base
+output "docker_image_url_base" {
+  description = "Base URL for Docker images in Artifact Registry"
+  value       = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.backend.repository_id}"
+}
