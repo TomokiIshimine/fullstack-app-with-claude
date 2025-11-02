@@ -41,6 +41,16 @@ def create_tables():
     for table_name in Base.metadata.tables.keys():
         print(f"  - {table_name}")
 
+    return 0
+
 
 if __name__ == "__main__":
-    create_tables()
+    try:
+        exit_code = create_tables()
+        sys.exit(exit_code)
+    except Exception as e:
+        print(f"❌ Error creating tables: {e}", file=sys.stderr)
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
