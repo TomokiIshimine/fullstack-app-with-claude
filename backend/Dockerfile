@@ -55,6 +55,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
     nginx \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed Python packages from backend-builder
