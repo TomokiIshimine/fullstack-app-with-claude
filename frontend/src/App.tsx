@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { LoginPage } from '@/pages/LoginPage'
 import { TodoListPage } from '@/pages/TodoListPage'
@@ -7,7 +7,7 @@ import '@/styles/todo.css'
 
 function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -22,7 +22,7 @@ function App() {
           <Route path="/" element={<Navigate to="/todos" replace />} />
         </Routes>
       </AuthProvider>
-    </HashRouter>
+    </BrowserRouter>
   )
 }
 
