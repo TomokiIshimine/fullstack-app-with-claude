@@ -1,5 +1,8 @@
 # Cloud Storage bucket for frontend static hosting
+# NOTE: Currently disabled as frontend is served from Cloud Run container
+# Uncomment this file if you want to use Cloud Storage for static hosting again
 
+/*
 # Random suffix for bucket name to ensure global uniqueness
 resource "random_id" "bucket_suffix" {
   byte_length = 4
@@ -90,3 +93,4 @@ resource "google_storage_bucket_object" "index_html" {
     ]
   }
 }
+*/
