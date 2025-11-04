@@ -133,17 +133,29 @@ jobs:
 
       - name: Run Health Check
         run: |
-          echo "Running health check..."
-          sleep 10
+          echo "Running health check with retry logic..."
           HEALTH_URL="${{ needs.terraform.outputs.cloud_run_url }}/api/health"
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL")
+          MAX_RETRIES=12
+          RETRY_INTERVAL=5
 
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ Health check passed (HTTP $HTTP_STATUS)"
-          else
-            echo "❌ Health check failed (HTTP $HTTP_STATUS)"
-            exit 1
-          fi
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i/$MAX_RETRIES: Checking $HEALTH_URL"
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" --max-time 10)
+
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "✅ Health check passed (HTTP $HTTP_STATUS) after $i attempt(s)"
+              exit 0
+            else
+              echo "⚠️  Health check returned HTTP $HTTP_STATUS"
+              if [ $i -lt $MAX_RETRIES ]; then
+                echo "   Retrying in ${RETRY_INTERVAL}s..."
+                sleep $RETRY_INTERVAL
+              fi
+            fi
+          done
+
+          echo "❌ Health check failed after $MAX_RETRIES attempts"
+          exit 1
 
       - name: Display Application URLs
         run: |
