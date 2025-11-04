@@ -1,8 +1,31 @@
-# Multi-stage build for Python backend with Poetry
-# Build stage
-FROM python:3.12-slim AS builder
+# Multi-stage build for full-stack application
+# Stage 1: Build frontend
+FROM node:20-slim AS frontend-builder
 
-# Set working directory
+WORKDIR /frontend
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Note: Build context must be the repository root
+# Copy frontend dependency files
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source code
+COPY frontend ./
+
+# Build frontend with API URL pointing to same domain
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
+RUN pnpm run build
+
+# Stage 2: Build backend dependencies
+FROM python:3.12-slim AS backend-builder
+
 WORKDIR /app
 
 # Install system dependencies for building Python packages
@@ -15,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir poetry==2.0.1
 
 # Copy dependency files
-COPY pyproject.toml poetry.lock* ./
+COPY backend/pyproject.toml backend/poetry.lock* ./
 
 # Configure Poetry to not create a virtual environment
 RUN poetry config virtualenvs.create false
@@ -23,39 +46,51 @@ RUN poetry config virtualenvs.create false
 # Install dependencies (production only)
 RUN poetry install --only main --no-interaction --no-ansi
 
-# Runtime stage
+# Stage 3: Runtime with Nginx + Gunicorn
 FROM python:3.12-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install runtime system dependencies
+# Install runtime system dependencies and Nginx
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed Python packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy installed Python packages from backend-builder
+COPY --from=backend-builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=backend-builder /usr/local/bin /usr/local/bin
+
+# Copy frontend build output from frontend-builder
+COPY --from=frontend-builder /frontend/dist /app/static
 
 # Copy application code
-COPY app ./app
-COPY scripts ./scripts
+COPY backend/app ./app
+COPY backend/scripts ./scripts
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# Copy Nginx configuration
+COPY backend/nginx.conf /etc/nginx/sites-available/default
+RUN rm -f /etc/nginx/sites-enabled/default && \
+    ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# Expose port 5000
+# Copy entrypoint script
+COPY backend/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+# Create log directories
+RUN mkdir -p /var/log/nginx && \
+    chmod -R 755 /var/log/nginx
+
+# Expose port 5000 (Nginx)
 EXPOSE 5000
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=app.main:app
 
-# Health check
+# Health check (via Nginx)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"
 
-# Run gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "app.main:app"]
+# Run entrypoint script
+CMD ["./entrypoint.sh"]

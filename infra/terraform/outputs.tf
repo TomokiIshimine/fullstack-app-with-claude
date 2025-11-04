@@ -1,6 +1,8 @@
 # Terraform outputs
 # デプロイ後にこれらの値を参照できます
 
+# Cloud Storage outputs (currently disabled as frontend is served from Cloud Run)
+/*
 # Cloud Storage バケット名
 output "frontend_bucket_name" {
   description = "Frontend Cloud Storage bucket name"
@@ -18,6 +20,7 @@ output "frontend_bucket_url" {
   description = "Frontend bucket URL for gsutil"
   value       = "gs://${google_storage_bucket.frontend.name}"
 }
+*/
 
 # Cloud SQL インスタンス名
 output "cloud_sql_instance_name" {
