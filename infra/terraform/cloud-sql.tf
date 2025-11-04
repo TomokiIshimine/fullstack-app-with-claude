@@ -19,7 +19,7 @@ resource "google_sql_database_instance" "main" {
     # IP configuration - Private IP only for security
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.vpc.id
+      private_network = google_compute_network.vpc.self_link
       require_ssl     = true
     }
 
