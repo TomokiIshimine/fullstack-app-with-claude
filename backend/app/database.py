@@ -56,7 +56,8 @@ def _create_connection_factory(cloud_sql_config: CloudSQLConfig, connector: Conn
                 conn_args["password"] = cloud_sql_config.db_pass
             logger.debug("Using password authentication for Cloud SQL connection")
 
-        return connector.connect(cloud_sql_config.instance_connection_name, "pymysql", **conn_args)
+        logger.debug(f"Connecting to Cloud SQL using IP type: {cloud_sql_config.ip_type}")
+        return connector.connect(cloud_sql_config.instance_connection_name, "pymysql", ip_type=cloud_sql_config.ip_type, **conn_args)
 
     return getconn
 

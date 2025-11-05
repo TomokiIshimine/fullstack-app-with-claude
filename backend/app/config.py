@@ -34,6 +34,7 @@ class CloudSQLConfig:
     db_name: str
     db_pass: str | None
     enable_iam_auth: bool
+    ip_type: str = "PRIVATE"  # PRIVATE or PUBLIC (PRIMARY)
 
 
 def load_database_config() -> DatabaseConfig:
@@ -61,6 +62,7 @@ def load_cloud_sql_config() -> CloudSQLConfig:
     db_user = os.getenv("DB_USER")
     db_name = os.getenv("DB_NAME")
     enable_iam_auth = os.getenv("ENABLE_IAM_AUTH", "false").lower() == "true"
+    ip_type = os.getenv("CLOUDSQL_IP_TYPE", "PRIVATE").upper()
 
     if not all([instance_connection_name, db_user, db_name]):
         raise ValueError("CLOUDSQL_INSTANCE, DB_USER, and DB_NAME must be set when USE_CLOUD_SQL_CONNECTOR=true")
@@ -70,12 +72,17 @@ def load_cloud_sql_config() -> CloudSQLConfig:
     if not enable_iam_auth and not db_pass:
         raise ValueError("DB_PASS must be set when ENABLE_IAM_AUTH=false")
 
+    # Validate IP type
+    if ip_type not in ("PRIVATE", "PUBLIC"):
+        raise ValueError(f"CLOUDSQL_IP_TYPE must be 'PRIVATE' or 'PUBLIC', got: {ip_type}")
+
     return CloudSQLConfig(
         instance_connection_name=instance_connection_name,  # type: ignore
         db_user=db_user,  # type: ignore
         db_name=db_name,  # type: ignore
         db_pass=db_pass,
         enable_iam_auth=enable_iam_auth,
+        ip_type=ip_type,
     )
 
 
