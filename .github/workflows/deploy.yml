@@ -20,8 +20,8 @@ jobs:
     name: "CI (Lint & Test)"
     uses: ./.github/workflows/ci.yml
 
-  terraform:
-    name: Terraform Apply
+  get-terraform-outputs:
+    name: Get Infrastructure Info
     runs-on: ubuntu-latest
     needs: ci
     defaults:
@@ -52,24 +52,10 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Terraform Init
+      - name: Terraform Init (read-only)
         run: terraform init
 
-      - name: Terraform Plan
-        run: |
-          terraform plan -no-color -input=false \
-            -var="cloud_sql_password=${{ secrets.DATABASE_PASSWORD }}" \
-            -var="flask_secret_key=${{ secrets.FLASK_SECRET_KEY }}" \
-            -out=tfplan
-
-      - name: Show Terraform Plan
-        run: terraform show -no-color tfplan
-
-      - name: Terraform Apply
-        run: |
-          terraform apply -auto-approve -input=false tfplan
-
-      - name: Save Terraform Outputs
+      - name: Read Terraform Outputs
         id: outputs
         run: |
           echo "cloud_run_url=$(terraform output -raw cloud_run_url)" >> $GITHUB_OUTPUT
@@ -81,7 +67,7 @@ jobs:
   deploy-backend:
     name: "Deploy Backend"
     runs-on: ubuntu-latest
-    needs: terraform
+    needs: get-terraform-outputs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -103,28 +89,28 @@ jobs:
         run: |
           docker build \
             --build-arg VITE_API_BASE_URL=/api \
-            -t ${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
-            -t ${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:latest \
+            -t ${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:latest \
             -f backend/Dockerfile \
             .
 
       - name: Push Docker image to Artifact Registry
         run: |
-          docker push ${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+          docker push ${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:latest
 
       - name: Update Migration Job Image
         run: |
-          gcloud run jobs update ${{ needs.terraform.outputs.db_migrate_job_name }} \
-            --image=${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
-            --region=${{ needs.terraform.outputs.cloud_run_location }} \
+          gcloud run jobs update ${{ needs.get-terraform-outputs.outputs.db_migrate_job_name }} \
+            --image=${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+            --region=${{ needs.get-terraform-outputs.outputs.cloud_run_location }} \
             --project=${{ env.GCP_PROJECT_ID }}
 
       - name: Run Database Migrations
         run: |
           echo "🔄 Running database migrations..."
-          gcloud run jobs execute ${{ needs.terraform.outputs.db_migrate_job_name }} \
-            --region=${{ needs.terraform.outputs.cloud_run_location }} \
+          gcloud run jobs execute ${{ needs.get-terraform-outputs.outputs.db_migrate_job_name }} \
+            --region=${{ needs.get-terraform-outputs.outputs.cloud_run_location }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --wait
 
@@ -132,17 +118,17 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy ${{ needs.terraform.outputs.cloud_run_service_name }} \
-            --image=${{ needs.terraform.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+          gcloud run deploy ${{ needs.get-terraform-outputs.outputs.cloud_run_service_name }} \
+            --image=${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
             --platform=managed \
-            --region=${{ needs.terraform.outputs.cloud_run_location }} \
+            --region=${{ needs.get-terraform-outputs.outputs.cloud_run_location }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --quiet
 
       - name: Run Health Check
         run: |
           echo "Running health check with retry logic..."
-          HEALTH_URL="${{ needs.terraform.outputs.cloud_run_url }}/api/health"
+          HEALTH_URL="${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/api/health"
           MAX_RETRIES=12
           RETRY_INTERVAL=5
 
@@ -168,7 +154,7 @@ jobs:
       - name: Display Application URLs
         run: |
           echo "🚀 Full-stack application deployed successfully!"
-          echo "🌐 Application URL: ${{ needs.terraform.outputs.cloud_run_url }}"
-          echo "📱 Frontend: ${{ needs.terraform.outputs.cloud_run_url }}/"
-          echo "⚙️  Backend API: ${{ needs.terraform.outputs.cloud_run_url }}/api"
-          echo "🏥 Health Check: ${{ needs.terraform.outputs.cloud_run_url }}/api/health"
+          echo "🌐 Application URL: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}"
+          echo "📱 Frontend: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/"
+          echo "⚙️  Backend API: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/api"
+          echo "🏥 Health Check: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/api/health"
