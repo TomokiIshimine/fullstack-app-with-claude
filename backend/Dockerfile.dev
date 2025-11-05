@@ -1,0 +1,35 @@
+# Development Dockerfile for Backend
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies for building Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    default-libmysqlclient-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry==2.0.1
+
+# Configure Poetry to not create a virtual environment
+# (since we're already in a container)
+RUN poetry config virtualenvs.create false
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies
+# Using --no-root to avoid installing the project itself
+# Dependencies will be installed, but the project code is mounted as a volume
+RUN poetry install --no-root --no-interaction --no-ansi
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=app.main:app
+
+# Expose port
+EXPOSE 5000
+
+# Default command (can be overridden in docker-compose.yml)
+CMD ["poetry", "run", "flask", "run", "--host=0.0.0.0", "--port=5000"]

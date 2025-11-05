@@ -1,10 +1,13 @@
 services:
   frontend:
-    image: node:20-alpine
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
     working_dir: /app
     volumes:
       - ../frontend:/app
-    command: npm run dev -- --host 0.0.0.0 --port 5173
+      - /app/node_modules
+    command: pnpm run dev --host 0.0.0.0 --port 5173
     ports:
       - "5173:5173"
     environment:
@@ -14,17 +17,18 @@ services:
       - app-network
 
   backend:
-    image: python:3.12-slim
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
     working_dir: /app
     volumes:
       - ../backend:/app
-    command: >-
-      sh -c "pip install --no-cache-dir poetry && poetry install && poetry run flask run --host=0.0.0.0 --port=5000"
+    command: poetry run flask run --host=0.0.0.0 --port=5000
     ports:
       - "5000:5000"
     environment:
       - FLASK_APP=${FLASK_APP:-app.main:app}
-      - FLASK_ENV=development
+      - FLASK_DEBUG=1
       - DATABASE_URL=mysql+pymysql://${MYSQL_USER:-app_user}:${MYSQL_PASSWORD:-example-password}@db:3306/${MYSQL_DATABASE:-app_db}
     depends_on:
       db:
