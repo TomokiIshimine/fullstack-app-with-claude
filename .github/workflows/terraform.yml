@@ -70,6 +70,7 @@ jobs:
           terraform plan -no-color -input=false \
             -var="cloud_sql_password=${{ secrets.DATABASE_PASSWORD }}" \
             -var="flask_secret_key=${{ secrets.FLASK_SECRET_KEY }}" \
+            -var="cloud_sql_deletion_protection=true" \
             -out=tfplan 2>&1 | tee plan_output.txt
           exitcode=${PIPESTATUS[0]}
           echo "exitcode=${exitcode}" >> $GITHUB_OUTPUT

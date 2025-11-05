@@ -70,8 +70,10 @@ resource "google_sql_database_instance" "main" {
     }
   }
 
-  # Deletion protection - Configurable per environment (should be true for production)
-  deletion_protection = var.cloud_sql_deletion_protection
+  # Deletion protection - Auto-enabled for production, or can be explicitly set
+  # If cloud_sql_deletion_protection is set explicitly, use that value
+  # Otherwise, automatically enable for production environment
+  deletion_protection = var.cloud_sql_deletion_protection != null ? var.cloud_sql_deletion_protection : (var.environment == "production")
 
   depends_on = [
     google_service_networking_connection.private_vpc_connection,
