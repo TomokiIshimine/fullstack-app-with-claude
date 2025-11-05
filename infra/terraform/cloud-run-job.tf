@@ -12,9 +12,9 @@ resource "google_cloud_run_v2_job" "db_migrate" {
         # Initial dummy image, will be updated by GitHub Actions
         image = "gcr.io/cloudrun/hello"
 
-        # Migration command
-        command = ["python"]
-        args    = ["scripts/create_tables.py"]
+        # Migration command - run shell script that creates tables and grants IAM permissions
+        command = ["/bin/bash"]
+        args    = ["scripts/run_migrations.sh"]
 
         # Cloud SQL Connector configuration
         env {
@@ -27,9 +27,15 @@ resource "google_cloud_run_v2_job" "db_migrate" {
           value = google_sql_database_instance.main.connection_name
         }
 
+        # Use password-based admin user for migrations (has full privileges)
         env {
           name  = "DB_USER"
-          value = google_service_account.cloud_run.email
+          value = var.cloud_sql_user
+        }
+
+        env {
+          name  = "DB_PASS"
+          value = var.cloud_sql_password
         }
 
         env {
@@ -37,14 +43,21 @@ resource "google_cloud_run_v2_job" "db_migrate" {
           value = var.cloud_sql_database_name
         }
 
+        # Use password authentication for migrations (not IAM)
         env {
           name  = "ENABLE_IAM_AUTH"
-          value = "true"
+          value = "false"
         }
 
         env {
           name  = "CLOUDSQL_IP_TYPE"
           value = "PRIVATE"
+        }
+
+        # IAM user email to grant permissions to (for application access)
+        env {
+          name  = "IAM_USER_EMAIL"
+          value = google_service_account.cloud_run.email
         }
 
         env {
