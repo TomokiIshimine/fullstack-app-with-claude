@@ -148,7 +148,9 @@ resource "google_cloud_run_service" "backend" {
   depends_on = [
     google_project_service.run,
     google_sql_database_instance.main,
-    google_vpc_access_connector.connector
+    google_vpc_access_connector.connector,
+    google_secret_manager_secret_version.jwt_secret_key,
+    google_secret_manager_secret_version.flask_secret_key
   ]
 
   # ライフサイクル設定 (イメージはGitHub Actionsで更新される)
