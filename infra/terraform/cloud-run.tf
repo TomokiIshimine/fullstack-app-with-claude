@@ -93,6 +93,27 @@ resource "google_cloud_run_service" "backend" {
           value = "PRIVATE"
         }
 
+        # Redis configuration for rate limiting
+        env {
+          name  = "REDIS_HOST"
+          value = google_redis_instance.rate_limiter.host
+        }
+
+        env {
+          name  = "REDIS_PORT"
+          value = tostring(google_redis_instance.rate_limiter.port)
+        }
+
+        env {
+          name  = "REDIS_PASSWORD"
+          value = google_redis_instance.rate_limiter.auth_string
+        }
+
+        env {
+          name  = "RATE_LIMIT_ENABLED"
+          value = "true"
+        }
+
         # リソース制限
         resources {
           limits = {
@@ -148,7 +169,8 @@ resource "google_cloud_run_service" "backend" {
   depends_on = [
     google_project_service.run,
     google_sql_database_instance.main,
-    google_vpc_access_connector.connector
+    google_vpc_access_connector.connector,
+    google_redis_instance.rate_limiter
   ]
 
   # ライフサイクル設定 (イメージはGitHub Actionsで更新される)

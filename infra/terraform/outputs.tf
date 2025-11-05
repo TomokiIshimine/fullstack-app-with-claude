@@ -118,3 +118,22 @@ output "db_migrate_job_name" {
   description = "Cloud Run Job name for database migrations"
   value       = google_cloud_run_v2_job.db_migrate.name
 }
+
+# Redis instance host
+output "redis_host" {
+  description = "Redis instance host for rate limiting"
+  value       = google_redis_instance.rate_limiter.host
+}
+
+# Redis instance port
+output "redis_port" {
+  description = "Redis instance port"
+  value       = google_redis_instance.rate_limiter.port
+}
+
+# Redis auth string (sensitive)
+output "redis_auth_string" {
+  description = "Redis AUTH string for authentication"
+  value       = google_redis_instance.rate_limiter.auth_string
+  sensitive   = true
+}
