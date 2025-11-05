@@ -44,6 +44,7 @@ output "cloud_sql_database_name" {
 output "cloud_sql_public_ip" {
   description = "Cloud SQL public IP address"
   value       = google_sql_database_instance.main.public_ip_address
+  sensitive   = true
 }
 
 # Cloud SQL プライベートIPアドレス

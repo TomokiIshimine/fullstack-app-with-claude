@@ -70,8 +70,10 @@ resource "google_sql_database_instance" "main" {
     }
   }
 
-  # Deletion protection - Disabled for development
-  deletion_protection = false
+  # Deletion protection - Auto-enabled for production, or can be explicitly set
+  # If cloud_sql_deletion_protection is set explicitly, use that value
+  # Otherwise, automatically enable for production environment
+  deletion_protection = var.cloud_sql_deletion_protection != null ? var.cloud_sql_deletion_protection : (var.environment == "production")
 
   depends_on = [
     google_service_networking_connection.private_vpc_connection,
@@ -89,7 +91,11 @@ resource "google_sql_database" "database" {
   collation = "utf8mb4_unicode_ci"
 }
 
-# Database user creation (password-based, kept for backward compatibility)
+# Database user creation (password-based, for migration purposes only)
+# This user is used exclusively by the Cloud Run Job (db_migrate) to:
+# 1. Create database tables via scripts/create_tables.py
+# 2. Grant permissions to the IAM user for application access
+# The application itself (Cloud Run service) uses IAM authentication via google_sql_user.iam_user
 resource "google_sql_user" "user" {
   name     = var.cloud_sql_user
   instance = google_sql_database_instance.main.name
@@ -153,7 +159,7 @@ resource "google_service_networking_connection" "private_vpc_connection" {
 
 # VPC Access Connector for Cloud Run to access Cloud SQL via private IP
 resource "google_vpc_access_connector" "connector" {
-  name          = "fullstack-app-vpc-conn" # Must match pattern ^[a-z][-a-z0-9]{0,23}[a-z0-9]$
+  name          = "${var.app_name}-vpc-conn" # Must match pattern ^[a-z][-a-z0-9]{0,23}[a-z0-9]$
   project       = var.gcp_project_id
   region        = var.gcp_region
   network       = google_compute_network.vpc.name

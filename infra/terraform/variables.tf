@@ -81,3 +81,11 @@ variable "flask_secret_key" {
   type        = string
   sensitive   = true
 }
+
+# Cloud SQL 削除保護
+variable "cloud_sql_deletion_protection" {
+  description = "Enable deletion protection for Cloud SQL instance. If not set (null), automatically determined by environment (true for production, false otherwise). Can be explicitly set to override automatic behavior."
+  type        = bool
+  default     = null
+  nullable    = true
+}
