@@ -53,7 +53,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Terraform Init (read-only)
-        run: terraform init
+        run: terraform init -upgrade
 
       - name: Read Terraform Outputs
         id: outputs
