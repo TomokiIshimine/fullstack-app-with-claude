@@ -43,6 +43,11 @@ resource "google_cloud_run_v2_job" "db_migrate" {
         }
 
         env {
+          name  = "CLOUDSQL_IP_TYPE"
+          value = "PRIVATE"
+        }
+
+        env {
           name  = "FLASK_ENV"
           value = "production"
         }

@@ -406,6 +406,11 @@ CLOUDSQL_INSTANCE=project-id:region:instance-name
 DB_USER=your-db-user
 DB_NAME=your-database-name
 
+# IP type: PRIVATE (default) or PUBLIC
+# Use PRIVATE when connecting via VPC (recommended for security)
+# Use PUBLIC when connecting from outside GCP
+CLOUDSQL_IP_TYPE=PRIVATE
+
 # Authentication method (choose one):
 # Option 1: IAM Authentication (recommended for GCP environments)
 ENABLE_IAM_AUTH=true

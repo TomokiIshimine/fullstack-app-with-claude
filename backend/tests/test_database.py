@@ -90,6 +90,7 @@ class TestCloudSQLConfig:
         assert config.db_name == "testdb"
         assert config.db_pass is None
         assert config.enable_iam_auth is True
+        assert config.ip_type == "PRIVATE"  # Default value
 
     def test_load_cloud_sql_config_missing_required_fields(self, monkeypatch: pytest.MonkeyPatch):
         """Test that ValueError is raised when required fields are missing."""
@@ -109,6 +110,31 @@ class TestCloudSQLConfig:
         monkeypatch.delenv("DB_PASS", raising=False)
 
         with pytest.raises(ValueError, match="DB_PASS must be set when ENABLE_IAM_AUTH=false"):
+            load_cloud_sql_config()
+
+    def test_load_cloud_sql_config_custom_ip_type(self, monkeypatch: pytest.MonkeyPatch):
+        """Test Cloud SQL config with custom IP type."""
+        monkeypatch.setenv("CLOUDSQL_INSTANCE", "project:region:instance")
+        monkeypatch.setenv("DB_USER", "testuser")
+        monkeypatch.setenv("DB_NAME", "testdb")
+        monkeypatch.setenv("DB_PASS", "password")
+        monkeypatch.setenv("ENABLE_IAM_AUTH", "false")
+        monkeypatch.setenv("CLOUDSQL_IP_TYPE", "public")  # lowercase
+
+        config = load_cloud_sql_config()
+
+        assert config.ip_type == "PUBLIC"  # Should be uppercased
+
+    def test_load_cloud_sql_config_invalid_ip_type(self, monkeypatch: pytest.MonkeyPatch):
+        """Test that ValueError is raised for invalid IP type."""
+        monkeypatch.setenv("CLOUDSQL_INSTANCE", "project:region:instance")
+        monkeypatch.setenv("DB_USER", "testuser")
+        monkeypatch.setenv("DB_NAME", "testdb")
+        monkeypatch.setenv("DB_PASS", "password")
+        monkeypatch.setenv("ENABLE_IAM_AUTH", "false")
+        monkeypatch.setenv("CLOUDSQL_IP_TYPE", "INVALID")
+
+        with pytest.raises(ValueError, match="CLOUDSQL_IP_TYPE must be 'PRIVATE' or 'PUBLIC'"):
             load_cloud_sql_config()
 
 
@@ -250,6 +276,7 @@ class TestCloudSQLEngine:
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
+            ip_type="PRIVATE",
             user="testuser@project.iam",
             db="testdb",
             enable_iam_auth=True,
@@ -299,6 +326,7 @@ class TestCloudSQLEngine:
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
+            ip_type="PRIVATE",
             user="testuser",
             db="testdb",
             password="testpassword",
@@ -354,6 +382,7 @@ class TestConnectionFactory:
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
+            ip_type="PRIVATE",
             user="testuser@project.iam",
             db="testdb",
             enable_iam_auth=True,
@@ -381,6 +410,7 @@ class TestConnectionFactory:
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
+            ip_type="PRIVATE",
             user="testuser",
             db="testdb",
             password="secret123",
