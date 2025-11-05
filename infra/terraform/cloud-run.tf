@@ -35,16 +35,26 @@ resource "google_cloud_run_service" "backend" {
           value = "production"
         }
 
-        # JWT認証用のシークレットキー（必須）
+        # JWT認証用のシークレットキー（Secret Managerから取得）
         env {
-          name  = "JWT_SECRET_KEY"
-          value = var.flask_secret_key
+          name = "JWT_SECRET_KEY"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.jwt_secret_key.secret_id
+              key  = "latest"
+            }
+          }
         }
 
-        # Flaskのシークレットキー（将来のセッション管理用）
+        # Flaskのシークレットキー（Secret Managerから取得）
         env {
-          name  = "FLASK_SECRET_KEY"
-          value = var.flask_secret_key
+          name = "FLASK_SECRET_KEY"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.flask_secret_key.secret_id
+              key  = "latest"
+            }
+          }
         }
 
         # CORS設定用のフロントエンドURL
@@ -81,12 +91,6 @@ resource "google_cloud_run_service" "backend" {
         env {
           name  = "CLOUDSQL_IP_TYPE"
           value = "PRIVATE"
-        }
-
-        # Legacy DATABASE_URL (kept for reference, not used when USE_CLOUD_SQL_CONNECTOR=true)
-        env {
-          name  = "DATABASE_URL"
-          value = "mysql+pymysql://${var.cloud_sql_user}:${var.cloud_sql_password}@${google_sql_database_instance.main.private_ip_address}/${var.cloud_sql_database_name}?charset=utf8mb4"
         }
 
         # リソース制限
