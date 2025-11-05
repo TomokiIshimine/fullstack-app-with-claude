@@ -5,7 +5,23 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from app.config import CloudSQLConfig, DatabaseConfig, load_cloud_sql_config, load_database_config
-from app.database import _create_connection_factory, _create_standard_engine, _mask_password_in_uri, cleanup_connector, init_engine
+from app.database import (
+    _convert_ip_type_to_enum,
+    _create_connection_factory,
+    _create_standard_engine,
+    _mask_password_in_uri,
+    cleanup_connector,
+    init_engine,
+)
+
+# Import IPTypes for testing
+try:
+    from google.cloud.sql.connector import IPTypes
+
+    IPTYPES_AVAILABLE = True
+except ImportError:
+    IPTYPES_AVAILABLE = False
+    IPTypes = None  # type: ignore
 
 
 class TestDatabaseConfig:
@@ -272,11 +288,16 @@ class TestCloudSQLEngine:
         creator_func = engine.pool._creator
         creator_func()
 
-        # Verify connector.connect was called with IAM auth
+        # Verify connector.connect was called with IAM auth and IPTypes.PRIVATE
+        if IPTYPES_AVAILABLE and IPTypes:
+            expected_ip_type = IPTypes.PRIVATE
+        else:
+            expected_ip_type = "PRIVATE"  # Fallback for test environment without IPTypes
+
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
-            ip_type="PRIVATE",
+            ip_type=expected_ip_type,
             user="testuser@project.iam",
             db="testdb",
             enable_iam_auth=True,
@@ -322,11 +343,16 @@ class TestCloudSQLEngine:
         creator_func = engine.pool._creator
         creator_func()
 
-        # Verify connector.connect was called with password
+        # Verify connector.connect was called with password and IPTypes.PRIVATE
+        if IPTYPES_AVAILABLE and IPTypes:
+            expected_ip_type = IPTypes.PRIVATE
+        else:
+            expected_ip_type = "PRIVATE"
+
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
-            ip_type="PRIVATE",
+            ip_type=expected_ip_type,
             user="testuser",
             db="testdb",
             password="testpassword",
@@ -357,6 +383,43 @@ class TestCloudSQLEngine:
             _create_cloud_sql_engine(db_config, cloud_sql_config)
 
 
+class TestIPTypeConversion:
+    """Tests for IP type string to enum conversion."""
+
+    @patch("app.database.CLOUD_SQL_AVAILABLE", True)
+    @patch("app.database.IPTypes")
+    def test_convert_ip_type_private(self, mock_iptypes: Mock):
+        """Test converting 'PRIVATE' string to IPTypes.PRIVATE."""
+        mock_iptypes.PRIVATE = "IPTypes.PRIVATE"
+        mock_iptypes.PUBLIC = "IPTypes.PUBLIC"
+
+        result = _convert_ip_type_to_enum("PRIVATE")
+        assert result == "IPTypes.PRIVATE"
+
+    @patch("app.database.CLOUD_SQL_AVAILABLE", True)
+    @patch("app.database.IPTypes")
+    def test_convert_ip_type_public(self, mock_iptypes: Mock):
+        """Test converting 'PUBLIC' string to IPTypes.PUBLIC."""
+        mock_iptypes.PRIVATE = "IPTypes.PRIVATE"
+        mock_iptypes.PUBLIC = "IPTypes.PUBLIC"
+
+        result = _convert_ip_type_to_enum("PUBLIC")
+        assert result == "IPTypes.PUBLIC"
+
+    @patch("app.database.CLOUD_SQL_AVAILABLE", True)
+    @patch("app.database.IPTypes")
+    def test_convert_ip_type_invalid(self, mock_iptypes: Mock):
+        """Test that ValueError is raised for invalid IP type."""
+        with pytest.raises(ValueError, match="Invalid IP type"):
+            _convert_ip_type_to_enum("INVALID")
+
+    @patch("app.database.CLOUD_SQL_AVAILABLE", False)
+    def test_convert_ip_type_not_available(self):
+        """Test that RuntimeError is raised when Cloud SQL Connector is not available."""
+        with pytest.raises(RuntimeError, match="Cloud SQL Connector is not available"):
+            _convert_ip_type_to_enum("PRIVATE")
+
+
 class TestConnectionFactory:
     """Tests for connection factory function."""
 
@@ -379,10 +442,16 @@ class TestConnectionFactory:
         result = getconn()
 
         assert result == mock_conn
+
+        if IPTYPES_AVAILABLE and IPTypes:
+            expected_ip_type = IPTypes.PRIVATE
+        else:
+            expected_ip_type = "PRIVATE"
+
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
-            ip_type="PRIVATE",
+            ip_type=expected_ip_type,
             user="testuser@project.iam",
             db="testdb",
             enable_iam_auth=True,
@@ -407,10 +476,16 @@ class TestConnectionFactory:
         result = getconn()
 
         assert result == mock_conn
+
+        if IPTYPES_AVAILABLE and IPTypes:
+            expected_ip_type = IPTypes.PRIVATE
+        else:
+            expected_ip_type = "PRIVATE"
+
         mock_connector.connect.assert_called_once_with(
             "project:region:instance",
             "pymysql",
-            ip_type="PRIVATE",
+            ip_type=expected_ip_type,
             user="testuser",
             db="testdb",
             password="secret123",
