@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, Response, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import TooManyRequests
@@ -71,7 +71,7 @@ limiter = Limiter(
 )
 
 
-def rate_limit_error_handler(e: TooManyRequests) -> tuple[dict, int]:
+def rate_limit_error_handler(e: TooManyRequests) -> tuple[Response, int]:
     """
     Custom error handler for rate limit exceeded (429) responses.
 
@@ -106,9 +106,12 @@ def init_limiter(app: Flask) -> Limiter:
     app.register_error_handler(429, rate_limit_error_handler)
 
     # Log the storage backend being used
-    storage_uri = limiter._storage.storage_uri if hasattr(limiter._storage, 'storage_uri') else 'memory'
-    if 'redis' in str(storage_uri):
-        logger.info("Rate limiter initialized with Redis backend")
+    if limiter._storage and hasattr(limiter._storage, 'storage_uri'):
+        storage_uri = limiter._storage.storage_uri
+        if 'redis' in str(storage_uri):
+            logger.info("Rate limiter initialized with Redis backend")
+        else:
+            logger.info("Rate limiter initialized with in-memory backend")
     else:
         logger.info("Rate limiter initialized with in-memory backend")
 
