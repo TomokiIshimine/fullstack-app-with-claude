@@ -155,6 +155,29 @@ pnpm -C frontend run commitlint -- --help  # コミットメッセージ形式�
 - [backend/CLAUDE.md](backend/CLAUDE.md) - Backend 規約
 - [frontend/CLAUDE.md](frontend/CLAUDE.md) - Frontend 規約
 
+## 本番環境デプロイ
+
+### Google Cloud SQL 対応
+
+このアプリケーションは Google Cloud SQL への安全な接続をサポートしています：
+
+**主な機能:**
+- 🔒 **自動 SSL/TLS 暗号化** - 証明書管理不要
+- 🔑 **IAM 認証サポート** - パスワードレス認証が可能
+- 🔄 **自動接続プール管理** - 最適なリソース利用
+- ⚡ **自動再接続** - 一時的な障害からの復旧
+
+**設定例:**
+```env
+USE_CLOUD_SQL_CONNECTOR=true
+CLOUDSQL_INSTANCE=my-project:asia-northeast1:my-instance
+DB_USER=my-service-account@my-project.iam
+DB_NAME=app_db
+ENABLE_IAM_AUTH=true
+```
+
+詳細な設定方法と環境変数については、[docs/00_development.md - Cloud SQL 接続設定](docs/00_development.md#cloud-sql-接続設定本番環境向け) を参照してください。
+
 ## ライセンス
 
 このプロジェクトのライセンスについては、プロジェクト管理者にお問い合わせください。

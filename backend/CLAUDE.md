@@ -376,15 +376,76 @@ app.logger.error(f"Unhandled application error: {type(err).__name__}: {err}", ex
 
 **Default connection**: `mysql+pymysql://user:password@db:3306/app_db`
 
-Override via `DATABASE_URL` environment variable. Backend loads `.env` file from `backend/.env` if it exists (`app/config.py`).
+The backend supports two connection modes:
+1. **Standard Connection** (default): Direct connection using `DATABASE_URL`
+2. **Cloud SQL Connector**: Secure connection to Google Cloud SQL with SSL/TLS and IAM authentication support
+
+Backend loads `.env` file from `backend/.env` if it exists (`app/config.py`).
 
 ### Environment Variables
+
+#### Standard Connection Mode (Local Development)
 
 Create a `backend/.env` file for local development:
 
 ```env
 DATABASE_URL=mysql+pymysql://user:password@localhost:3306/app_db
 FLASK_ENV=development
+```
+
+#### Cloud SQL Connector Mode (Production/Cloud)
+
+For Google Cloud SQL connections with enhanced security:
+
+```env
+# Enable Cloud SQL Connector
+USE_CLOUD_SQL_CONNECTOR=true
+
+# Cloud SQL connection details
+CLOUDSQL_INSTANCE=project-id:region:instance-name
+DB_USER=your-db-user
+DB_NAME=your-database-name
+
+# Authentication method (choose one):
+# Option 1: IAM Authentication (recommended for GCP environments)
+ENABLE_IAM_AUTH=true
+
+# Option 2: Password Authentication
+ENABLE_IAM_AUTH=false
+DB_PASS=your-db-password
+
+# Optional: Connection pool configuration
+DB_POOL_SIZE=5           # Default: 5
+DB_MAX_OVERFLOW=10       # Default: 10
+```
+
+**Authentication Methods:**
+
+- **IAM Authentication** (`ENABLE_IAM_AUTH=true`):
+  - Uses Google Cloud IAM for authentication
+  - No password required
+  - Recommended for Cloud Run, Cloud Functions, GKE
+  - User must have Cloud SQL Client role
+  - Example user: `serviceaccount@project.iam`
+
+- **Password Authentication** (`ENABLE_IAM_AUTH=false`):
+  - Traditional username/password authentication
+  - Requires `DB_PASS` environment variable
+  - Useful for local testing or non-GCP environments
+
+**Connection Security:**
+
+The Cloud SQL Connector provides:
+- Automatic SSL/TLS encryption
+- Automatic credential refresh for IAM auth
+- Connection pooling and retry logic
+- No need to manage SSL certificates manually
+
+**Installation:**
+
+Cloud SQL Connector dependencies are included in `pyproject.toml`:
+```toml
+cloud-sql-python-connector[pymysql] (>=1.0,<2.0)
 ```
 
 ### Schema Management

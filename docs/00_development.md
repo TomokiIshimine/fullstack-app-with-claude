@@ -60,6 +60,45 @@ LOG_LEVEL=DEBUG
 JWT_SECRET_KEY=your-secret-key-here
 ```
 
+### Cloud SQL 接続設定（本番環境向け）
+
+Google Cloud SQL に接続する場合は、以下の環境変数を設定します:
+
+| 環境変数 | 必須 | デフォルト | 説明 |
+|---------|------|-----------|------|
+| `USE_CLOUD_SQL_CONNECTOR` | いいえ | `false` | Cloud SQL Connector を有効化（`true`/`false`） |
+| `CLOUDSQL_INSTANCE` | はい* | - | Cloud SQL インスタンス名（`project:region:instance`形式） |
+| `DB_USER` | はい* | - | データベースユーザー名 |
+| `DB_NAME` | はい* | - | データベース名 |
+| `ENABLE_IAM_AUTH` | いいえ | `false` | IAM 認証を使用（`true`/`false`） |
+| `DB_PASS` | 条件付き** | - | データベースパスワード |
+| `DB_POOL_SIZE` | いいえ | `5` | 接続プールサイズ |
+| `DB_MAX_OVERFLOW` | いいえ | `10` | 最大オーバーフロー接続数 |
+
+*`USE_CLOUD_SQL_CONNECTOR=true` の場合のみ必須
+**`ENABLE_IAM_AUTH=false` の場合のみ必須
+
+**設定例（IAM 認証）:**
+```env
+USE_CLOUD_SQL_CONNECTOR=true
+CLOUDSQL_INSTANCE=my-project:asia-northeast1:my-instance
+DB_USER=my-service-account@my-project.iam
+DB_NAME=app_db
+ENABLE_IAM_AUTH=true
+```
+
+**設定例（パスワード認証）:**
+```env
+USE_CLOUD_SQL_CONNECTOR=true
+CLOUDSQL_INSTANCE=my-project:asia-northeast1:my-instance
+DB_USER=app_user
+DB_NAME=app_db
+DB_PASS=my-secure-password
+ENABLE_IAM_AUTH=false
+```
+
+詳細は [backend/CLAUDE.md - Database Configuration](../backend/CLAUDE.md#database-configuration) を参照してください。
+
 ## よく使うコマンド
 
 | フロー            | コマンド            | 説明                                     |

@@ -149,6 +149,38 @@ app/
 | RDBMS                 | MySQL                   | 8.0       | データ永続化                    |
 | ストレージエンジン    | InnoDB                  | -         | トランザクション管理            |
 | 文字セット            | UTF8MB4                 | -         | 多言語サポート                  |
+| クラウド接続          | Cloud SQL Python Connector | 1.x    | Google Cloud SQL 接続（オプション）|
+
+#### データベース接続方式
+
+バックエンドは2つのデータベース接続方式をサポートしています:
+
+**1. 標準接続（ローカル開発）**
+- 直接TCP/IP接続（`mysql+pymysql://` URI）
+- ローカルMySQLやDocker環境での開発に使用
+- `DATABASE_URL` 環境変数で接続文字列を指定
+
+**2. Cloud SQL Connector（本番環境）**
+- Google Cloud SQL 専用の接続ライブラリ
+- 以下の機能を提供:
+  - **自動SSL/TLS暗号化**: 証明書管理不要
+  - **IAM認証サポート**: パスワードなしで認証可能
+  - **自動接続プール管理**: 最適な接続管理
+  - **自動再接続**: 一時的な障害からの復旧
+- Cloud Run、Cloud Functions、GKE での利用を推奨
+- `USE_CLOUD_SQL_CONNECTOR=true` で有効化
+
+**接続方式の選択基準:**
+
+| 環境 | 推奨方式 | 理由 |
+|------|---------|------|
+| ローカル開発 | 標準接続 | シンプルで設定が容易 |
+| Docker Compose | 標準接続 | コンテナ間通信が直接的 |
+| Cloud Run/Functions | Cloud SQL Connector | IAM認証、自動暗号化 |
+| GKE | Cloud SQL Connector | Workload Identity連携 |
+| オンプレミス/他クラウド | 標準接続 | Cloud SQL以外のMySQLに対応 |
+
+詳細な設定方法は [開発環境ガイド](./00_development.md#cloud-sql-接続設定本番環境向け) を参照してください。
 
 ### 3.4 インフラ・開発環境
 

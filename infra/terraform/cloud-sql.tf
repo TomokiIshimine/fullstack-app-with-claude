@@ -20,6 +20,7 @@ resource "google_sql_database_instance" "main" {
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc.self_link
+      require_ssl     = true
     }
 
     # Backup configuration - Disabled for cost savings
@@ -43,6 +44,11 @@ resource "google_sql_database_instance" "main" {
     database_flags {
       name  = "collation_server"
       value = "utf8mb4_unicode_ci"
+    }
+
+    database_flags {
+      name  = "cloudsql_iam_authentication"
+      value = "on"
     }
 
     # Disk configuration - Fixed size for cost savings
@@ -83,11 +89,40 @@ resource "google_sql_database" "database" {
   collation = "utf8mb4_unicode_ci"
 }
 
-# Database user creation
+# Database user creation (password-based, kept for backward compatibility)
 resource "google_sql_user" "user" {
   name     = var.cloud_sql_user
   instance = google_sql_database_instance.main.name
   password = var.cloud_sql_password
+  project  = var.gcp_project_id
+}
+
+# Service Account for Cloud Run
+resource "google_service_account" "cloud_run" {
+  account_id   = "${var.app_name}-cloud-run-sa"
+  display_name = "Cloud Run Service Account for ${var.app_name}"
+  project      = var.gcp_project_id
+}
+
+# Grant Cloud SQL Client role to the service account
+resource "google_project_iam_member" "cloud_sql_client" {
+  project = var.gcp_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# Grant Cloud SQL Instance User role for IAM authentication
+resource "google_project_iam_member" "cloud_sql_instance_user" {
+  project = var.gcp_project_id
+  role    = "roles/cloudsql.instanceUser"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# IAM-based database user (no password required)
+resource "google_sql_user" "iam_user" {
+  name     = google_service_account.cloud_run.email
+  instance = google_sql_database_instance.main.name
+  type     = "CLOUD_IAM_SERVICE_ACCOUNT"
   project  = var.gcp_project_id
 }
 

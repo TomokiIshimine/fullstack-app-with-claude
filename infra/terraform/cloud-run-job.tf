@@ -16,15 +16,41 @@ resource "google_cloud_run_v2_job" "db_migrate" {
         command = ["python"]
         args    = ["scripts/create_tables.py"]
 
-        # Environment variables (same as Cloud Run service)
+        # Cloud SQL Connector configuration
         env {
-          name  = "DATABASE_URL"
-          value = "mysql+pymysql://${var.cloud_sql_user}:${var.cloud_sql_password}@${google_sql_database_instance.main.private_ip_address}/${var.cloud_sql_database_name}?charset=utf8mb4"
+          name  = "USE_CLOUD_SQL_CONNECTOR"
+          value = "true"
+        }
+
+        env {
+          name  = "CLOUDSQL_INSTANCE"
+          value = google_sql_database_instance.main.connection_name
+        }
+
+        env {
+          name  = "DB_USER"
+          value = google_service_account.cloud_run.email
+        }
+
+        env {
+          name  = "DB_NAME"
+          value = var.cloud_sql_database_name
+        }
+
+        env {
+          name  = "ENABLE_IAM_AUTH"
+          value = "true"
         }
 
         env {
           name  = "FLASK_ENV"
           value = "production"
+        }
+
+        # Legacy DATABASE_URL (kept for reference, not used when USE_CLOUD_SQL_CONNECTOR=true)
+        env {
+          name  = "DATABASE_URL"
+          value = "mysql+pymysql://${var.cloud_sql_user}:${var.cloud_sql_password}@${google_sql_database_instance.main.private_ip_address}/${var.cloud_sql_database_name}?charset=utf8mb4"
         }
 
         # Resource limits
@@ -35,6 +61,9 @@ resource "google_cloud_run_v2_job" "db_migrate" {
           }
         }
       }
+
+      # Service account for IAM authentication
+      service_account = google_service_account.cloud_run.email
 
       # VPC connection for private Cloud SQL access
       vpc_access {
