@@ -20,7 +20,7 @@ resource "google_sql_database_instance" "main" {
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc.self_link
-      require_ssl     = true
+      ssl_mode        = "ENCRYPTED_ONLY"
     }
 
     # Backup configuration - Disabled for cost savings

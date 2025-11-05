@@ -105,6 +105,20 @@ resource "google_project_iam_member" "github_actions_service_account_admin" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# Grant Secret Manager Admin role to GitHub Actions service account (for managing secrets)
+resource "google_project_iam_member" "github_actions_secret_manager_admin" {
+  project = var.gcp_project_id
+  role    = "roles/secretmanager.admin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant Service Usage Admin role to GitHub Actions service account (for enabling APIs)
+resource "google_project_iam_member" "github_actions_service_usage_admin" {
+  project = var.gcp_project_id
+  role    = "roles/serviceusage.serviceUsageAdmin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # Workload Identity Pool for GitHub Actions
 resource "google_iam_workload_identity_pool" "github_actions" {
   workload_identity_pool_id = "${var.app_name}-github-pool"
