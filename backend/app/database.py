@@ -14,18 +14,42 @@ from app.config import CloudSQLConfig, DatabaseConfig, load_cloud_sql_config, lo
 
 # Conditional import for Cloud SQL Connector
 try:
-    from google.cloud.sql.connector import Connector
+    from google.cloud.sql.connector import Connector, IPTypes
 
     CLOUD_SQL_AVAILABLE = True
 except ImportError:
     CLOUD_SQL_AVAILABLE = False
     Connector = None  # type: ignore
+    IPTypes = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
 _engine: Engine | None = None
 _session_factory: ScopedSession[Session] | None = None
 _connector: Connector | None = None  # Cloud SQL Connector instance
+
+
+def _convert_ip_type_to_enum(ip_type_str: str):  # type: ignore
+    """Convert IP type string to IPTypes enum.
+
+    Args:
+        ip_type_str: IP type as string ("PRIVATE" or "PUBLIC").
+
+    Returns:
+        IPTypes enum value.
+
+    Raises:
+        ValueError: If ip_type_str is not "PRIVATE" or "PUBLIC".
+    """
+    if not CLOUD_SQL_AVAILABLE or IPTypes is None:
+        raise RuntimeError("Cloud SQL Connector is not available")
+
+    if ip_type_str == "PRIVATE":
+        return IPTypes.PRIVATE
+    elif ip_type_str == "PUBLIC":
+        return IPTypes.PUBLIC
+    else:
+        raise ValueError(f"Invalid IP type: {ip_type_str}. Must be 'PRIVATE' or 'PUBLIC'")
 
 
 def _create_connection_factory(cloud_sql_config: CloudSQLConfig, connector: Connector):  # type: ignore
@@ -56,8 +80,10 @@ def _create_connection_factory(cloud_sql_config: CloudSQLConfig, connector: Conn
                 conn_args["password"] = cloud_sql_config.db_pass
             logger.debug("Using password authentication for Cloud SQL connection")
 
-        logger.debug(f"Connecting to Cloud SQL using IP type: {cloud_sql_config.ip_type}")
-        return connector.connect(cloud_sql_config.instance_connection_name, "pymysql", ip_type=cloud_sql_config.ip_type, **conn_args)
+        # Convert IP type string to IPTypes enum
+        ip_type_enum = _convert_ip_type_to_enum(cloud_sql_config.ip_type)
+        logger.debug(f"Connecting to Cloud SQL using IP type: {cloud_sql_config.ip_type} ({ip_type_enum})")
+        return connector.connect(cloud_sql_config.instance_connection_name, "pymysql", ip_type=ip_type_enum, **conn_args)
 
     return getconn
 
