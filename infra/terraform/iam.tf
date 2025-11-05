@@ -35,24 +35,34 @@ resource "google_service_account" "github_actions" {
   depends_on = [google_project_service.iam]
 }
 
-# Grant Cloud Run Admin role to GitHub Actions service account
-resource "google_project_iam_member" "github_actions_cloud_run_admin" {
+# Grant Cloud Run Developer role to GitHub Actions service account
+# Allows deploying services and managing jobs (sufficient for CI/CD)
+resource "google_project_iam_member" "github_actions_cloud_run_developer" {
   project = var.gcp_project_id
-  role    = "roles/run.admin"
+  role    = "roles/run.developer"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Cloud SQL Admin role to GitHub Actions service account
-resource "google_project_iam_member" "github_actions_cloud_sql_admin" {
+# Grant Cloud SQL Editor role to GitHub Actions service account
+# Allows managing Cloud SQL instances via Terraform (less privileged than admin)
+resource "google_project_iam_member" "github_actions_cloud_sql_editor" {
   project = var.gcp_project_id
-  role    = "roles/cloudsql.admin"
+  role    = "roles/cloudsql.editor"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Storage Admin role to GitHub Actions service account
-resource "google_project_iam_member" "github_actions_storage_admin" {
+# Grant Storage Object Admin role to GitHub Actions service account
+# Allows managing objects in Cloud Storage (for Terraform state)
+resource "google_project_iam_member" "github_actions_storage_object_admin" {
   project = var.gcp_project_id
-  role    = "roles/storage.admin"
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant Storage Legacy Bucket Writer role for bucket-level operations
+resource "google_project_iam_member" "github_actions_storage_legacy_bucket_writer" {
+  project = var.gcp_project_id
+  role    = "roles/storage.legacyBucketWriter"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
@@ -63,56 +73,112 @@ resource "google_project_iam_member" "github_actions_sa_user" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Artifact Registry Admin role to GitHub Actions service account (for Docker images)
-resource "google_project_iam_member" "github_actions_artifact_registry_admin" {
+# Grant Artifact Registry Writer role to GitHub Actions service account
+# Allows pushing Docker images (sufficient for CI/CD)
+resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
   project = var.gcp_project_id
-  role    = "roles/artifactregistry.admin"
+  role    = "roles/artifactregistry.writer"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant VPC Access Viewer role to GitHub Actions service account (for VPC Access Connector)
-resource "google_project_iam_member" "github_actions_vpcaccess_viewer" {
+# Grant Artifact Registry Repo Admin role for repository management
+# Required for Terraform to manage repositories
+resource "google_project_iam_member" "github_actions_artifact_registry_repo_admin" {
   project = var.gcp_project_id
-  role    = "roles/vpcaccess.viewer"
+  role    = "roles/artifactregistry.repoAdmin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Project IAM Admin role to GitHub Actions service account (for managing IAM policies)
-resource "google_project_iam_member" "github_actions_project_iam_admin" {
+# Grant VPC Access Admin role to GitHub Actions service account
+# Required for Terraform to manage VPC Access Connectors
+resource "google_project_iam_member" "github_actions_vpcaccess_admin" {
   project = var.gcp_project_id
-  role    = "roles/resourcemanager.projectIamAdmin"
+  role    = "roles/vpcaccess.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Compute Network Viewer role to GitHub Actions service account (for VPC network access)
-resource "google_project_iam_member" "github_actions_compute_network_viewer" {
+# Grant Service Networking Admin role for VPC peering
+# Required for Cloud SQL private IP (VPC peering connection)
+resource "google_project_iam_member" "github_actions_servicenetworking_admin" {
   project = var.gcp_project_id
-  role    = "roles/compute.networkViewer"
+  role    = "roles/servicenetworking.networksAdmin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Workload Identity Pool Admin role to GitHub Actions service account (for Workload Identity Pool management)
-resource "google_project_iam_member" "github_actions_workload_identity_pool_admin" {
+# Project IAM Admin role removed for security
+# This was too permissive and not needed for regular deployments
+# If Terraform needs to manage IAM policies, use more specific roles:
+# - roles/iam.securityAdmin (for IAM policy management)
+# - roles/resourcemanager.projectIamAdmin (only if absolutely necessary)
+# resource "google_project_iam_member" "github_actions_project_iam_admin" {
+#   project = var.gcp_project_id
+#   role    = "roles/resourcemanager.projectIamAdmin"
+#   member  = "serviceAccount:${google_service_account.github_actions.email}"
+# }
+
+# Grant Compute Network Admin role to GitHub Actions service account
+# Required for Terraform to manage VPC networks, subnets, and VPC Access Connectors
+resource "google_project_iam_member" "github_actions_compute_network_admin" {
   project = var.gcp_project_id
-  role    = "roles/iam.workloadIdentityPoolAdmin"
+  role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Service Account Admin role to GitHub Actions service account (for managing service account IAM policies)
-resource "google_project_iam_member" "github_actions_service_account_admin" {
+# Workload Identity Pool Admin role removed for security
+# This was only needed during initial Terraform setup
+# After the pool is created, this permission is no longer required
+#
+# IMPORTANT: If you are running Terraform for the first time and creating
+# the Workload Identity Pool, you may need to temporarily enable this role:
+# resource "google_project_iam_member" "github_actions_workload_identity_pool_admin" {
+#   project = var.gcp_project_id
+#   role    = "roles/iam.workloadIdentityPoolAdmin"
+#   member  = "serviceAccount:${google_service_account.github_actions.email}"
+# }
+
+# Grant Service Account Creator role for creating service accounts
+resource "google_project_iam_member" "github_actions_service_account_creator" {
   project = var.gcp_project_id
-  role    = "roles/iam.serviceAccountAdmin"
+  role    = "roles/iam.serviceAccountCreator"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Secret Manager Admin role to GitHub Actions service account (for managing secrets)
+# Grant Service Account Key Admin role to GitHub Actions service account
+# Allows managing service account keys (less privileged than serviceAccountAdmin)
+resource "google_project_iam_member" "github_actions_service_account_key_admin" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountKeyAdmin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant Security Admin role for managing IAM policies
+# Required for Terraform to manage IAM bindings (less privileged than projectIamAdmin)
+resource "google_project_iam_member" "github_actions_security_admin" {
+  project = var.gcp_project_id
+  role    = "roles/iam.securityAdmin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant Role Viewer role for IAM role information
+resource "google_project_iam_member" "github_actions_iam_role_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/iam.roleViewer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant Secret Manager Admin role for managing secrets
+# Required for Terraform to create/delete secrets and manage versions
+# Note: This is one of the few Admin roles we keep because Terraform needs
+# to manage Secret Manager resources (secrets, versions, IAM policies)
 resource "google_project_iam_member" "github_actions_secret_manager_admin" {
   project = var.gcp_project_id
   role    = "roles/secretmanager.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Service Usage Admin role to GitHub Actions service account (for enabling APIs)
+# Grant Service Usage Admin role to GitHub Actions service account
+# Required for Terraform to enable GCP APIs (compute, sql, run, etc.)
+# Note: This is kept as Admin because Terraform needs to manage API enablement
 resource "google_project_iam_member" "github_actions_service_usage_admin" {
   project = var.gcp_project_id
   role    = "roles/serviceusage.serviceUsageAdmin"
