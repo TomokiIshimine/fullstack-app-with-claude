@@ -18,16 +18,8 @@ resource "google_sql_database_instance" "main" {
 
     # IP configuration - Private IP only for security
     ip_configuration {
-      ipv4_enabled    = true # Need public IP for initial setup and Cloud SQL Proxy
-      private_network = google_compute_network.vpc.id
-      require_ssl     = false # Set to true in production
-
-      # Allow access from anywhere for development
-      # In production, restrict to specific IP ranges
-      authorized_networks {
-        name  = "allow-all"
-        value = "0.0.0.0/0"
-      }
+      ipv4_enabled    = false
+      private_network = google_compute_network.vpc.self_link
     }
 
     # Backup configuration - Disabled for cost savings
