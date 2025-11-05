@@ -10,6 +10,7 @@ from werkzeug.exceptions import HTTPException
 
 from .config import Config
 from .database import get_engine, get_session_factory, init_engine
+from .limiter import init_limiter
 from .logger import setup_logging
 from .routes import api_bp
 
@@ -103,6 +104,9 @@ def create_app() -> Flask:
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     )
     app.logger.info(f"CORS enabled for origin: {frontend_origin}")
+
+    # Initialize rate limiter with Redis backend
+    init_limiter(app)
 
     init_engine(app.config["SQLALCHEMY_DATABASE_URI"])
     app.extensions["sqlalchemy_engine"] = get_engine()

@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from werkzeug.exceptions import Unauthorized
 
 from app.database import get_session
+from app.limiter import limiter
 from app.schemas.auth import LoginRequest, LogoutResponse, RefreshTokenResponse
 from app.services.auth_service import AuthService
 
@@ -19,6 +20,7 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
 @auth_bp.post("/login")
+@limiter.limit("10 per minute")  # Rate limit: 10 login attempts per minute per IP
 def login():
     """
     Login endpoint.
@@ -106,6 +108,7 @@ def login():
 
 
 @auth_bp.post("/refresh")
+@limiter.limit("30 per minute")  # Rate limit: 30 token refreshes per minute per IP
 def refresh():
     """
     Refresh access token endpoint.
@@ -188,6 +191,7 @@ def refresh():
 
 
 @auth_bp.post("/logout")
+@limiter.limit("20 per minute")  # Rate limit: 20 logout requests per minute per IP
 def logout():
     """
     Logout endpoint.
