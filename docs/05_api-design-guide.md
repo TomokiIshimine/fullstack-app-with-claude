@@ -253,7 +253,7 @@ def handle_http_exception(err: HTTPException):
     return response, err.code
 ```
 
-**実装箇所:** `backend/app/main.py:18-29`
+**実装箇所:** `backend/app/main.py`
 
 実際の実装では、個別のステータスコードごとにハンドラーを定義するのではなく、`HTTPException` を一括で処理する単一のハンドラーを使用しています。
 

@@ -222,9 +222,9 @@ sequenceDiagram
 
 | メソッド | エンドポイント | 認証 | 説明 | 実装箇所 |
 |---------|--------------|------|------|---------|
-| POST | `/api/auth/login` | 不要 | ログイン | BE: `auth_routes.py:22-108` |
-| POST | `/api/auth/logout` | 不要 | ログアウト | BE: `auth_routes.py:193-236` |
-| POST | `/api/auth/refresh` | 不要 | トークン更新 | BE: `auth_routes.py:110-191` |
+| POST | `/api/auth/login` | 不要 | ログイン | BE: `auth_routes.py` |
+| POST | `/api/auth/logout` | 不要 | ログアウト | BE: `auth_routes.py` |
+| POST | `/api/auth/refresh` | 不要 | トークン更新 | BE: `auth_routes.py` |
 
 ### 5.2 ログイン API
 
@@ -243,7 +243,7 @@ Content-Type: application/json
 - 最低8文字
 - 英字（a-z, A-Z）と数字（0-9）の両方を含むこと
 
-**実装箇所:** `backend/app/schemas/auth.py:28-37`
+**実装箇所:** `backend/app/schemas/auth.py`
 
 **レスポンス:**
 ```json
