@@ -122,7 +122,6 @@ jobs:
         id: outputs
         run: |
           echo "cloud_run_url=$(terraform output -raw cloud_run_url)" >> $GITHUB_OUTPUT
-          echo "frontend_bucket_name=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
           echo "cloud_sql_connection_name=$(terraform output -raw cloud_sql_connection_name)" >> $GITHUB_OUTPUT
 
       - name: Display Deployment Info
@@ -132,5 +131,4 @@ jobs:
           echo ""
           echo "📊 Deployment Information:"
           echo "  - Cloud Run URL: ${{ steps.outputs.outputs.cloud_run_url }}"
-          echo "  - Frontend Bucket: ${{ steps.outputs.outputs.frontend_bucket_name }}"
           echo "  - Cloud SQL Connection: ${{ steps.outputs.outputs.cloud_sql_connection_name }}"
