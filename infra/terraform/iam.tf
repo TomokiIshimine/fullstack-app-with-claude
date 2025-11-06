@@ -59,12 +59,9 @@ resource "google_project_iam_member" "github_actions_storage_object_admin" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant Storage Legacy Bucket Writer role for bucket-level operations
-resource "google_project_iam_member" "github_actions_storage_legacy_bucket_writer" {
-  project = var.gcp_project_id
-  role    = "roles/storage.legacyBucketWriter"
-  member  = "serviceAccount:${google_service_account.github_actions.email}"
-}
+# Storage Legacy Bucket Writer role removed
+# This role is bucket-level only and cannot be granted at project level
+# roles/storage.objectAdmin is sufficient for Terraform state management
 
 # Grant Service Account User role to GitHub Actions service account
 resource "google_project_iam_member" "github_actions_sa_user" {
