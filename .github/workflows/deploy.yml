@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform.yml'
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
