@@ -26,8 +26,9 @@ runs:
           ~/.cache/pypoetry
           ~/.local/share/pypoetry
           ~/.local/share/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ hashFiles('backend/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ hashFiles('backend/poetry.lock') }}-${{ hashFiles('backend/pyproject.toml') }}
         restore-keys: |
+          ${{ runner.os }}-poetry-${{ hashFiles('backend/poetry.lock') }}-
           ${{ runner.os }}-poetry-
 
     - name: Install backend dependencies

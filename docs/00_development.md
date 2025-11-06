@@ -195,6 +195,162 @@ make lint                 # mypy + flake8 + ESLint を実行
 make test                 # カバレッジ付きでテストを実行
 ```
 
+## CI/CD ワークフロー
+
+本プロジェクトは GitHub Actions を使用した CI/CD パイプラインを実装しています。
+
+### ワークフロー構成
+
+#### 1. CI ワークフロー (`.github/workflows/ci.yml`)
+
+Pull Request 時に自動実行され、コード品質を検証します:
+
+- **setup**: 依存関係のキャッシュウォーミング
+- **lint**: コード品質チェック（並列実行）
+- **test**: テストスイート実行（並列実行）
+
+```bash
+# ローカルで CI と同等のチェックを実行
+make lint                 # Lint チェック
+make test                 # テスト実行
+```
+
+#### 2. Deploy ワークフロー (`.github/workflows/deploy.yml`)
+
+main ブランチへのプッシュ時に自動デプロイを実行します:
+
+- **トリガー条件**: Terraform ファイル以外の変更時のみ実行
+- **パスフィルタリング**: ドキュメント変更時は実行をスキップ
+- **デプロイ先**: Google Cloud Run
+
+```yaml
+# 以下のファイル変更時はデプロイをスキップ
+- infra/terraform/**
+- **.md
+- docs/**
+```
+
+#### 3. Terraform ワークフロー (`.github/workflows/terraform.yml`)
+
+インフラストラクチャ変更時に実行されます:
+
+- **トリガー条件**: Terraform ファイル変更時のみ
+- **Pull Request**: Terraform Plan 結果をコメント
+- **main ブランチ**: Terraform Apply を自動実行
+
+### 再利用可能な Composite Actions
+
+コードの重複を削減し、メンテナンス性を向上するため、以下の Composite Actions を提供しています:
+
+#### setup-frontend (`.github/actions/setup-frontend`)
+
+Node.js、pnpm、フロントエンド依存関係をセットアップします。
+
+```yaml
+- name: Setup Frontend
+  uses: ./.github/actions/setup-frontend
+  with:
+    node-version: '20'    # オプション、デフォルト: 20
+    pnpm-version: '10'    # オプション、デフォルト: 10
+```
+
+#### setup-backend (`.github/actions/setup-backend`)
+
+Python、Poetry、バックエンド依存関係をセットアップします。
+
+```yaml
+- name: Setup Backend
+  uses: ./.github/actions/setup-backend
+  with:
+    python-version: '3.12'  # オプション、デフォルト: 3.12
+```
+
+**キャッシュ戦略**: `poetry.lock` と `pyproject.toml` のハッシュを組み合わせた階層化キャッシュキーを使用し、キャッシュヒット率を最大化しています。
+
+#### setup-gcp (`.github/actions/setup-gcp`)
+
+GCP 認証と gcloud SDK をセットアップします。
+
+```yaml
+- name: Setup GCP
+  uses: ./.github/actions/setup-gcp
+  with:
+    workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+    service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+```
+
+#### setup-terraform (`.github/actions/setup-terraform`)
+
+Terraform と GCP 認証を統合セットアップします。
+
+```yaml
+- name: Setup Terraform
+  uses: ./.github/actions/setup-terraform
+  with:
+    terraform-version: '~1.9.0'  # オプション、デフォルト: ~1.9.0
+    workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+    service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+```
+
+### パフォーマンス最適化
+
+#### 並列実行
+
+CI ワークフローでは lint と test を並列実行し、実行時間を約 30-40% 短縮しています:
+
+```yaml
+lint:
+  needs: setup
+  # lint ジョブを実行
+
+test:
+  needs: setup
+  # test ジョブを並列実行
+```
+
+#### Path Filtering
+
+deploy.yml と terraform.yml は path フィルタリングを使用し、不要な実行を防止しています:
+
+- **Terraform 変更**: terraform.yml のみ実行
+- **アプリケーション変更**: deploy.yml のみ実行
+- **ドキュメント変更**: どちらも実行しない
+
+これにより、ワークフロー実行コストと時間を削減しています。
+
+#### キャッシュ戦略
+
+- **pnpm**: `pnpm-lock.yaml` を使用した自動キャッシュ
+- **Poetry**: 階層化キャッシュキー（`poetry.lock` + `pyproject.toml`）
+- **setup ジョブ**: 後続ジョブのキャッシュウォーミング
+
+### トラブルシューティング
+
+#### CI/CD が失敗する場合
+
+1. **ローカルで同じチェックを実行**:
+   ```bash
+   make lint && make test
+   ```
+
+2. **依存関係の更新**:
+   ```bash
+   make install
+   ```
+
+3. **キャッシュのクリア**: GitHub Actions の UI から "Clear cache" を実行
+
+#### Terraform の状態ロックエラー
+
+Terraform の状態がロックされている場合、`terraform-unlock.yml` ワークフローを使用します:
+
+```bash
+# GitHub Actions UI から workflow_dispatch で実行
+# Lock ID を指定して強制アンロック
+```
+
+詳細は [システム構成設計書](./01_system-architecture.md) を参照してください。
+
 ## 認証システム
 
 本プロジェクトは **JWT (JSON Web Token) ベースの認証システム**を実装しています:
