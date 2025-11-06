@@ -28,7 +28,7 @@ Adminアカウントを追加し、ユーザーの追加・削除が行えるよ
 
 | 項目 | 決定内容 |
 |------|---------|
-| **Adminアカウント作成方法** | 環境変数（`ADMIN_EMAIL` / `ADMIN_PASSWORD`）で初期設定し、アプリ起動時に自動作成 |
+| **Adminアカウント作成方法** | 環境変数（`ADMIN_EMAIL` / `ADMIN_PASSWORD_HASH`）で初期設定し、アプリ起動時に自動作成<br/>※ADMIN_PASSWORD_HASHはbcryptでハッシュ化された値を設定 |
 | **ロール名** | `admin` (管理者) と `user` (一般ユーザー) |
 | **初期パスワード生成方式** | 英数字のみ12文字のランダム文字列（例: aB3xY9mK2pL5） |
 | **ユーザー管理画面の機能** | ユーザー一覧表示、ユーザー追加、ユーザー削除 |
@@ -138,7 +138,9 @@ graph TB
 | `backend/app/routes/password_routes.py` | 新規 | パスワード変更 API エンドポイント |
 | `backend/app/utils/auth_decorator.py` | 修正 | ロールベースの認可デコレータを追加 |
 | `backend/app/utils/password_generator.py` | 新規 | 初期パスワード生成ユーティリティ |
+| `backend/app/utils/password_hash_validator.py` | 新規 | bcryptハッシュ形式バリデータ |
 | `backend/scripts/create_admin.py` | 新規 | 初期 Admin アカウント作成スクリプト |
+| `backend/scripts/generate_admin_hash.py` | 新規 | Admin パスワードハッシュ生成ヘルパー |
 | `backend/app/main.py` | 修正 | アプリ起動時に Admin アカウントを確認・作成 |
 | `infra/mysql/init/001_init.sql` | 修正 | usersテーブル定義を更新 |
 
@@ -157,27 +159,31 @@ sequenceDiagram
 
     App->>Script: 初期化処理開始
     Script->>Env: ADMIN_EMAIL取得
-    Script->>Env: ADMIN_PASSWORD取得
+    Script->>Env: ADMIN_PASSWORD_HASH取得
 
     alt 環境変数が設定されている
-        Script->>DB: email=ADMIN_EMAIL のユーザーを検索
+        Script->>Script: ADMIN_PASSWORD_HASHのバリデーション<br/>(bcrypt形式チェック)
 
-        alt ユーザーが存在しない
-            Script->>Script: パスワードをbcryptでハッシュ化
-            Script->>DB: Admin ユーザー作成<br/>(email, password_hash, role='admin', name='Administrator')
-            DB-->>Script: 作成成功
-            Script-->>App: ログ: Admin作成完了
-        else ユーザーが既に存在
-            Script->>DB: role を確認
-            alt role が user の場合
-                Script->>DB: 既存ユーザーを削除（CASCADE）
-                Script->>Script: パスワードをbcryptでハッシュ化
+        alt バリデーション成功
+            Script->>DB: email=ADMIN_EMAIL のユーザーを検索
+
+            alt ユーザーが存在しない
                 Script->>DB: Admin ユーザー作成<br/>(email, password_hash, role='admin', name='Administrator')
                 DB-->>Script: 作成成功
-                Script-->>App: ログ: 既存userを削除してAdmin作成完了
-            else role が admin の場合
-                Script-->>App: ログ: Admin既に存在、スキップ
+                Script-->>App: ログ: Admin作成完了
+            else ユーザーが既に存在
+                Script->>DB: role を確認
+                alt role が user の場合
+                    Script->>DB: 既存ユーザーを削除（CASCADE）
+                    Script->>DB: Admin ユーザー作成<br/>(email, password_hash, role='admin', name='Administrator')
+                    DB-->>Script: 作成成功
+                    Script-->>App: ログ: 既存userを削除してAdmin作成完了
+                else role が admin の場合
+                    Script-->>App: ログ: Admin既に存在、スキップ
+                end
             end
+        else バリデーション失敗
+            Script-->>App: エラーログ: 無効なパスワードハッシュ形式
         end
     else 環境変数が未設定
         Script-->>App: 警告ログ: Admin環境変数未設定
@@ -186,12 +192,15 @@ sequenceDiagram
 
 **処理内容の説明:**
 1. アプリ起動時に `create_admin.py` スクリプトを実行
-2. 環境変数 `ADMIN_EMAIL` と `ADMIN_PASSWORD` を読み込む
+2. 環境変数 `ADMIN_EMAIL` と `ADMIN_PASSWORD_HASH` を読み込む
 3. 環境変数が設定されている場合:
-   - 指定されたメールアドレスのユーザーがDBに存在するか確認
-   - 存在しない場合: 新規にAdminアカウントを作成
-   - 存在してrole=userの場合: 既存ユーザーを削除（CASCADE）してから新規にAdminを作成
-   - 存在してrole=adminの場合: 何もせずスキップ
+   - `ADMIN_PASSWORD_HASH` が正しいbcrypt形式かバリデーション
+   - バリデーション成功:
+     - 指定されたメールアドレスのユーザーがDBに存在するか確認
+     - 存在しない場合: 新規にAdminアカウントを作成
+     - 存在してrole=userの場合: 既存ユーザーを削除（CASCADE）してから新規にAdminを作成
+     - 存在してrole=adminの場合: 何もせずスキップ
+   - バリデーション失敗: エラーログを出力してスキップ
 4. 環境変数が未設定の場合: 警告ログを出力してスキップ
 
 ##### 3.2.2 ユーザー作成フロー（Adminによる）
@@ -943,17 +952,23 @@ SHOW INDEXES FROM users;
 **作業内容:**
 1. `backend/app/utils/password_generator.py` を作成
    - `generate_initial_password()` 関数を実装
-2. `backend/scripts/create_admin.py` を作成
-   - 環境変数から ADMIN_EMAIL と ADMIN_PASSWORD を読み込む
+2. `backend/app/utils/password_hash_validator.py` を作成
+   - `validate_bcrypt_hash(hash_string)` 関数を実装（bcrypt形式チェック）
+3. `backend/scripts/create_admin.py` を作成
+   - 環境変数から ADMIN_EMAIL と ADMIN_PASSWORD_HASH を読み込む
+   - ADMIN_PASSWORD_HASH のバリデーション（bcrypt形式チェック）
    - Admin ユーザーが存在しない場合は作成
    - 既存ユーザーの場合は role を admin に更新
-3. `backend/app/main.py` を修正
+4. `backend/scripts/generate_admin_hash.py` を作成（ヘルパースクリプト）
+   - パスワードを入力するとbcryptハッシュを生成して出力
+5. `backend/app/main.py` を修正
    - アプリ起動時に `create_admin.py` を実行
-4. `backend/.env` に環境変数を追加
+6. `backend/.env` に環境変数を追加
    ```env
    ADMIN_EMAIL=admin@example.com
-   ADMIN_PASSWORD=admin123
+   ADMIN_PASSWORD_HASH=$2b$12$...（bcryptハッシュ値）
    ```
+   ※ハッシュの生成は `python backend/scripts/generate_admin_hash.py` で実行
 
 **動作確認:**
 ```bash
@@ -1484,12 +1499,37 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # 新規追加: Admin アカウント設定
 ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=admin123
+ADMIN_PASSWORD_HASH=$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5UpCCaa70.MYW
+```
+
+**パスワードハッシュの生成方法:**
+
+平文のパスワードをbcryptでハッシュ化するには、以下のヘルパースクリプトを使用します：
+
+```bash
+# ハッシュ生成スクリプトを実行
+poetry -C backend run python backend/scripts/generate_admin_hash.py
+
+# パスワードを入力するとハッシュが表示される
+# 例: admin123 → $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5UpCCaa70.MYW
+```
+
+または Python で直接生成：
+
+```python
+import bcrypt
+password = "your-secure-password"
+hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+print(hash.decode('utf-8'))
 ```
 
 **注意:**
-- 本番環境では `ADMIN_PASSWORD` を強固なパスワードに変更してください
+- `ADMIN_PASSWORD_HASH` には必ずbcryptでハッシュ化された値を設定してください
+- 平文のパスワードを設定するとバリデーションエラーになります
+- bcryptハッシュは `$2b$` で始まる60文字程度の文字列です
+- 本番環境では強固なパスワードを使用してください
 - 環境変数が未設定の場合、Admin は作成されません（警告ログが出力されます）
+- ハッシュ形式が不正な場合もエラーログが出力され、Admin は作成されません
 
 #### 7.2 フロントエンド環境変数
 
@@ -1504,8 +1544,8 @@ ADMIN_PASSWORD=admin123
 ```mermaid
 graph TB
     subgraph "初期化"
-        ENV[環境変数<br/>ADMIN_EMAIL<br/>ADMIN_PASSWORD]
-        INIT[アプリ起動時<br/>create_admin.py]
+        ENV[環境変数<br/>ADMIN_EMAIL<br/>ADMIN_PASSWORD_HASH]
+        INIT[アプリ起動時<br/>create_admin.py<br/>ハッシュバリデーション]
         ENV --> INIT
         INIT --> DB[(Database<br/>users)]
     end
