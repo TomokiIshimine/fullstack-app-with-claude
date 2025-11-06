@@ -1,6 +1,7 @@
 # データベース設計書
 
 **作成日:** 2025-10-28
+**最終更新:** 2025-11-06
 **バージョン:** 1.0
 **対象システム:** TODO アプリケーション
 
@@ -259,7 +260,7 @@ make db-reset             # 全データ削除＋再作成
 make db-create-user EMAIL=user@example.com PASSWORD=password123
 
 # MySQL コンソール接続
-docker compose exec db mysql -u app_user -p app_db
+docker compose -f infra/docker-compose.yml exec db mysql -u app_user -p app_db
 ```
 
 ### 7.2 SQLAlchemy モデルとSQL定義の同期
@@ -269,6 +270,20 @@ docker compose exec db mysql -u app_user -p app_db
 1. モデル定義を更新: `backend/app/models/*.py`
 2. 初期化SQLを更新: `infra/mysql/init/001_init.sql`
 3. 変更を適用: `make db-init`
+
+### 7.3 SQLAlchemy型マッピング
+
+SQLAlchemyの型とMySQLの型の対応関係:
+
+| SQLAlchemy型 | MySQL型 | 備考 |
+|-------------|---------|------|
+| `BigInteger` | `BIGINT` | UNSIGNED制約はクロスDB互換性のため省略 |
+| `Boolean` | `TINYINT(1)` | MySQLには真偽型がないため |
+| `DateTime` | `DATETIME` | TIMESTAMPとは異なる（タイムゾーン非対応） |
+| `String(length)` | `VARCHAR(length)` | |
+| `Text` | `TEXT` | |
+
+**注意**: `created_at` / `updated_at` カラムは、SQLAlchemyモデルでは `DateTime` 型を使用していますが、MySQL初期化スクリプト（`infra/mysql/init/001_init.sql`）では `TIMESTAMP` 型を使用しています。これは互換性のための設計判断で、どちらも日時を正しく扱えます。
 
 ---
 

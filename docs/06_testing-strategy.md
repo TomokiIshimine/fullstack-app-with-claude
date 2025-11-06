@@ -1,6 +1,7 @@
 # テスト戦略書
 
 **作成日:** 2025-10-28
+**最終更新:** 2025-11-06
 **バージョン:** 1.0
 **対象システム:** TODO アプリケーション
 
@@ -782,6 +783,8 @@ poetry -C backend run pytest --cov=app --cov-report=html
 pnpm --dir frontend run test:coverage
 # HTMLレポート: frontend/coverage/index.html
 ```
+
+**注意**: カバレッジレポートディレクトリは `.gitignore` に含まれており、リポジトリには含まれません。テスト実行後にローカルで生成されます。
 
 ---
 

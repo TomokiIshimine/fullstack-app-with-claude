@@ -19,7 +19,7 @@
 ## 初期セットアップ
 
 1. リポジトリをクローンします。
-2. 必要なランタイムをインストールします（Node.js 20 / pnpm、Python 3.12 / Poetry、Docker / Docker Compose）。
+2. 必要なランタイムをインストールします（Node.js 20 / pnpm 9+ (推奨: pnpm 10)、Python 3.12 / Poetry、Docker / Docker Compose）。
 3. 依存関係は `make install` でまとめてセットアップできます。
 
 ```bash
@@ -399,7 +399,7 @@ Terraform の状態がロックされている場合、`terraform-unlock.yml` �
 - **セキュリティ**: XSS 攻撃防止、トークンローテーション、bcrypt パスワードハッシュ化
 - **認証 API**: `/api/auth/login`, `/api/auth/logout`, `/api/auth/refresh`
 
-詳細な認証フロー、トークン仕様、セキュリティ対策については [認証・認可設計書](./authentication-authorization.md) を参照してください。
+詳細な認証フロー、トークン仕様、セキュリティ対策については [認証・認可設計書](./02_authentication-authorization.md) を参照してください。
 
 ## 開発フロー
 
@@ -483,7 +483,7 @@ make format               # Prettier / isort / black を実行
 - `backend/.env` の `JWT_SECRET_KEY` が設定されているか確認
 - バックエンドを再起動した場合、既存のトークンは無効になるため再ログインが必要
 
-詳細は [認証・認可設計書](./authentication-authorization.md) のトラブルシューティングセクションを参照してください。
+詳細は [認証・認可設計書](./02_authentication-authorization.md) のトラブルシューティングセクションを参照してください。
 
 ## 参考
 

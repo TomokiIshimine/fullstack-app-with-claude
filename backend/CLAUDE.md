@@ -529,11 +529,13 @@ The TODO feature demonstrates the full backend stack:
 
 1. **Define Model** (`app/models/`)
    ```python
+   from sqlalchemy.orm import Mapped, mapped_column
+
    class Todo(Base):
        __tablename__ = "todos"
-       id = Column(Integer, primary_key=True)
-       title = Column(String(255), nullable=False)
-       is_completed = Column(Boolean, default=False)
+       id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+       title: Mapped[str] = mapped_column(String(length=120), nullable=False)
+       is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
    ```
 
 2. **Define Schemas** (`app/schemas/`)

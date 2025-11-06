@@ -1,6 +1,7 @@
 # API設計ガイド
 
 **作成日:** 2025-10-28
+**最終更新:** 2025-11-06
 **バージョン:** 1.0
 **対象システム:** TODO アプリケーション
 
@@ -243,23 +244,18 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 **バックエンド（Flask）:**
 ```python
 from flask import jsonify
+from werkzeug.exceptions import HTTPException
 
-@app.errorhandler(400)
-def bad_request(error):
-    return jsonify({
-        "error": "Bad Request",
-        "message": str(error)
-    }), 400
-
-@app.errorhandler(401)
-def unauthorized(error):
-    return jsonify({
-        "error": "Unauthorized",
-        "message": "認証が必要です"
-    }), 401
+@app.errorhandler(HTTPException)
+def handle_http_exception(err: HTTPException):
+    """Handle all HTTP exceptions with consistent format"""
+    response = jsonify(error={"code": err.code, "message": err.description})
+    return response, err.code
 ```
 
-**実装箇所:** `backend/app/main.py` にグローバルエラーハンドラーを実装済み
+**実装箇所:** `backend/app/main.py:18-29`
+
+実際の実装では、個別のステータスコードごとにハンドラーを定義するのではなく、`HTTPException` を一括で処理する単一のハンドラーを使用しています。
 
 ---
 
@@ -297,7 +293,7 @@ GET /api/todos?sort_by=created_at&order=desc
 - `order`: `asc` (昇順) または `desc` (降順)
 - デフォルト: `created_at` 降順（最新が先頭）
 
-**注:** 現在のTODOアプリではフロントエンド側でソートを実装しています。
+**注:** 現在のTODOアプリではフロントエンド側でソートを実装しています（`useTodos.ts`）。`sort_by` および `order` クエリパラメータはバックエンドでは**未実装**です。将来的な拡張としてバックエンドソートを検討する場合は、これらのパラメータを実装してください。
 
 ### 6.3 ページネーション（将来実装予定）
 
