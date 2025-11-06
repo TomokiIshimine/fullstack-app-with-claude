@@ -106,7 +106,13 @@ make pre-commit-update    # Update hook versions
 
 ## Docker Compose Setup
 
-Three services run in Docker: `frontend` (Node 20), `backend` (Python 3.12), `db` (MySQL 8.0). Services communicate via the `app-network` bridge network.
+Four services run in Docker:
+- `frontend` (Node 20-alpine)
+- `backend` (Python 3.12-slim)
+- `db` (MySQL 8.0)
+- `redis` (Redis 7-alpine) - Used for rate limiting
+
+Services communicate via the `app-network` bridge network.
 
 **For detailed architecture and configuration, see [docs/01_system-architecture.md](docs/01_system-architecture.md)**
 

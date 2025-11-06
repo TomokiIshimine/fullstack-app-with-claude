@@ -19,7 +19,7 @@
 ## 初期セットアップ
 
 1. リポジトリをクローンします。
-2. 必要なランタイムをインストールします（Node.js 20 / pnpm、Python 3.12 / Poetry、Docker / Docker Compose）。
+2. 必要なランタイムをインストールします（Node.js 20 / pnpm 9+ (推奨: pnpm 10)、Python 3.12 / Poetry、Docker / Docker Compose）。
 3. 依存関係は `make install` でまとめてセットアップできます。
 
 ```bash
@@ -98,6 +98,45 @@ ENABLE_IAM_AUTH=false
 ```
 
 詳細は [backend/CLAUDE.md - Database Configuration](../backend/CLAUDE.md#database-configuration) を参照してください。
+
+## Redis
+
+バックエンドは Redis をレート制限のキャッシュストアとして使用します。
+
+### 環境変数
+
+| 環境変数 | デフォルト | 説明 |
+|---------|-----------|------|
+| `REDIS_HOST` | redis | Redisホスト名 |
+| `REDIS_PORT` | 6379 | Redisポート番号 |
+| `REDIS_PASSWORD` | dev-redis-password | Redis認証パスワード |
+| `RATE_LIMIT_ENABLED` | true | レート制限の有効化 |
+
+これらの環境変数は `infra/.env.development` で設定されており、Flask-Limiter によるAPIレート制限に使用されます。
+
+### ヘルスチェック
+
+```bash
+docker compose -f infra/docker-compose.yml exec redis redis-cli ping
+# 応答: PONG
+```
+
+### トラブルシューティング
+
+```bash
+# Redisの状態確認
+docker compose -f infra/docker-compose.yml logs redis
+
+# Redis CLIに接続
+docker compose -f infra/docker-compose.yml exec redis redis-cli
+# パスワード認証が必要な場合: AUTH <password>
+
+# レート制限の動作確認
+# 認証エンドポイントに連続リクエストを送ると429エラーが返される
+# 例: ログインエンドポイントは10リクエスト/分に制限されています
+```
+
+詳細なレート制限の設定については、[認証・認可設計書](./02_authentication-authorization.md) を参照してください。
 
 ## よく使うコマンド
 
@@ -360,7 +399,7 @@ Terraform の状態がロックされている場合、`terraform-unlock.yml` �
 - **セキュリティ**: XSS 攻撃防止、トークンローテーション、bcrypt パスワードハッシュ化
 - **認証 API**: `/api/auth/login`, `/api/auth/logout`, `/api/auth/refresh`
 
-詳細な認証フロー、トークン仕様、セキュリティ対策については [認証・認可設計書](./authentication-authorization.md) を参照してください。
+詳細な認証フロー、トークン仕様、セキュリティ対策については [認証・認可設計書](./02_authentication-authorization.md) を参照してください。
 
 ## 開発フロー
 
@@ -444,7 +483,7 @@ make format               # Prettier / isort / black を実行
 - `backend/.env` の `JWT_SECRET_KEY` が設定されているか確認
 - バックエンドを再起動した場合、既存のトークンは無効になるため再ログインが必要
 
-詳細は [認証・認可設計書](./authentication-authorization.md) のトラブルシューティングセクションを参照してください。
+詳細は [認証・認可設計書](./02_authentication-authorization.md) のトラブルシューティングセクションを参照してください。
 
 ## 参考
 
