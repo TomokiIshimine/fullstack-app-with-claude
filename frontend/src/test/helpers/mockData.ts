@@ -40,6 +40,8 @@ export function createMockUser(overrides?: Partial<User>): User {
   return {
     id: 1,
     email: 'test@example.com',
+    role: 'user',
+    name: 'Test User',
     ...overrides,
   }
 }
@@ -51,6 +53,8 @@ export function createMockUserDto(overrides?: Partial<UserDto>): UserDto {
   return {
     id: 1,
     email: 'test@example.com',
+    role: 'user',
+    name: 'Test User',
     ...overrides,
   }
 }

@@ -1,8 +1,13 @@
-import type { LoginPayload, LoginResponse, User, UserDto } from '@/types/auth'
+import type {
+  UserResponse,
+  UserListResponse,
+  UserCreateRequest,
+  UserCreateResponse,
+} from '@/types/user'
 import { logger } from '@/lib/logger'
 import { ApiError } from './todos'
 
-const API_BASE_URL = '/api/auth'
+const API_BASE_URL = '/api/users'
 
 /**
  * Wrapper for fetch with automatic logging, timing, and credentials
@@ -31,10 +36,25 @@ async function fetchWithLogging(url: string, options?: RequestInit): Promise<Res
 }
 
 /**
- * Login with email and password
+ * Fetch all users (Admin only)
  */
-export async function login(payload: LoginPayload): Promise<User> {
-  const response = await fetchWithLogging(`${API_BASE_URL}/login`, {
+export async function fetchUsers(): Promise<UserResponse[]> {
+  const response = await fetchWithLogging(API_BASE_URL, {
+    method: 'GET',
+  })
+  const json = await parseJson(response)
+  if (!response.ok) {
+    throw buildApiError(response, json)
+  }
+  const listResponse = json as UserListResponse
+  return listResponse.users
+}
+
+/**
+ * Create a new user (Admin only)
+ */
+export async function createUser(payload: UserCreateRequest): Promise<UserCreateResponse> {
+  const response = await fetchWithLogging(API_BASE_URL, {
     method: 'POST',
     headers: buildJsonHeaders(),
     body: JSON.stringify(payload),
@@ -43,36 +63,20 @@ export async function login(payload: LoginPayload): Promise<User> {
   if (!response.ok) {
     throw buildApiError(response, json)
   }
-  const loginResponse = json as LoginResponse
-  return mapUserDto(loginResponse.user)
+  return json as UserCreateResponse
 }
 
 /**
- * Logout current user
+ * Delete a user (Admin only)
  */
-export async function logout(): Promise<void> {
-  const response = await fetchWithLogging(`${API_BASE_URL}/logout`, {
-    method: 'POST',
+export async function deleteUser(userId: number): Promise<void> {
+  const response = await fetchWithLogging(`${API_BASE_URL}/${userId}`, {
+    method: 'DELETE',
   })
   if (!response.ok) {
     const json = await parseJson(response)
     throw buildApiError(response, json)
   }
-}
-
-/**
- * Refresh access token using refresh token from cookies
- */
-export async function refreshToken(): Promise<User> {
-  const response = await fetchWithLogging(`${API_BASE_URL}/refresh`, {
-    method: 'POST',
-  })
-  const json = await parseJson(response)
-  if (!response.ok) {
-    throw buildApiError(response, json)
-  }
-  const refreshResponse = json as { message: string; user: UserDto }
-  return mapUserDto(refreshResponse.user)
 }
 
 function buildJsonHeaders(): HeadersInit {
@@ -91,15 +95,6 @@ async function parseJson(response: Response): Promise<unknown> {
     return JSON.parse(text)
   } catch {
     return null
-  }
-}
-
-function mapUserDto(dto: UserDto): User {
-  return {
-    id: dto.id,
-    email: dto.email,
-    role: dto.role,
-    name: dto.name,
   }
 }
 

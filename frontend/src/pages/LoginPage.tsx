@@ -18,9 +18,11 @@ export function LoginPage() {
     setIsLoading(true)
 
     try {
-      await login(email, password)
-      logger.info('Login successful, redirecting to todos')
-      navigate('/todos')
+      const user = await login(email, password)
+      // Redirect based on user role
+      const redirectPath = user.role === 'admin' ? '/admin/users' : '/todos'
+      logger.info('Login successful, redirecting', { role: user.role, path: redirectPath })
+      navigate(redirectPath)
     } catch (err) {
       logger.error('Login error', err as Error)
       if (err instanceof ApiError) {

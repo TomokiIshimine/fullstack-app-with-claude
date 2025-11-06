@@ -4,6 +4,8 @@
 export interface UserDto {
   id: number
   email: string
+  role: string
+  name: string | null
 }
 
 /**
@@ -12,6 +14,8 @@ export interface UserDto {
 export interface User {
   id: number
   email: string
+  role: string
+  name: string | null
 }
 
 /**

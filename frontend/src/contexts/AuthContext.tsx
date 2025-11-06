@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
   logout: () => Promise<void>
 }
 
@@ -42,11 +42,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     try {
       const user = await authApi.login({ email, password })
       setUser(user)
-      logger.info('User logged in', { userId: user.id, email: user.email })
+      logger.info('User logged in', { userId: user.id, email: user.email, role: user.role })
+      return user
     } catch (error) {
       logger.error('Login failed', error as Error)
       throw error
