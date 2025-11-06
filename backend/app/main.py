@@ -112,6 +112,13 @@ def create_app() -> Flask:
     app.extensions["sqlalchemy_engine"] = get_engine()
     app.extensions["sqlalchemy_session_factory"] = get_session_factory()
 
+    # Create admin user from environment variables
+    # This must be called after init_engine() to ensure database connection is ready
+    # Automatically skips in test environment (FLASK_ENV=testing)
+    from scripts.create_admin import create_admin_user
+
+    create_admin_user()
+
     _register_error_handlers(app)
     _register_request_hooks(app)
     _register_session_hooks(app)

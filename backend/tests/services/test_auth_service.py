@@ -267,7 +267,7 @@ def test_logout_with_nonexistent_token(auth_service):
 
 def test_generate_access_token_contains_user_info(app, test_user, auth_service):
     """Test that generated access token contains user information."""
-    token = auth_service._generate_access_token(test_user, "test@example.com")
+    token = auth_service._generate_access_token(test_user, "test@example.com", "user")
 
     # Decode token
     jwt_secret = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
@@ -277,6 +277,7 @@ def test_generate_access_token_contains_user_info(app, test_user, auth_service):
 
     assert payload["user_id"] == test_user
     assert payload["email"] == "test@example.com"
+    assert payload["role"] == "user"
     assert "exp" in payload
 
 
@@ -302,7 +303,7 @@ def test_generate_refresh_token_contains_jti(app, test_user, auth_service):
 
 def test_access_token_expiration(app, test_user, auth_service):
     """Test that access token has correct expiration time."""
-    token = auth_service._generate_access_token(test_user, "test@example.com")
+    token = auth_service._generate_access_token(test_user, "test@example.com", "user")
 
     # Decode token
     jwt_secret = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")

@@ -59,16 +59,16 @@ class AuthService:
             raise ValueError("メールアドレスまたはパスワードが間違っています")
 
         # Generate tokens
-        access_token = self._generate_access_token(user.id, user.email)
+        access_token = self._generate_access_token(user.id, user.email, user.role)
         refresh_token = self._generate_refresh_token(user.id)
 
         # Store refresh token in database
         expires_at = datetime.now(timezone.utc) + timedelta(days=self.refresh_token_expire_days)
         self.refresh_token_repo.create(token=refresh_token, user_id=user.id, expires_at=expires_at)
 
-        logger.info(f"User logged in successfully: {email} (id={user.id})")
+        logger.info(f"User logged in successfully: {email} (id={user.id}, role={user.role})")
 
-        response = LoginResponse(user=UserResponse(id=user.id, email=user.email))
+        response = LoginResponse(user=UserResponse(id=user.id, email=user.email, role=user.role, name=user.name))
         return response, access_token, refresh_token
 
     def refresh_access_token(self, refresh_token: str) -> tuple[str, str, object]:
@@ -117,7 +117,7 @@ class AuthService:
                 raise ValueError("リフレッシュトークンが無効です")
 
             # Generate new tokens
-            new_access_token = self._generate_access_token(user.id, user.email)
+            new_access_token = self._generate_access_token(user.id, user.email, user.role)
             new_refresh_token = self._generate_refresh_token(user.id)
 
             # Revoke old refresh token
@@ -127,7 +127,7 @@ class AuthService:
             expires_at = datetime.now(timezone.utc) + timedelta(days=self.refresh_token_expire_days)
             self.refresh_token_repo.create(token=new_refresh_token, user_id=user.id, expires_at=expires_at)
 
-            logger.info(f"Access token refreshed for user: {user.email} (id={user.id})")
+            logger.info(f"Access token refreshed for user: {user.email} (id={user.id}, role={user.role})")
 
             return new_access_token, new_refresh_token, user
 
@@ -148,10 +148,10 @@ class AuthService:
         self.refresh_token_repo.revoke(refresh_token)
         logger.info("User logged out, refresh token revoked")
 
-    def _generate_access_token(self, user_id: int, email: str) -> str:
+    def _generate_access_token(self, user_id: int, email: str, role: str) -> str:
         """Generate JWT access token."""
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
-        payload = {"user_id": user_id, "email": email, "exp": expires_at}
+        payload = {"user_id": user_id, "email": email, "role": role, "exp": expires_at}
         return jwt.encode(payload, self.jwt_secret, algorithm=self.jwt_algorithm)
 
     def _generate_refresh_token(self, user_id: int) -> str:

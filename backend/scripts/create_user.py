@@ -16,8 +16,15 @@ from app.models.user import User  # noqa: E402
 from app.utils.password import hash_password  # noqa: E402
 
 
-def create_user(email: str, password: str):
-    """Create a test user."""
+def create_user(email: str, password: str, role: str = "user", name: str | None = None):
+    """Create a test user.
+
+    Args:
+        email: User's email address
+        password: User's password (will be hashed)
+        role: User's role ('admin' or 'user', default: 'user')
+        name: User's display name (optional)
+    """
     database_url = Config.SQLALCHEMY_DATABASE_URI
     print("Connecting to database...")
     init_engine(database_url)
@@ -31,11 +38,11 @@ def create_user(email: str, password: str):
             return
 
         # Create new user
-        user = User(email=email, password_hash=hash_password(password))
+        user = User(email=email, password_hash=hash_password(password), role=role, name=name)
         session.add(user)
         session.commit()
         session.refresh(user)
-        print(f"✅ Created user: {user.email} (id={user.id})")
+        print(f"✅ Created user: {user.email} (id={user.id}, role={user.role}, name={user.name})")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import os
+
+# Set test environment BEFORE importing app.main to prevent admin user creation
+os.environ["FLASK_ENV"] = "testing"
+
 import pytest
 from flask import Flask
 
@@ -47,7 +52,7 @@ def test_user(app: Flask):
 
     with app.app_context():
         session = get_session()
-        user = User(email="test@example.com", password_hash=hash_password("password123"))
+        user = User(email="test@example.com", password_hash=hash_password("password123"), role="user", name="Test User")
         session.add(user)
         session.commit()
         user_id = user.id
@@ -57,8 +62,26 @@ def test_user(app: Flask):
 
 
 @pytest.fixture()
+def test_admin(app: Flask):
+    """Create a test admin user for admin operations."""
+    from app.database import get_session
+    from app.models.user import User
+    from app.utils.password import hash_password
+
+    with app.app_context():
+        session = get_session()
+        admin = User(email="admin@example.com", password_hash=hash_password("admin123"), role="admin", name="Admin User")
+        session.add(admin)
+        session.commit()
+        admin_id = admin.id
+        session.expunge(admin)
+
+    return admin_id
+
+
+@pytest.fixture()
 def auth_client(app: Flask, test_user):
-    """Create a test client with authentication cookies."""
+    """Create a test client with authentication cookies (regular user)."""
     import os
     from datetime import datetime, timedelta, timezone
 
@@ -72,6 +95,38 @@ def auth_client(app: Flask, test_user):
         now = datetime.now(timezone.utc)
         payload = {
             "user_id": test_user,
+            "email": "test@example.com",
+            "role": "user",
+            "exp": now + timedelta(hours=1),
+            "iat": now,
+        }
+        access_token = jwt.encode(payload, jwt_secret, algorithm=jwt_algorithm)
+
+        # Create client and set cookie
+        client = app.test_client()
+        client.set_cookie("access_token", access_token)
+
+        return client
+
+
+@pytest.fixture()
+def auth_admin_client(app: Flask, test_admin):
+    """Create a test client with authentication cookies (admin user)."""
+    import os
+    from datetime import datetime, timedelta, timezone
+
+    import jwt
+
+    with app.app_context():
+        # Create JWT access token for admin user
+        jwt_secret = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
+        jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256")
+
+        now = datetime.now(timezone.utc)
+        payload = {
+            "user_id": test_admin,
+            "email": "admin@example.com",
+            "role": "admin",
             "exp": now + timedelta(hours=1),
             "iat": now,
         }

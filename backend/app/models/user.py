@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Index, Integer, String, func
+from sqlalchemy import BigInteger, DateTime, Enum, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from . import Base
@@ -14,6 +14,7 @@ class User(Base):
     __tablename__ = "users"
     __table_args__ = (
         Index("idx_users_email", "email", unique=True),
+        Index("idx_users_role", "role"),
         {"sqlite_autoincrement": True},
     )
 
@@ -24,6 +25,12 @@ class User(Base):
     )
     email: Mapped[str] = mapped_column(String(length=255), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(length=255), nullable=False)
+    role: Mapped[str] = mapped_column(
+        Enum("admin", "user", name="user_role"),
+        nullable=False,
+        server_default="user",
+    )
+    name: Mapped[str | None] = mapped_column(String(length=100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
