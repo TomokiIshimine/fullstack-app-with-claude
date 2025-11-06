@@ -1,0 +1,35 @@
+name: 'Setup Backend'
+description: 'Setup Python, Poetry, and install backend dependencies'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.12'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Poetry
+      shell: bash
+      run: pipx install poetry
+
+    - name: Cache Poetry dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pypoetry
+          ~/.local/share/pypoetry
+          ~/.local/share/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('backend/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-
+
+    - name: Install backend dependencies
+      shell: bash
+      run: poetry -C backend install --no-interaction
