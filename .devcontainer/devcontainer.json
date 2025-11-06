@@ -27,7 +27,9 @@
           "ms-python.python",
           "dbaeumer.vscode-eslint",
           "esbenp.prettier-vscode",
-          "ms-azuretools.vscode-docker"
+          "ms-azuretools.vscode-docker",
+          "yzhang.markdown-all-in-one",
+          "bierner.markdown-mermaid"
         ]
       }
     },
