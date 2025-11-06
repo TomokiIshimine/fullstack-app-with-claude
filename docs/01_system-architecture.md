@@ -141,6 +141,8 @@ app/
 | テスト                | pytest                  | -         | ユニット・統合テスト            |
 | リンター              | flake8 + mypy           | -         | コード品質・型チェック          |
 | フォーマッター        | black + isort           | -         | コード整形                      |
+| レート制限            | Flask-Limiter           | 3.x       | APIレート制限                  |
+| キャッシュ            | Redis                   | 7.x       | レート制限バックエンド          |
 
 ### 3.3 データベース
 
@@ -217,6 +219,13 @@ services:
     - Port: 3306
     - Volume: mysql-data (永続化)
     - Healthcheck: mysqladmin ping
+
+  redis:
+    - Image: redis:7-alpine
+    - Port: 6379
+    - Volume: redis-data (永続化)
+    - Healthcheck: redis-cli ping
+    - Purpose: レート制限用キャッシュストア
 
 networks:
   app-network (bridge)
