@@ -1,0 +1,33 @@
+name: 'Setup Terraform'
+description: 'Setup Terraform and authenticate to GCP'
+
+inputs:
+  terraform-version:
+    description: 'Terraform version to use'
+    required: false
+    default: '~1.9.0'
+  workload_identity_provider:
+    description: 'GCP Workload Identity Provider'
+    required: true
+  service_account:
+    description: 'GCP Service Account'
+    required: true
+  working-directory:
+    description: 'Working directory for Terraform'
+    required: false
+    default: 'infra/terraform'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+        terraform_wrapper: false
+
+    - name: Setup GCP
+      uses: ./.github/actions/setup-gcp
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
