@@ -124,7 +124,6 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 ```json
 {
   "id": 123,
-  "user_id": 1,
   "title": "買い物リスト作成",
   "detail": "スーパーで野菜を買う",
   "due_date": "2025-10-30",
@@ -133,6 +132,8 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
   "updated_at": "2025-10-28T10:00:00Z"
 }
 ```
+
+**注記:** `user_id` はセキュリティ上の理由で、APIレスポンスには含まれません。ユーザーは自分のTODOのみにアクセスでき、認証トークンから自動的に判別されます。
 
 #### 成功レスポンス（一覧取得）
 ```json
@@ -190,6 +191,7 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 | **401 Unauthorized** | 認証エラー | トークン未提供、期限切れ | アクセストークン無効 |
 | **403 Forbidden** | 認可エラー | 権限不足 | 他ユーザーのTODO編集試行 |
 | **404 Not Found** | リソース不存在 | 指定IDのリソースが存在しない | `GET /api/todos/99999` |
+| **429 Too Many Requests** | レート制限超過 | API呼び出し頻度が制限を超えた | 認証エンドポイント |
 | **500 Internal Server Error** | サーバーエラー | 予期しないエラー | データベース接続エラー |
 
 ### 5.2 エラーレスポンス形式
@@ -266,10 +268,17 @@ def unauthorized(error):
 ### 6.1 フィルタリング
 
 ```
-GET /api/todos?status=active
-GET /api/todos?status=completed
-GET /api/todos?status=all
+GET /api/todos                    # デフォルト: status=active
+GET /api/todos?status=active      # 未完了TODOのみ
+GET /api/todos?status=completed   # 完了TODOのみ
+GET /api/todos?status=all         # 全TODO
 ```
+
+**パラメータ:**
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|---|------|----------|------|
+| `status` | string | No | `active` | フィルタ条件: `all`, `active`, `completed` |
 
 **ルール:**
 - パラメータ名: リソースの属性名に対応（`status`, `category` 等）
@@ -407,6 +416,16 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 |---------|------|-----|
 | `Content-Type` | レスポンスボディの形式 | `application/json` |
 | `Set-Cookie` | 認証トークン設定 | `access_token=...; HttpOnly; SameSite=Lax` |
+
+### 9.3 レート制限ヘッダー
+
+Flask-Limiterが自動的に以下のヘッダーを返します:
+
+| ヘッダー | 説明 | 例 |
+|---------|------|-----|
+| `X-RateLimit-Limit` | 制限値 | `10` |
+| `X-RateLimit-Remaining` | 残りリクエスト数 | `7` |
+| `X-RateLimit-Reset` | リセット時刻（UNIXタイムスタンプ） | `1699564800` |
 
 ---
 

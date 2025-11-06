@@ -59,7 +59,7 @@ sequenceDiagram
 
 | ステップ | 処理内容 |
 |---------|---------|
-| 1. 入力検証 | メールアドレス形式チェック、パスワード必須チェック |
+| 1. 入力検証 | - メールアドレス形式チェック<br/>- パスワード検証:<br/>  - 最低8文字<br/>  - 英字と数字の両方を含む必要あり |
 | 2. ユーザー検索 | データベースから email でユーザーを検索 |
 | 3. パスワード検証 | bcrypt.checkpw でハッシュと比較 |
 | 4. トークン生成 | access_token (1日), refresh_token (7日) を生成 |
@@ -181,7 +181,7 @@ sequenceDiagram
 | **XSS (Cross-Site Scripting)** | - httpOnly Cookie (JavaScript アクセス不可)<br/>- 入力サニタイズ | BE: `auth_routes.py`<br/>FE: React自動エスケープ |
 | **CSRF (Cross-Site Request Forgery)** | - SameSite=Lax Cookie 属性<br/>- Origin/Referer チェック (将来的) | BE: Cookie設定 |
 | **SQL インジェクション** | - SQLAlchemy ORM のパラメータ化クエリ<br/>- プリペアドステートメント | BE: `repositories/` |
-| **ブルートフォース攻撃** | - bcrypt による遅いハッシュ化 (コスト: デフォルト 12)<br/>- レート制限 (将来的) | BE: `utils/password.py` |
+| **ブルートフォース攻撃** | - bcrypt による遅いハッシュ化 (コスト: デフォルト 12)<br/>- レート制限 (実装済み: Flask-Limiter + Redis) | BE: `utils/password.py`, `limiter.py` |
 | **トークン盗聴** | - HTTPS による通信暗号化 (本番環境)<br/>- Secure Cookie 属性 | Infra設定 |
 | **トークン再利用** | - トークンローテーション<br/>- 使用済みトークンの無効化 | BE: `auth_service.py` |
 
@@ -222,9 +222,9 @@ sequenceDiagram
 
 | メソッド | エンドポイント | 認証 | 説明 | 実装箇所 |
 |---------|--------------|------|------|---------|
-| POST | `/api/auth/login` | 不要 | ログイン | BE: `auth_routes.py:21-106` |
-| POST | `/api/auth/logout` | 不要 | ログアウト | BE: `auth_routes.py:190-231` |
-| POST | `/api/auth/refresh` | 不要 | トークン更新 | BE: `auth_routes.py:108-187` |
+| POST | `/api/auth/login` | 不要 | ログイン | BE: `auth_routes.py:22-108` |
+| POST | `/api/auth/logout` | 不要 | ログアウト | BE: `auth_routes.py:193-236` |
+| POST | `/api/auth/refresh` | 不要 | トークン更新 | BE: `auth_routes.py:110-191` |
 
 ### 5.2 ログイン API
 
@@ -238,6 +238,12 @@ Content-Type: application/json
   "password": "password123"
 }
 ```
+
+**パスワード要件:**
+- 最低8文字
+- 英字（a-z, A-Z）と数字（0-9）の両方を含むこと
+
+**実装箇所:** `backend/app/schemas/auth.py:28-37`
 
 **レスポンス:**
 ```json
@@ -303,6 +309,27 @@ Set-Cookie: refresh_token=; HttpOnly; SameSite=Lax; Path=/api; Max-Age=0
   "message": "ログアウトしました"
 }
 ```
+
+### 5.5 レート制限
+
+全ての認証エンドポイントにレート制限が適用されています。
+
+| エンドポイント | 制限 | 超過時のレスポンス |
+|--------------|------|------------------|
+| `POST /api/auth/login` | 10リクエスト/分 | 429 Too Many Requests |
+| `POST /api/auth/refresh` | 30リクエスト/分 | 429 Too Many Requests |
+| `POST /api/auth/logout` | 20リクエスト/分 | 429 Too Many Requests |
+
+**レート制限超過時のレスポンス例:**
+```json
+429 Too Many Requests
+
+{
+  "error": "Too Many Requests"
+}
+```
+
+**実装:** `backend/app/limiter.py` でFlask-Limiterを使用してRedisバックエンドで制限を管理しています。
 
 ---
 

@@ -64,9 +64,9 @@ graph TB
 
 | 機能 | エンドポイント | 実装箇所 | 主な仕様 |
 |------|--------------|---------|---------|
-| **ログイン** | `POST /api/auth/login` | FE: `LoginPage.tsx`<br/>BE: `auth_routes.py:21-106` | - メール/パスワード認証<br/>- httpOnly Cookie (access_token, refresh_token)<br/>- bcrypt パスワードハッシュ化 |
-| **ログアウト** | `POST /api/auth/logout` | FE: `TodoListPage.tsx:34-44`<br/>BE: `auth_routes.py:190-231` | - リフレッシュトークン無効化<br/>- Cookie クリア |
-| **トークン更新** | `POST /api/auth/refresh` | FE: `AuthContext.tsx`<br/>BE: `auth_routes.py:108-187` | - 自動トークンリフレッシュ<br/>- トークンローテーション |
+| **ログイン** | `POST /api/auth/login` | FE: `LoginPage.tsx`<br/>BE: `auth_routes.py:22-108` | - メール/パスワード認証<br/>- httpOnly Cookie (access_token, refresh_token)<br/>- bcrypt パスワードハッシュ化 |
+| **ログアウト** | `POST /api/auth/logout` | FE: `TodoListPage.tsx:34-44`<br/>BE: `auth_routes.py:193-236` | - リフレッシュトークン無効化<br/>- Cookie クリア |
+| **トークン更新** | `POST /api/auth/refresh` | FE: `AuthContext.tsx`<br/>BE: `auth_routes.py:110-191` | - 自動トークンリフレッシュ<br/>- トークンローテーション |
 
 ---
 
@@ -122,11 +122,23 @@ graph TB
 - FE「API層」: API関数のユニットテストのみ実装、コンポーネント・フックのテストなし
 - FE「✓」: ユーティリティ層またはバリデーション層のテストが実装済み
 
+### 4.2 共通機能詳細
+
+| 機能 | 実装箇所 | 詳細 |
+|------|---------|------|
+| **レート制限** | BE: `limiter.py`<br/>BE: `routes/auth_routes.py` | - Flask-Limiter + Redis による実装<br/>- 認証エンドポイントに制限適用<br/>  - ログイン: 10req/分<br/>  - トークン更新: 30req/分<br/>  - ログアウト: 20req/分<br/>- 429エラーレスポンス |
+
 ---
 
 ## 5. API エンドポイント一覧
 
-### 5.1 認証 API
+### 5.1 システム監視
+
+| 機能 | エンドポイント | 実装箇所 | 詳細 |
+|------|--------------|---------|------|
+| **ヘルスチェック** | `GET /health` | FE: なし<br/>BE: `health.py:17` | アプリケーションとデータベースの状態確認。200 OK（正常）または 503 Service Unavailable（異常）を返す |
+
+### 5.2 認証 API
 
 | メソッド | エンドポイント | 認証 | 説明 |
 |---------|--------------|------|------|
@@ -134,7 +146,7 @@ graph TB
 | POST | `/api/auth/logout` | 不要 | ログアウト |
 | POST | `/api/auth/refresh` | 不要 | トークン更新 |
 
-### 5.2 TODO API
+### 5.3 TODO API
 
 | メソッド | エンドポイント | 認証 | 説明 |
 |---------|--------------|------|------|

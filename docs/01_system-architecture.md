@@ -93,10 +93,15 @@ app/
 ├── routes/             # APIエンドポイント定義
 │   ├── __init__.py     # Blueprintの統合
 │   ├── auth_routes.py  # 認証関連エンドポイント
-│   └── todo_routes.py  # TODO関連エンドポイント
+│   ├── todo_routes.py  # TODO関連エンドポイント
+│   └── health.py       # ヘルスチェックエンドポイント
 ├── services/           # ビジネスロジック
 │   ├── auth_service.py
 │   └── todo_service.py
+├── repositories/       # データアクセス層
+│   ├── user_repository.py
+│   ├── todo_repository.py
+│   └── refresh_token_repository.py
 ├── models/             # SQLAlchemy ORM モデル
 │   ├── user.py
 │   ├── todo.py
@@ -104,8 +109,12 @@ app/
 ├── schemas/            # Pydantic スキーマ (バリデーション)
 │   ├── auth.py
 │   └── todo.py
+├── utils/              # ユーティリティ
+│   ├── auth_decorator.py  # 認証デコレータ
+│   └── password.py        # パスワードハッシュ化
 ├── database.py         # データベース接続管理
 ├── logger.py           # ロギング設定
+├── limiter.py          # レート制限設定
 ├── config.py           # 設定管理
 └── main.py             # Flaskアプリケーションエントリーポイント
 ```
@@ -277,13 +286,20 @@ LOG_LEVEL=DEBUG
 LOG_DIR=backend/logs
 ```
 
-#### Docker Compose (.env.development)
+#### Docker Compose (infra/.env.development)
 
 ```env
+# MySQL（データベース）
 MYSQL_ROOT_PASSWORD=example-root-password
 MYSQL_DATABASE=app_db
 MYSQL_USER=app_user
 MYSQL_PASSWORD=example-password
+
+# Redis（レート制限用）
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=dev-password
+RATE_LIMIT_ENABLED=true
 ```
 
 ---

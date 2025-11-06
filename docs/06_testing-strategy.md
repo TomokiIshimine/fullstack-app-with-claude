@@ -317,9 +317,24 @@ def test_create_todo_success(auth_client):
 - ✓ API層（src/lib/api/）
 - ✓ ユーティリティ層（src/lib/utils/）
 - ✓ バリデーション層（src/lib/validation/）
-- ✗ コンポーネント層（src/components/）
-- ✗ カスタムフック層（src/hooks/）
-- ✗ ページ層（src/pages/）
+- ✓ コンポーネント層（src/components/） - TodoForm, TodoList, TodoFilterToggle, ErrorBoundary, ProtectedRoute
+- ✓ カスタムフック層（src/hooks/） - useTodos, useTodoForm (state/validation/submission)
+- ✗ ページ層（src/pages/） - 未実装
+
+**実装済みテストファイル:**
+
+| テストファイル | 対象 | テスト内容 |
+|--------------|------|-----------|
+| `src/components/TodoForm.test.tsx` | TodoFormコンポーネント | フォーム入力、バリデーション、送信 |
+| `src/components/TodoList.test.tsx` | TodoListコンポーネント | TODO表示、完了切替、削除 |
+| `src/components/TodoFilterToggle.test.tsx` | フィルタトグル | フィルタ切替動作 |
+| `src/components/ErrorBoundary.test.tsx` | エラーバウンダリ | エラーキャッチ、表示 |
+| `src/components/ProtectedRoute.test.tsx` | 認証ルート | 認証状態によるリダイレクト |
+| `src/hooks/useTodos.test.ts` | useTodosフック | CRUD操作、状態管理 |
+| `src/hooks/useTodoForm.state.test.ts` | useTodoFormフック（状態） | フォーム状態管理 |
+| `src/hooks/useTodoForm.validation.test.ts` | useTodoFormフック（検証） | 入力検証ロジック |
+| `src/hooks/useTodoForm.submission.test.ts` | useTodoFormフック（送信） | フォーム送信処理 |
+| `src/contexts/AuthContext.test.tsx` | AuthContextコンテキスト | 認証状態管理 |
 
 ### 3.7 モック戦略
 
@@ -453,9 +468,10 @@ vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
 
 | テストファイル | 対象機能 | テスト数 |
 |-------------|---------|---------|
-| `backend/tests/routes/test_auth_routes.py` | 認証APIエンドポイント | 18+ |
-| `backend/tests/services/test_auth_service.py` | 認証サービスロジック | 25+ |
-| `backend/tests/security/test_authorization.py` | 認可・アクセス制御 | 12+ |
+| `backend/tests/routes/test_auth_routes.py` | 認証APIエンドポイント | 28 |
+| `backend/tests/services/test_auth_service.py` | 認証サービスロジック | 38 |
+| `backend/tests/security/test_authorization.py` | 認可・アクセス制御 | 28 |
+| `backend/tests/routes/test_rate_limiting.py` | レート制限 | 3 |
 
 ### 5.2 クロスユーザーアクセス制御テスト
 
@@ -1274,7 +1290,7 @@ def test_filter_by_status(auth_client, status, expected_condition):
 | ツール | 用途 | 実装状況 | 備考 |
 |-------|------|---------|------|
 | **Vitest** | テストランナー | ✓ | ユーティリティ・API層のテストで使用中 |
-| **Testing Library** | Reactコンポーネントテスト | インストール済み | コンポーネントテストは未実装 |
+| **Testing Library** | Reactコンポーネントテスト | インストール済み | 実装済み（コンポーネント、フック、コンテキスト） |
 | **happy-dom** | DOM環境シミュレーション | 設定済み | vitest.configで設定済み |
 
 ---
