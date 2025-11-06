@@ -50,7 +50,9 @@ def change_password():
             data = PasswordChangeRequest.model_validate(payload)
         except ValidationError as e:
             logger.warning(f"POST /api/password/change - Validation error: {e}")
-            return jsonify({"error": "Validation error", "details": e.errors()}), 400
+            # Extract error messages from Pydantic validation errors
+            errors = [{"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]} for err in e.errors()]
+            return jsonify({"error": "Validation error", "details": errors}), 400
         except PasswordValidationError as e:
             logger.warning(f"POST /api/password/change - Validation error: {e}")
             return jsonify({"error": str(e)}), 400
