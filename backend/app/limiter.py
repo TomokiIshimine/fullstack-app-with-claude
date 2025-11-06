@@ -106,9 +106,9 @@ def init_limiter(app: Flask) -> Limiter:
     app.register_error_handler(429, rate_limit_error_handler)
 
     # Log the storage backend being used
-    if limiter._storage and hasattr(limiter._storage, 'storage_uri'):
+    if limiter._storage and hasattr(limiter._storage, "storage_uri"):
         storage_uri = limiter._storage.storage_uri
-        if 'redis' in str(storage_uri):
+        if "redis" in str(storage_uri):
             logger.info("Rate limiter initialized with Redis backend")
         else:
             logger.info("Rate limiter initialized with in-memory backend")

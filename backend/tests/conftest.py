@@ -5,12 +5,12 @@ import os
 # Set test environment BEFORE importing app.main to prevent admin user creation
 os.environ["FLASK_ENV"] = "testing"
 
-import pytest
-from flask import Flask
+import pytest  # noqa: E402
+from flask import Flask  # noqa: E402
 
-from app.config import Config
-from app.main import create_app, get_engine
-from app.models import Base
+from app.config import Config  # noqa: E402
+from app.main import create_app, get_engine  # noqa: E402
+from app.models import Base  # noqa: E402
 
 
 @pytest.fixture()
