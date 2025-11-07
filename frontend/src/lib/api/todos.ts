@@ -1,5 +1,5 @@
 import type { Todo, TodoDto, TodoPayload, TodoStatus, TodoUpdatePayload } from '@/types/todo'
-import { logger } from '@/lib/logger'
+import { fetchWithLogging, buildJsonHeaders, parseJson, buildApiError } from './client'
 
 /**
  * API error class for handling HTTP errors
@@ -17,32 +17,6 @@ export class ApiError extends Error {
 }
 
 const API_BASE_URL = '/api/todos'
-
-/**
- * Wrapper for fetch with automatic logging, timing, and credentials
- */
-async function fetchWithLogging(url: string, options?: RequestInit): Promise<Response> {
-  const method = options?.method || 'GET'
-  const startTime = performance.now()
-
-  logger.logApiRequest(method, url)
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      credentials: 'include', // Always include cookies for authentication
-    })
-    const duration = performance.now() - startTime
-
-    logger.logApiResponse(method, url, response.status, duration)
-
-    return response
-  } catch (error) {
-    const duration = performance.now() - startTime
-    logger.logApiError(method, url, error, { duration })
-    throw error
-  }
-}
 
 export async function getTodos(status: TodoStatus = 'all'): Promise<Todo[]> {
   const response = await fetchWithLogging(`${API_BASE_URL}?status=${status}`, {
@@ -107,25 +81,6 @@ export async function deleteTodo(id: number): Promise<void> {
   }
 }
 
-function buildJsonHeaders(): HeadersInit {
-  return {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  }
-}
-
-async function parseJson(response: Response): Promise<unknown> {
-  const text = await response.text()
-  if (!text) {
-    return null
-  }
-  try {
-    return JSON.parse(text)
-  } catch {
-    return null
-  }
-}
-
 function mapTodoDto(dto: TodoDto): Todo {
   return {
     id: dto.id,
@@ -152,15 +107,4 @@ function mapTodoPayload(payload: TodoPayload | TodoUpdatePayload): Record<string
   }
 
   return body
-}
-
-function buildApiError(response: Response, json: unknown): ApiError {
-  if (isErrorResponse(json)) {
-    return new ApiError(response.status, json.error.message ?? 'Request failed', json)
-  }
-  return new ApiError(response.status, response.statusText || 'Request failed', json)
-}
-
-function isErrorResponse(json: unknown): json is { error: { message?: string } } {
-  return Boolean(json && typeof json === 'object' && 'error' in (json as Record<string, unknown>))
 }
