@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { BrowserRouter, Routes, Route, MemoryRouter } from 'react-router-dom'
+import { Routes, Route, MemoryRouter } from 'react-router-dom'
 import { RoleBasedRedirect } from './RoleBasedRedirect'
 import { useAuth } from '@/contexts/AuthContext'
 import type { User } from '@/types/auth'

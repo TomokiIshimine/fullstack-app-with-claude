@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from flask import Flask
@@ -480,7 +480,7 @@ class TestMainExecution:
             # Mock apply_migrations to return 0
             with patch("scripts.apply_sql_migrations.apply_migrations", return_value=0):
                 # Mock sys.exit
-                with patch("sys.exit") as mock_exit:
+                with patch("sys.exit"):
                     # Import and execute
                     import scripts.apply_sql_migrations
 
