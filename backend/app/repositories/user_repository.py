@@ -64,8 +64,6 @@ class UserRepository:
         """
         user = User(email=email, password_hash=password_hash, role=role, name=name)
         self.session.add(user)
-        self.session.flush()
-        self.session.refresh(user)
         return user
 
     def delete(self, user: User) -> None:
@@ -76,7 +74,6 @@ class UserRepository:
             user: User instance to delete
         """
         self.session.delete(user)
-        self.session.flush()
 
 
 __all__ = ["UserRepository"]

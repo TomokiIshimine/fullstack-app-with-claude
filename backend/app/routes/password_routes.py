@@ -34,50 +34,40 @@ def change_password():
             "message": "パスワードを変更しました"
         }
     """
+    logger.info("POST /api/password/change - Changing password")
+
+    # Get user ID from Flask g (set by @require_auth)
+    user_id = g.user_id
+
+    # Parse and validate request
+    payload = request.get_json()
+    if not payload:
+        logger.warning("POST /api/password/change - Request body is required")
+        return jsonify({"error": "Request body is required"}), 400
+
     try:
-        logger.info("POST /api/password/change - Changing password")
+        data = PasswordChangeRequest.model_validate(payload)
+    except ValidationError as e:
+        logger.warning(f"POST /api/password/change - Validation error: {e}")
+        # Extract error messages from Pydantic validation errors
+        errors = [{"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]} for err in e.errors()]
+        return jsonify({"error": "Validation error", "details": errors}), 400
+    except PasswordValidationError as e:
+        logger.warning(f"POST /api/password/change - Validation error: {e}")
+        return jsonify({"error": str(e)}), 400
 
-        # Get user ID from Flask g (set by @require_auth)
-        user_id = g.user_id
+    # Change password
+    session = get_session()
+    password_service = PasswordService(session)
+    password_service.change_password(
+        user_id=user_id,
+        current_password=data.current_password,
+        new_password=data.new_password,
+    )
 
-        # Parse and validate request
-        payload = request.get_json()
-        if not payload:
-            logger.warning("POST /api/password/change - Request body is required")
-            return jsonify({"error": "Request body is required"}), 400
-
-        try:
-            data = PasswordChangeRequest.model_validate(payload)
-        except ValidationError as e:
-            logger.warning(f"POST /api/password/change - Validation error: {e}")
-            # Extract error messages from Pydantic validation errors
-            errors = [{"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]} for err in e.errors()]
-            return jsonify({"error": "Validation error", "details": errors}), 400
-        except PasswordValidationError as e:
-            logger.warning(f"POST /api/password/change - Validation error: {e}")
-            return jsonify({"error": str(e)}), 400
-
-        # Change password
-        session = get_session()
-        password_service = PasswordService(session)
-        password_service.change_password(
-            user_id=user_id,
-            current_password=data.current_password,
-            new_password=data.new_password,
-        )
-
-        response = PasswordChangeResponse(message="パスワードを変更しました")
-        logger.info(f"POST /api/password/change - Password changed successfully for user_id={user_id}")
-        return jsonify(response.model_dump()), 200
-
-    except Exception as e:
-        # Let Flask handle HTTPException (including custom service errors)
-        from werkzeug.exceptions import HTTPException
-
-        if isinstance(e, HTTPException):
-            raise
-        logger.error(f"POST /api/password/change - Unexpected error: {e}", exc_info=True)
-        return jsonify({"error": "Failed to change password"}), 500
+    response = PasswordChangeResponse(message="パスワードを変更しました")
+    logger.info(f"POST /api/password/change - Password changed successfully for user_id={user_id}")
+    return jsonify(response.model_dump()), 200
 
 
 __all__ = ["password_bp"]
