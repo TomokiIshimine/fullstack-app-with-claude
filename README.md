@@ -123,6 +123,34 @@ make pre-commit-update    # フックのバージョンを更新
 
 詳細なセットアップとトラブルシューティングについては、[docs/development.md](docs/development.md) を参照してください。
 
+## 環境変数設定
+
+### Admin ユーザー設定（必須）
+
+アプリケーションの初回起動時に、Admin ユーザーを作成するための環境変数を設定する必要があります。
+
+`backend/.env` ファイルに以下を追加：
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD_HASH=$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5UpCCaa70.MYW
+```
+
+**パスワードハッシュの生成方法:**
+
+```bash
+# ハッシュ生成スクリプトを実行
+poetry -C backend run python backend/scripts/generate_admin_hash.py
+
+# パスワードを入力するとハッシュが表示される
+# 例: admin123 → $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5UpCCaa70.MYW
+```
+
+**注意:**
+- `ADMIN_PASSWORD_HASH` には必ず bcrypt でハッシュ化された値を設定してください
+- 平文のパスワードを設定するとバリデーションエラーになります
+- 本番環境では強固なパスワードを使用してください
+
 ## Docker Compose セットアップ
 
 3つのサービスが Docker で実行されます：`frontend` (Node 20)、`backend` (Python 3.12)、`db` (MySQL 8.0)。サービスは `app-network` ブリッジネットワークで通信します。
