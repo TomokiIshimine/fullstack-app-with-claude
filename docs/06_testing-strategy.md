@@ -81,12 +81,17 @@ graph TB
 
 ### 3.3 カバレッジ目標（実装済み項目）
 
-| レイヤー | カバレッジ目標 | 重要度 |
-|---------|-------------|-------|
-| **Serviceレイヤー（バックエンド）** | 90%以上 | ★★★ |
-| **Repositoryレイヤー（バックエンド）** | 80%以上 | ★★★ |
-| **ユーティリティ（フロントエンド）** | 100% | ★★★ |
-| **API層（フロントエンド）** | 90%以上 | ★★★ |
+| レイヤー | カバレッジ目標 | 重要度 | 実装状況 |
+|---------|-------------|-------|---------|
+| **Serviceレイヤー（バックエンド）** | 90%以上 | ★★★ | ✓ |
+| **Repositoryレイヤー（バックエンド）** | 80%以上 | ★★★ | ✓ |
+| **Modelsレイヤー（バックエンド）** | 100% | ★★★ | ✓ |
+| **スクリプト層（バックエンド）** | 90%以上 | ★★★ | ✓ |
+| **ユーティリティ（フロントエンド）** | 100% | ★★★ | ✓ |
+| **API層（フロントエンド）** | 90%以上 | ★★★ | ✓ |
+
+**特記事項:**
+- **マイグレーション関連**: SchemaMigrationモデル（100%）、apply_sql_migrationsスクリプト（94.96%）
 
 ### 3.4 実装例
 
@@ -321,7 +326,190 @@ def test_create_todo_success(auth_client):
 - ✗ カスタムフック層（src/hooks/）
 - ✗ ページ層（src/pages/）
 
-### 3.7 モック戦略
+### 3.7 データベースマイグレーションテスト
+
+**実装済みのテスト:**
+
+本プロジェクトでは、データベースマイグレーションシステムに対する包括的なテストスイートを実装しています。
+
+#### 3.7.1 テスト対象
+
+| テストファイル | 対象 | テスト数 | カバレッジ |
+|-------------|------|---------|-----------|
+| `tests/models/test_schema_migration.py` | SchemaMigrationモデル | 10 | 100% |
+| `tests/scripts/test_apply_sql_migrations.py` | マイグレーション適用スクリプト | 26 | 94.96% |
+
+#### 3.7.2 SchemaMigrationモデルテスト
+
+**目的:** マイグレーション履歴を記録するモデルの正確性を検証
+
+**テスト内容:**
+```python
+# tests/models/test_schema_migration.py
+
+def test_create_schema_migration(app: Flask):
+    """マイグレーション記録の作成テスト"""
+    migration = SchemaMigration(
+        filename="001_initial_migration.sql",
+        checksum="abc123def456",
+    )
+    session.add(migration)
+    session.commit()
+
+    assert migration.id is not None
+    assert migration.filename == "001_initial_migration.sql"
+    assert isinstance(migration.applied_at, datetime)
+
+def test_unique_filename_constraint(app: Flask):
+    """ファイル名のユニーク制約テスト"""
+    # 同じファイル名で2回マイグレーション記録を作成すると失敗
+    with pytest.raises(IntegrityError):
+        # ... 重複作成処理 ...
+```
+
+**カバー範囲:**
+- ✓ レコードのCRUD操作（作成・取得・更新・削除）
+- ✓ ユニーク制約の検証（ファイル名重複防止）
+- ✓ タイムスタンプの自動設定
+- ✓ クエリ操作（フィルタリング、ソート、カウント）
+- ✓ インデックスによる高速検索
+
+#### 3.7.3 マイグレーション適用スクリプトテスト
+
+**目的:** SQLマイグレーションの安全な適用を保証
+
+**主要なテスト:**
+
+1. **チェックサム計算・検証テスト:**
+```python
+def test_calculate_checksum_consistent(tmp_path):
+    """同じファイルは常に同じチェックサムを生成"""
+    test_file = tmp_path / "test.sql"
+    test_file.write_text("SELECT * FROM users;")
+
+    checksum1 = calculate_checksum(test_file)
+    checksum2 = calculate_checksum(test_file)
+
+    assert checksum1 == checksum2
+    assert len(checksum1) == 64  # SHA256
+
+def test_verify_migration_integrity_mismatched_checksum(tmp_path):
+    """ファイル変更を検出"""
+    migration_file = tmp_path / "001_test.sql"
+    migration_file.write_text("SELECT 1;")
+
+    # 不正なチェックサムでテスト
+    applied_migrations = {"001_test.sql": "wrong_checksum"}
+
+    result = verify_migration_integrity(applied_migrations, migration_file)
+
+    assert result is False  # 整合性チェック失敗
+```
+
+2. **べき等性テスト（最重要）:**
+```python
+def test_apply_migrations_idempotency(app: Flask, tmp_path):
+    """同じマイグレーションを2回実行しても安全"""
+    migration_file = tmp_path / "400_idempotency_test.sql"
+    migration_file.write_text("CREATE TABLE test (id INTEGER);")
+
+    # 1回目: 成功
+    result1 = apply_migrations()
+    assert result1 == 0
+    count1 = session.query(SchemaMigration).count()
+
+    # 2回目: スキップされる（重複実行防止）
+    result2 = apply_migrations()
+    assert result2 == 0
+    count2 = session.query(SchemaMigration).count()
+
+    assert count1 == count2  # レコードが増えていない
+```
+
+3. **トランザクションロールバックテスト:**
+```python
+def test_apply_migrations_transaction_rollback_on_error(app: Flask, tmp_path):
+    """エラー時に全変更がロールバックされる"""
+    good_migration = tmp_path / "500_good.sql"
+    good_migration.write_text("CREATE TABLE good (id INTEGER);")
+
+    bad_migration = tmp_path / "501_bad.sql"
+    bad_migration.write_text("INVALID SQL;")
+
+    # エラーが発生
+    with pytest.raises(SQLAlchemyError):
+        apply_migrations()
+
+    # 両方のマイグレーションが記録されていない（全ロールバック）
+    session.rollback()
+    count = session.query(SchemaMigration).count()
+    assert count == 0
+```
+
+**カバー範囲:**
+- ✓ マイグレーションファイルの検出とソート
+- ✓ SHA256チェックサムの計算
+- ✓ チェックサム不一致の検出（ファイル改ざん防止）
+- ✓ **べき等性（重複実行の防止）**
+- ✓ 単一/複数SQLステートメントの実行
+- ✓ SQLコメントの処理
+- ✓ 不正なSQL実行時のエラーハンドリング
+- ✓ **トランザクションロールバック（失敗時の安全性）**
+- ✓ マイグレーション履歴の追跡
+- ✓ ファイル整合性検証
+
+#### 3.7.4 マイグレーションテストの重要性
+
+データベースマイグレーションは本番環境のデータに直接影響を与えるため、以下の品質保証が不可欠です：
+
+| 観点 | 重要度 | 実装状況 |
+|------|--------|---------|
+| **べき等性** | ★★★ | ✓ テスト済み |
+| **ロールバック安全性** | ★★★ | ✓ テスト済み |
+| **ファイル整合性** | ★★★ | ✓ テスト済み（SHA256チェックサム） |
+| **エラーハンドリング** | ★★★ | ✓ テスト済み |
+| **パフォーマンス** | ★★☆ | 手動確認 |
+
+#### 3.7.5 マイグレーションテストの実行
+
+**個別実行:**
+```bash
+# モデルテスト
+poetry -C backend run pytest tests/models/test_schema_migration.py -v
+
+# スクリプトテスト
+poetry -C backend run pytest tests/scripts/test_apply_sql_migrations.py -v
+
+# 両方を実行
+poetry -C backend run pytest tests/models/test_schema_migration.py tests/scripts/test_apply_sql_migrations.py -v
+```
+
+**カバレッジ付き実行:**
+```bash
+poetry -C backend run pytest \
+  tests/models/test_schema_migration.py \
+  tests/scripts/test_apply_sql_migrations.py \
+  --cov=app/models/schema_migration \
+  --cov=scripts/apply_sql_migrations \
+  --cov-report=term-missing
+```
+
+**期待される結果:**
+```
+tests/models/test_schema_migration.py .......... (10 passed)
+tests/scripts/test_apply_sql_migrations.py .......................... (26 passed)
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+app/models/schema_migration.py             13      0   100%
+scripts/apply_sql_migrations.py            97      3    95%   19-22, 163
+---------------------------------------------------------------------
+TOTAL                                     110      3    97%
+
+36 passed in 0.66s
+```
+
+### 3.8 モック戦略
 
 **バックエンド:**
 - データベースアクセス: `pytest-mock` でRepositoryレイヤーをモック

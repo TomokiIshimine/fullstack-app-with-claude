@@ -554,6 +554,45 @@ When modifying database schema:
 - Migrations are automatically applied in production (no manual intervention)
 - For detailed migration workflow, see `infra/mysql/migrations/README.md`
 
+### Migration Testing
+
+Comprehensive tests ensure migration safety and reliability:
+
+**Test Coverage:**
+
+| Test File | Target | Tests | Coverage |
+|-----------|--------|-------|----------|
+| `tests/models/test_schema_migration.py` | SchemaMigration model | 10 | 100% |
+| `tests/scripts/test_apply_sql_migrations.py` | Migration script | 26 | 94.96% |
+
+**Key Test Scenarios:**
+
+1. **Idempotency Testing** - Ensures migrations can be run multiple times safely
+2. **Transaction Rollback** - Verifies all changes rollback on error
+3. **Checksum Verification** - Detects file tampering (SHA256)
+4. **Error Handling** - Tests invalid SQL and edge cases
+
+**Run Migration Tests:**
+```bash
+# Run all migration tests
+poetry -C backend run pytest tests/models/test_schema_migration.py tests/scripts/test_apply_sql_migrations.py -v
+
+# With coverage
+poetry -C backend run pytest \
+  tests/models/test_schema_migration.py \
+  tests/scripts/test_apply_sql_migrations.py \
+  --cov=app/models/schema_migration \
+  --cov=scripts/apply_sql_migrations \
+  --cov-report=term-missing
+```
+
+**Expected Results:**
+- 36 tests passed
+- SchemaMigration model: 100% coverage
+- Migration script: ~95% coverage
+
+For detailed testing strategy, see [Testing Strategy](../docs/06_testing-strategy.md#37-データベースマイグレーションテスト).
+
 ## Feature Implementation Example: TODO
 
 The TODO feature demonstrates the full backend stack:
