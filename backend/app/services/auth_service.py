@@ -68,7 +68,7 @@ class AuthService:
 
         logger.info(f"User logged in successfully: {email} (id={user.id}, role={user.role})")
 
-        response = LoginResponse(user=UserResponse(id=user.id, email=user.email, role=user.role, name=user.name))
+        response = LoginResponse(user=UserResponse(id=user.id, email=user.email, role=user.role, name=user.name, created_at=user.created_at))
         return response, access_token, refresh_token
 
     def refresh_access_token(self, refresh_token: str) -> tuple[str, str, object]:

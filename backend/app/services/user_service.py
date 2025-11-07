@@ -67,7 +67,7 @@ class UserService:
         try:
             users = self.user_repo.find_all()
             logger.info(f"Retrieved {len(users)} users")
-            return [UserResponse(id=user.id, email=user.email, role=user.role, name=user.name) for user in users]
+            return [UserResponse(id=user.id, email=user.email, role=user.role, name=user.name, created_at=user.created_at) for user in users]
         except Exception as e:
             logger.error(f"Failed to list users: {e}", exc_info=True)
             raise UserServiceError(description="Failed to retrieve users")
@@ -109,7 +109,7 @@ class UserService:
             self.session.commit()
             logger.info(f"User created successfully: {email} (id={user.id}, name={name})")
 
-            user_response = UserResponse(id=user.id, email=user.email, role=user.role, name=user.name)
+            user_response = UserResponse(id=user.id, email=user.email, role=user.role, name=user.name, created_at=user.created_at)
             return UserCreateResponse(user=user_response, initial_password=initial_password)
 
         except UserAlreadyExistsError:
