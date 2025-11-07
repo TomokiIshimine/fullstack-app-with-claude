@@ -158,15 +158,38 @@ make db-reset             # Docker ボリュームを削除してデータベー
 データベーススキーマを変更する場合:
 
 1. `app/models/` の SQLAlchemy モデルを更新
-2. `infra/mysql/init/001_init.sql` を同じ内容に更新
-3. 既存環境では `make db-init` を実行するか、手動でデータを移行
+2. `infra/mysql/init/001_init.sql` を同じ内容に更新（新規インストール用）
+3. `infra/mysql/migrations/` に連番付きマイグレーションSQL（例: `002_add_column.sql`）を作成
+4. ローカル環境でマイグレーションをテスト
+
+**ローカル開発環境でのマイグレーション適用:**
+```bash
+# SQLマイグレーションを適用（既存テーブルへのスキーマ変更）
+poetry -C backend run python scripts/apply_sql_migrations.py
+```
+
+**CI/CD環境での自動マイグレーション:**
+
+本番環境（Cloud Run）では、デプロイ時にマイグレーションが自動的に適用されます:
+
+1. GitHub Actionsがデプロイワークフローを実行
+2. Cloud Run Jobが`scripts/run_migrations.sh`を実行
+   - Step 1: テーブル作成（新規テーブルのみ）
+   - Step 2: **SQLマイグレーション自動適用**（既存テーブルのスキーマ変更）
+   - Step 3: IAM権限付与
+3. マイグレーション成功後にアプリケーションがデプロイされる
+
+マイグレーションの適用状況は`schema_migrations`テーブルで追跡されます。
 
 **重要な注意事項:**
 - SQLAlchemy モデルと SQL ファイルは手動で同期する必要があります
-- 現在プロジェクトでは Alembic マイグレーションを使用していません
-- 本番デプロイでは適切なマイグレーションツールの導入を検討してください
+- マイグレーションファイルは**一度適用したら変更しない**でください（チェックサムで整合性を検証）
+- 新しいマイグレーションは必ず新しいファイルとして作成してください
 
-詳細は [データベース設計書](./04_database-design.md) を参照してください。
+詳細は以下を参照してください:
+- [データベース設計書](./04_database-design.md) - スキーマ管理の詳細
+- [システム構成設計書](./01_system-architecture.md) - CI/CDパイプライン
+- [マイグレーションREADME](../infra/mysql/migrations/README.md) - マイグレーション手順
 
 ## Pre-commit フック（軽量チェック）
 

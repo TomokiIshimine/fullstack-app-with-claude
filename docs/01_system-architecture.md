@@ -367,9 +367,253 @@ graph TB
 
 ---
 
-## 8. 付録
+## 8. CI/CDパイプライン
 
-### 8.1 開発コマンド一覧
+本プロジェクトは GitHub Actions を使用した自動化されたCI/CDパイプラインを実装しています。
+
+### 8.1 ワークフロー構成
+
+プロジェクトには4つのGitHub Actionsワークフローがあります:
+
+#### 1. CI Workflow (`.github/workflows/ci.yml`)
+
+**トリガー:**
+- Pull Request作成・更新時
+- 手動実行（workflow_dispatch）
+- 他のワークフローから呼び出し可能（workflow_call）
+
+**ジョブ:**
+1. **Setup**: 依存関係のキャッシュウォームアップ
+2. **Lint**: コード品質チェック（ESLint, flake8, mypy）- 並列実行
+3. **Test**: ユニット・統合テスト（Vitest, pytest）- 並列実行、カバレッジレポート付き
+
+**目的**: プルリクエストの品質を自動検証し、マージ前に問題を検出
+
+#### 2. Terraform Workflow (`.github/workflows/terraform.yml`)
+
+**トリガー:**
+- `main`ブランチへのプッシュ（`infra/terraform/**`変更時）
+- Pull Request（Terraform変更時）
+- 手動実行
+
+**プロビジョニングリソース:**
+- Cloud SQL（MySQL 8.0インスタンス）
+- Cloud Run（アプリケーションサービス + マイグレーションジョブ）
+- VPC・ネットワーク設定
+- Redis（Memorystore）
+- Artifact Registry
+
+**機能:**
+- Pull Request時: `terraform plan`の結果をPRにコメント
+- `main`へのマージ時: `terraform apply`を自動実行
+
+#### 3. Deploy Workflow (`.github/workflows/deploy.yml`)
+
+**トリガー:**
+- `main`ブランチへのプッシュ
+- 手動実行
+
+**デプロイフロー:**
+
+```mermaid
+flowchart TD
+    A[CI検証] --> B[Dockerイメージビルド]
+    B --> C[Artifact Registryにプッシュ]
+    C --> D[Migration Jobイメージ更新]
+    D --> E[データベースマイグレーション実行]
+    E --> F{マイグレーション成功?}
+    F -->|Yes| G[Cloud Runサービスデプロイ]
+    F -->|No| H[デプロイ中止]
+    G --> I[ヘルスチェック]
+    I --> J{ヘルスチェック成功?}
+    J -->|Yes| K[デプロイ完了]
+    J -->|No| L[デプロイ失敗]
+
+    style E fill:#ffffcc,stroke:#333,stroke-width:2px
+    style F fill:#ffcccc,stroke:#333,stroke-width:2px
+    style G fill:#ccffcc,stroke:#333,stroke-width:2px
+```
+
+**ジョブ詳細:**
+
+1. **CI検証** (reusable workflow)
+   - Lint・テストを再実行してコードの健全性を確認
+
+2. **Terraformアウトプット取得**
+   - インフラ情報（Cloud SQL接続名、Cloud Runサービス名など）を取得
+
+3. **バックエンドデプロイ** ⭐ **マイグレーション自動化**
+   ```yaml
+   # Dockerイメージビルド・プッシュ
+   - Build and push Docker image
+
+   # マイグレーションジョブ更新
+   - Update Migration Job Image
+     → 新しいイメージをマイグレーションジョブに設定
+
+   # マイグレーション実行（ブロッキング）
+   - Run Database Migrations
+     → gcloud run jobs execute --wait
+     → 失敗時はデプロイ中止
+
+   # アプリケーションデプロイ
+   - Deploy to Cloud Run
+     → マイグレーション成功後のみ実行
+
+   # ヘルスチェック
+   - Health check validation
+   ```
+
+#### 4. Terraform Unlock Workflow (`.github/workflows/terraform-unlock.yml`)
+
+**目的**: Terraformステートロックの手動解除用ユーティリティ
+
+### 8.2 データベースマイグレーション自動化
+
+#### マイグレーションインフラ
+
+**Cloud Run Job** (`infra/terraform/cloud-run-job.tf`):
+```hcl
+resource "google_cloud_run_v2_job" "db_migrate" {
+  name     = "${var.app_name}-db-migrate"
+  location = var.gcp_region
+
+  template {
+    containers {
+      command = ["/bin/bash"]
+      args    = ["scripts/run_migrations.sh"]
+      # Cloud SQL接続用の環境変数
+    }
+  }
+}
+```
+
+**特徴:**
+- 専用のCloud Run Jobとして実行
+- パスワードベースの管理ユーザーで接続（全権限）
+- Cloud SQL Connectorによる安全な接続
+- プライベートVPCアクセス
+- タイムアウト: 5分
+- リソース: 1 CPU, 512Mi メモリ
+
+#### マイグレーション実行フロー
+
+**スクリプト**: `backend/scripts/run_migrations.sh`
+
+```bash
+# Step 1: テーブル作成
+python scripts/create_tables.py
+  → SQLAlchemy Base.metadata.create_all()
+  → 存在しないテーブルのみ作成（べき等）
+
+# Step 2: SQLマイグレーション適用 ⭐
+python scripts/apply_sql_migrations.py
+  → infra/mysql/migrations/*.sql を読み込み
+  → schema_migrations テーブルで適用履歴を追跡
+  → 未適用のマイグレーションを順番に実行
+  → チェックサム検証で整合性を保証
+
+# Step 3: IAM権限付与
+  → Cloud Run サービスアカウントに権限付与
+  → IAM認証を有効化
+```
+
+#### マイグレーション追跡
+
+**テーブル**: `schema_migrations`
+
+| カラム | 型 | 説明 |
+|--------|-----|------|
+| id | BIGINT | 主キー |
+| filename | VARCHAR(255) | マイグレーションファイル名 |
+| checksum | VARCHAR(64) | SHA256ハッシュ（整合性検証用） |
+| applied_at | TIMESTAMP | 適用日時 |
+
+**機能:**
+- 適用済みマイグレーションを記録
+- 重複実行を防止（べき等性）
+- ファイル変更を検出（チェックサム比較）
+
+#### デプロイ順序の重要性
+
+マイグレーションは**アプリケーションデプロイより前**に実行されます:
+
+1. **マイグレーション実行** (`--wait`フラグでブロック)
+2. **マイグレーション成功** → アプリケーションデプロイ
+3. **マイグレーション失敗** → **デプロイ中止**
+
+これにより、スキーマとアプリケーションの不整合を防ぎます。
+
+### 8.3 マイグレーション管理のベストプラクティス
+
+#### ローカル開発
+
+```bash
+# マイグレーションファイル作成
+vim infra/mysql/migrations/002_add_new_column.sql
+
+# ローカルでテスト
+poetry -C backend run python scripts/apply_sql_migrations.py
+
+# 動作確認
+poetry -C backend run pytest
+```
+
+#### CI/CD環境
+
+- **自動適用**: `main`へのマージ時に自動実行
+- **失敗時の挙動**: デプロイが中止され、アプリケーションは変更されない
+- **ロールバック**: 手動で実施（ダウンマイグレーションスクリプトは未実装）
+
+#### 注意事項
+
+1. **マイグレーションファイルは不変**
+   - 一度適用したファイルは変更しない
+   - 新しい変更は新しいファイルとして作成
+
+2. **連番管理**
+   - ファイル名に連番を使用（`001_`, `002_`, ...）
+   - アルファベット順で実行される
+
+3. **破壊的変更**
+   - ALTER TABLE DROP COLUMNなどは慎重に
+   - バックアップ取得を推奨
+
+4. **テスト**
+   - ローカル環境で必ずテスト
+   - ステージング環境があればそこでも検証
+
+### 8.4 CI/CD環境変数
+
+デプロイワークフローで使用される主な環境変数:
+
+| 環境変数 | 説明 | ソース |
+|---------|------|--------|
+| `CLOUDSQL_INSTANCE` | Cloud SQLインスタンス名 | Terraform outputs |
+| `DB_USER` | データベース管理ユーザー | GitHub Secrets |
+| `DB_PASS` | データベースパスワード | GitHub Secrets |
+| `DB_NAME` | データベース名 | Terraform outputs |
+| `IAM_USER_EMAIL` | IAMサービスアカウント | Terraform outputs |
+| `CLOUDSQL_IP_TYPE` | 接続タイプ（PRIVATE/PUBLIC） | 固定値: PRIVATE |
+
+### 8.5 セキュリティ
+
+**マイグレーションジョブ:**
+- プライベートVPC経由でCloud SQLに接続
+- Cloud SQL Connectorによる自動SSL/TLS暗号化
+- 管理者パスワードはGitHub Secretsで管理
+- 実行ログにセンシティブ情報をマスキング
+
+**アプリケーションサービス:**
+- IAM認証を使用（パスワード不要）
+- Cloud SQL Proxyは使用せず、Connectorを利用
+- サービスアカウントに最小限の権限
+
+---
+
+## 9. 付録
+
+### 9.1 開発コマンド一覧
 
 ```bash
 # 環境構築
@@ -394,7 +638,7 @@ make db-reset             # データベースリセット
 make db-create-user       # テストユーザー作成
 ```
 
-### 8.2 参考資料
+### 9.2 参考資料
 
 - [React Documentation](https://react.dev/)
 - [Flask Documentation](https://flask.palletsprojects.com/)
