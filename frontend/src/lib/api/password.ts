@@ -1,7 +1,7 @@
 import type { PasswordChangeRequest, PasswordChangeResponse } from '@/types/password'
 import { fetchWithLogging, buildJsonHeaders, parseJson, buildApiError } from './client'
 
-const API_BASE_URL = '/api/auth/change-password'
+const API_BASE_URL = '/api/password/change'
 
 /**
  * Change user password

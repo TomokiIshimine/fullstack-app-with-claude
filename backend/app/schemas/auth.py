@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
@@ -42,7 +43,7 @@ class UserResponse(BaseModel):
 
     id: int
     email: str
-    role: str
+    role: Literal["admin", "user"]
     name: str | None = None
 
     model_config = {"from_attributes": True}

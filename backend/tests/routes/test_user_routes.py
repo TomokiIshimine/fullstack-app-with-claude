@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from tests.helpers import assert_response_error, assert_response_success, create_auth_client, create_user
 
-
 # GET /api/users tests
 
 

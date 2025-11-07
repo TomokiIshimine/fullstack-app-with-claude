@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import jwt
 from flask import g, request
@@ -65,7 +65,7 @@ def require_auth(f: Callable[..., Any]) -> Callable[..., Any]:
     return decorated_function
 
 
-def require_role(required_role: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def require_role(required_role: Literal["admin", "user"]) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator to require a specific role for an endpoint.
 
@@ -73,7 +73,7 @@ def require_role(required_role: str) -> Callable[[Callable[..., Any]], Callable[
     It checks if the authenticated user has the required role.
 
     Args:
-        required_role: The role required to access the endpoint (e.g., 'admin', 'user')
+        required_role: The role required to access the endpoint ('admin' or 'user')
 
     Returns:
         Decorator function

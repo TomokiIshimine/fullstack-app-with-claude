@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from tests.helpers import assert_response_error, assert_response_success, create_auth_client, create_user
 
-
 # POST /api/password/change tests
 
 
@@ -13,9 +12,7 @@ def test_change_password_success(app, client):
     user_id = create_user(app, email="user@example.com", password="oldpassword123", role="user")
     user_client = create_auth_client(app, user_id, email="user@example.com", role="user")
 
-    response = user_client.post(
-        "/api/password/change", json={"current_password": "oldpassword123", "new_password": "newpassword456"}
-    )
+    response = user_client.post("/api/password/change", json={"current_password": "oldpassword123", "new_password": "newpassword456"})
 
     data = assert_response_success(response, 200)
     assert "message" in data
@@ -35,9 +32,7 @@ def test_change_password_admin_can_change(app):
     admin_id = create_user(app, email="admin@example.com", password="adminpass123", role="admin")
     admin_client = create_auth_client(app, admin_id, email="admin@example.com", role="admin")
 
-    response = admin_client.post(
-        "/api/password/change", json={"current_password": "adminpass123", "new_password": "newadminpass456"}
-    )
+    response = admin_client.post("/api/password/change", json={"current_password": "adminpass123", "new_password": "newadminpass456"})
 
     assert_response_success(response, 200)
 
@@ -47,9 +42,7 @@ def test_change_password_invalid_current_password(app):
     user_id = create_user(app, email="user@example.com", password="correctpass123", role="user")
     user_client = create_auth_client(app, user_id, email="user@example.com", role="user")
 
-    response = user_client.post(
-        "/api/password/change", json={"current_password": "wrongpass123", "new_password": "newpassword456"}
-    )
+    response = user_client.post("/api/password/change", json={"current_password": "wrongpass123", "new_password": "newpassword456"})
 
     assert_response_error(response, 401)
     data = response.get_json()
@@ -81,9 +74,7 @@ def test_change_password_new_password_no_numbers(app):
     user_id = create_user(app, email="user@example.com", password="oldpassword123", role="user")
     user_client = create_auth_client(app, user_id, email="user@example.com", role="user")
 
-    response = user_client.post(
-        "/api/password/change", json={"current_password": "oldpassword123", "new_password": "onlyletters"}
-    )
+    response = user_client.post("/api/password/change", json={"current_password": "oldpassword123", "new_password": "onlyletters"})
 
     assert_response_error(response, 400)
 

@@ -77,9 +77,7 @@ def test_create_user_password_is_hashed(app, user_service, client):
     result = user_service.create_user(email="newuser@example.com", name="New User")
 
     # Try to login with the initial password
-    login_response = client.post(
-        "/api/auth/login", json={"email": "newuser@example.com", "password": result.initial_password}
-    )
+    login_response = client.post("/api/auth/login", json={"email": "newuser@example.com", "password": result.initial_password})
 
     assert login_response.status_code == 200
 
