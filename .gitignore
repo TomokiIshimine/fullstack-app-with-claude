@@ -70,3 +70,5 @@ infra/terraform/*_override.tf
 infra/terraform/*_override.tf.json
 
 .claude/settings.local.json
+
+review_results/
