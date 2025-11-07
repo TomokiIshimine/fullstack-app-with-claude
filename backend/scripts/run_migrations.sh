@@ -1,7 +1,8 @@
 #!/bin/bash
 # Migration script that:
 # 1. Creates tables using password-based admin user
-# 2. Grants permissions to IAM user for application access
+# 2. Applies SQL migrations from infra/mysql/migrations/
+# 3. Grants permissions to IAM user for application access
 
 set -e  # Exit on error
 
@@ -12,7 +13,13 @@ python scripts/create_tables.py
 
 echo ""
 echo "========================================="
-echo "Step 2: Granting permissions to IAM user"
+echo "Step 2: Applying SQL migrations"
+echo "========================================="
+python scripts/apply_sql_migrations.py
+
+echo ""
+echo "========================================="
+echo "Step 3: Granting permissions to IAM user"
 echo "========================================="
 
 # Set up environment for grant script

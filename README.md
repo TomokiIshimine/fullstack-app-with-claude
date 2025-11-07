@@ -124,6 +124,67 @@ make pre-commit-update    # フックのバージョンを更新
 
 詳細なセットアップとトラブルシューティングについては、[docs/00_development.md](docs/00_development.md) を参照してください。
 
+## 環境変数設定
+
+### Admin ユーザー設定（必須）
+
+アプリケーションの初回起動時に、Admin ユーザーを作成するための環境変数を設定する必要があります。
+
+`backend/.env` ファイルに以下を追加：
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD_HASH=$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5UpCCaa70.MYW
+```
+
+**パスワードハッシュの生成方法:**
+
+```bash
+# ハッシュ生成スクリプトを実行
+poetry -C backend run python backend/scripts/generate_admin_hash.py
+
+# パスワードを入力するとハッシュが表示される
+# 例: admin123 → $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5UpCCaa70.MYW
+```
+
+**注意:**
+- `ADMIN_PASSWORD_HASH` には必ず bcrypt でハッシュ化された値を設定してください
+- 平文のパスワードを設定するとバリデーションエラーになります
+- 本番環境では強固なパスワードを使用してください
+
+**開発環境での簡易設定:**
+
+平文パスワードを直接設定することもできます（自動的にハッシュ化されます）：
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=YourSecurePassword123
+```
+
+詳細は `backend/.env.example` を参照してください。
+
+### 本番環境デプロイ時の設定（GitHub Secrets）
+
+GitHub Actions でのデプロイ時に、管理者アカウント情報を安全に設定できます。
+
+**手順:**
+
+1. GitHubリポジトリの設定ページを開く
+2. **Settings** > **Secrets and variables** > **Actions** に移動
+3. **New repository secret** をクリック
+4. 以下の2つのシークレットを追加：
+
+| シークレット名 | 説明 | 例 |
+|-------------|------|-----|
+| `ADMIN_EMAIL` | 管理者のメールアドレス | `admin@example.com` |
+| `ADMIN_PASSWORD` | 管理者のパスワード（平文） | `YourSecurePassword123` |
+
+**セキュリティ上の注意:**
+- パスワードは8文字以上で数字を含む必要があります
+- GitHub Secretsは暗号化されて保存されます
+- デプロイ時にCloud Runの環境変数として設定され、起動時に自動的にハッシュ化されます
+- GitHub Secretsは GitHub Actions のログに表示されません
+
 ## Docker Compose セットアップ
 
 3つのサービスが Docker で実行されます：`frontend` (Node 20)、`backend` (Python 3.12)、`db` (MySQL 8.0)。サービスは `app-network` ブリッジネットワークで通信します。

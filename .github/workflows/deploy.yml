@@ -116,6 +116,7 @@ jobs:
             --platform=managed \
             --region=${{ needs.get-terraform-outputs.outputs.cloud_run_location }} \
             --project=${{ env.GCP_PROJECT_ID }} \
+            --update-env-vars ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }},ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
             --quiet
 
       - name: Run Health Check

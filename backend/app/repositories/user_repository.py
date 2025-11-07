@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Sequence
+
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -38,22 +40,40 @@ class UserRepository:
         """
         return self.session.query(User).filter(User.id == user_id).first()
 
-    def create(self, email: str, password_hash: str) -> User:
+    def find_all(self) -> Sequence[User]:
+        """
+        Find all users ordered by created_at.
+
+        Returns:
+            Sequence of all User instances
+        """
+        return self.session.query(User).order_by(User.created_at.asc()).all()
+
+    def create(self, email: str, password_hash: str, role: str = "user", name: str | None = None) -> User:
         """
         Create a new user.
 
         Args:
             email: User's email address
             password_hash: Hashed password
+            role: User role (default: 'user')
+            name: User's display name (optional)
 
         Returns:
             Created User instance
         """
-        user = User(email=email, password_hash=password_hash)
+        user = User(email=email, password_hash=password_hash, role=role, name=name)
         self.session.add(user)
-        self.session.commit()
-        self.session.refresh(user)
         return user
+
+    def delete(self, user: User) -> None:
+        """
+        Delete a user.
+
+        Args:
+            user: User instance to delete
+        """
+        self.session.delete(user)
 
 
 __all__ = ["UserRepository"]

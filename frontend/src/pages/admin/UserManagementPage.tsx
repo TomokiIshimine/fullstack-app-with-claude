@@ -1,0 +1,136 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
+import { UserList } from '@/components/admin/UserList'
+import { UserCreateForm } from '@/components/admin/UserCreateForm'
+import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
+import { fetchUsers } from '@/lib/api/users'
+import type { UserResponse } from '@/types/user'
+import { logger } from '@/lib/logger'
+import { ApiError } from '@/lib/api/todos'
+
+export function UserManagementPage() {
+  const [users, setUsers] = useState<UserResponse[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [initialPassword, setInitialPassword] = useState<{
+    email: string
+    password: string
+  } | null>(null)
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  // Load users on mount
+  useEffect(() => {
+    loadUsers()
+  }, [])
+
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const data = await fetchUsers()
+      setUsers(data)
+      logger.info('Users loaded', { count: data.length })
+    } catch (err) {
+      logger.error('Failed to load users', err as Error)
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('ユーザーの読み込みに失敗しました')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      logger.info('Logout successful, redirecting to login')
+      navigate('/login')
+    } catch (error) {
+      logger.error('Logout error', error as Error)
+      // Navigate to login even if logout fails
+      navigate('/login')
+    }
+  }
+
+  const handleCreateSuccess = (response: { user: UserResponse; initial_password: string }) => {
+    // Show initial password modal
+    setInitialPassword({ email: response.user.email, password: response.initial_password })
+    // Hide create form
+    setShowCreateForm(false)
+    // Reload users list
+    loadUsers()
+  }
+
+  const handleClosePasswordModal = () => {
+    setInitialPassword(null)
+  }
+
+  return (
+    <div className="user-management-page">
+      <div className="user-management-page__content">
+        <div className="user-management-page__header">
+          <h1 className="user-management-page__title">ユーザー管理</h1>
+          <div className="user-management-page__actions">
+            <button
+              onClick={() => navigate('/settings')}
+              className="user-management-page__settings"
+            >
+              設定
+            </button>
+            <button onClick={handleLogout} className="user-management-page__logout">
+              ログアウト
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="error-message" role="alert">
+            {error}
+            <button onClick={loadUsers} className="error-message__retry">
+              再試行
+            </button>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="loading-container">
+            <div className="loading-spinner">読み込み中...</div>
+          </div>
+        ) : (
+          <div className="user-management-page__body">
+            {!showCreateForm && (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="user-management-page__create-button"
+              >
+                + 新規ユーザー追加
+              </button>
+            )}
+
+            {showCreateForm && (
+              <UserCreateForm
+                onSuccess={handleCreateSuccess}
+                onCancel={() => setShowCreateForm(false)}
+              />
+            )}
+
+            <UserList users={users} onUsersChange={loadUsers} />
+          </div>
+        )}
+
+        {initialPassword && (
+          <InitialPasswordModal
+            email={initialPassword.email}
+            password={initialPassword.password}
+            onClose={handleClosePasswordModal}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

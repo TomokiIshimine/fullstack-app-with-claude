@@ -39,13 +39,15 @@ def create_todo(auth_client, **overrides) -> dict[str, Any]:
     return response.get_json()
 
 
-def create_user(app: Flask, email: str = "test@example.com", password: str = "password123") -> int:
+def create_user(app: Flask, email: str = "test@example.com", password: str = "password123", role: str = "user", name: str | None = None) -> int:
     """Create a user directly in the database.
 
     Args:
         app: Flask application instance
         email: User email address
         password: User password (will be hashed)
+        role: User role ('admin' or 'user', default: 'user')
+        name: User display name (optional)
 
     Returns:
         int: Created user ID
@@ -56,7 +58,7 @@ def create_user(app: Flask, email: str = "test@example.com", password: str = "pa
 
     with app.app_context():
         session = get_session()
-        user = User(email=email, password_hash=hash_password(password))
+        user = User(email=email, password_hash=hash_password(password), role=role, name=name)
         session.add(user)
         session.commit()
         user_id = user.id
@@ -65,12 +67,14 @@ def create_user(app: Flask, email: str = "test@example.com", password: str = "pa
     return user_id
 
 
-def create_auth_client(app: Flask, user_id: int):
+def create_auth_client(app: Flask, user_id: int, email: str = "test@example.com", role: str = "user"):
     """Create an authenticated test client for a specific user.
 
     Args:
         app: Flask application instance
         user_id: User ID to authenticate as
+        email: User email address (default: test@example.com)
+        role: User role (default: user)
 
     Returns:
         FlaskClient: Test client with authentication cookie set
@@ -82,6 +86,8 @@ def create_auth_client(app: Flask, user_id: int):
         now = datetime.now(timezone.utc)
         payload = {
             "user_id": user_id,
+            "email": email,
+            "role": role,
             "exp": now + timedelta(hours=1),
             "iat": now,
         }

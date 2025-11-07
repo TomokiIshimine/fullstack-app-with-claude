@@ -263,6 +263,8 @@ describe('API Client - auth', () => {
       const userDto = createMockUserDto({
         id: 123,
         email: 'user@test.com',
+        role: 'user',
+        name: 'Test User',
       })
 
       mockFetch.mockResolvedValueOnce(
@@ -280,6 +282,8 @@ describe('API Client - auth', () => {
       expect(result).toEqual({
         id: 123,
         email: 'user@test.com',
+        role: 'user',
+        name: 'Test User',
       })
     })
   })

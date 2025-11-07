@@ -50,6 +50,9 @@ export function TodoListPage() {
           <h1 className="todo-page__title">TODOリスト</h1>
           <div className="todo-page__user-info">
             {user && <span className="user-email">{user.email}</span>}
+            <button type="button" onClick={() => navigate('/settings')} className="settings-button">
+              設定
+            </button>
             <button type="button" onClick={handleLogout} className="logout-button">
               ログアウト
             </button>

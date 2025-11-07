@@ -1,0 +1,33 @@
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
+
+/**
+ * Component that redirects to the appropriate page based on user role
+ * - Admin users are redirected to /admin/users
+ * - Regular users are redirected to /todos
+ * - Unauthenticated users are redirected to /login
+ */
+export function RoleBasedRedirect() {
+  const { isAuthenticated, isLoading, user } = useAuth()
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">読み込み中...</div>
+      </div>
+    )
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Redirect based on user role
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/users" replace />
+  } else {
+    return <Navigate to="/todos" replace />
+  }
+}

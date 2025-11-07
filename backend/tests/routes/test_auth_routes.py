@@ -21,6 +21,8 @@ def test_login_success(client, app, test_user):
     assert "user" in data
     assert data["user"]["email"] == "test@example.com"
     assert data["user"]["id"] == test_user
+    assert data["user"]["role"] == "user"
+    assert data["user"]["name"] == "Test User"
 
 
 def test_login_sets_cookies(client, app, test_user):
@@ -114,6 +116,8 @@ def test_refresh_success(client, app, test_user):
     assert "message" in data
     assert "user" in data
     assert data["user"]["email"] == "test@example.com"
+    assert data["user"]["role"] == "user"
+    assert data["user"]["name"] == "Test User"
 
 
 def test_refresh_sets_new_cookies(client, app, test_user):
@@ -285,12 +289,16 @@ def test_full_auth_flow(client, app, test_user):
     assert login_response.status_code == 200
     login_data = login_response.get_json()
     assert login_data["user"]["email"] == "test@example.com"
+    assert login_data["user"]["role"] == "user"
+    assert login_data["user"]["name"] == "Test User"
 
     # Step 2: Refresh token
     refresh_response = client.post("/api/auth/refresh")
     assert refresh_response.status_code == 200
     refresh_data = refresh_response.get_json()
     assert refresh_data["user"]["email"] == "test@example.com"
+    assert refresh_data["user"]["role"] == "user"
+    assert refresh_data["user"]["name"] == "Test User"
 
     # Step 3: Logout
     logout_response = client.post("/api/auth/logout")
@@ -315,14 +323,23 @@ def test_multiple_users_login_independently(client, app):
     # User 1 logs in
     user1_login = client.post("/api/auth/login", json=user1_data)
     assert user1_login.status_code == 200
-    assert user1_login.get_json()["user"]["email"] == "user1@example.com"
+    user1_response = user1_login.get_json()
+    assert user1_response["user"]["email"] == "user1@example.com"
+    assert user1_response["user"]["role"] == "user"
+    assert user1_response["user"]["name"] is not None
 
     # User 2 logs in (overwrites user1's cookies in this client)
     user2_login = client.post("/api/auth/login", json=user2_data)
     assert user2_login.status_code == 200
-    assert user2_login.get_json()["user"]["email"] == "user2@example.com"
+    user2_response = user2_login.get_json()
+    assert user2_response["user"]["email"] == "user2@example.com"
+    assert user2_response["user"]["role"] == "user"
+    assert user2_response["user"]["name"] is not None
 
     # Refresh should return user2's info
     refresh_response = client.post("/api/auth/refresh")
     assert refresh_response.status_code == 200
-    assert refresh_response.get_json()["user"]["email"] == "user2@example.com"
+    refresh_data = refresh_response.get_json()
+    assert refresh_data["user"]["email"] == "user2@example.com"
+    assert refresh_data["user"]["role"] == "user"
+    assert refresh_data["user"]["name"] is not None

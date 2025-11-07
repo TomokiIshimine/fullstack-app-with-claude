@@ -455,9 +455,9 @@ cloud-sql-python-connector[pymysql] (>=1.0,<2.0)
 
 ### Schema Management
 
-The project uses **two approaches** for database schema management:
+The project uses **three approaches** for database schema management:
 
-#### 1. Docker Compose Initialization (Recommended for New Environments)
+#### 1. Docker Compose Initialization (New Environments)
 
 When Docker starts with an empty volume, `infra/mysql/init/001_init.sql` automatically creates all tables:
 
@@ -467,7 +467,46 @@ make up                   # Starts Docker, MySQL initializes automatically
 
 This SQL file contains the complete schema and is the **single source of truth** for initial setup.
 
-#### 2. Python Scripts (Development & Testing)
+#### 2. SQL Migrations (Schema Changes to Existing Databases)
+
+For modifying existing database schemas, use SQL migration files:
+
+**Apply migrations (Local Development):**
+```bash
+poetry -C backend run python scripts/apply_sql_migrations.py
+```
+
+**Migration Features:**
+- Reads all `.sql` files from `infra/mysql/migrations/`
+- Tracks applied migrations in `schema_migrations` table
+- Prevents duplicate execution (idempotent)
+- Validates file integrity with SHA256 checksums
+- Executes migrations in alphabetical order
+
+**CI/CD Environments:**
+
+Migrations are **automatically applied** during deployment:
+- GitHub Actions triggers `scripts/run_migrations.sh` via Cloud Run Job
+- Step 1: Create tables (new tables only)
+- Step 2: Apply SQL migrations (schema changes)
+- Step 3: Grant IAM permissions
+- Application deploys only after successful migration
+
+**Migration Tracking Table:**
+
+The `schema_migrations` table records all applied migrations:
+
+```python
+class SchemaMigration(Base):
+    __tablename__ = "schema_migrations"
+
+    id: Mapped[int]                    # Primary key
+    filename: Mapped[str]               # Migration file name
+    checksum: Mapped[str]               # SHA256 hash for integrity
+    applied_at: Mapped[datetime]        # Application timestamp
+```
+
+#### 3. Python Scripts (Development & Testing)
 
 For development, testing, or manual schema updates:
 
@@ -497,13 +536,62 @@ make db-reset             # Drops Docker volume and recreates database
 When modifying database schema:
 
 1. Update SQLAlchemy model in `app/models/`
-2. Update `infra/mysql/init/001_init.sql` to match
-3. For existing environments, run `make db-init` or manually migrate data
+2. Update `infra/mysql/init/001_init.sql` to match (for new installations)
+3. Create migration SQL in `infra/mysql/migrations/` with sequential numbering
+   - Example: `002_add_status_column.sql`
+4. Test migration locally:
+   ```bash
+   poetry -C backend run python scripts/apply_sql_migrations.py
+   make test  # Verify application works
+   ```
+5. Commit all changes together
+6. CI/CD automatically applies migration on deployment
 
 **Important Notes:**
-- SQLAlchemy models and SQL file must be kept in sync manually
-- The project does not currently use Alembic migrations
-- For production deployments, consider implementing proper migration tooling
+- SQLAlchemy models and SQL files must be kept in sync manually
+- Migration files are **immutable** - never modify after application
+- New changes require new migration files
+- Migrations are automatically applied in production (no manual intervention)
+- For detailed migration workflow, see `infra/mysql/migrations/README.md`
+
+### Migration Testing
+
+Comprehensive tests ensure migration safety and reliability:
+
+**Test Coverage:**
+
+| Test File | Target | Tests | Coverage |
+|-----------|--------|-------|----------|
+| `tests/models/test_schema_migration.py` | SchemaMigration model | 10 | 100% |
+| `tests/scripts/test_apply_sql_migrations.py` | Migration script | 26 | 94.96% |
+
+**Key Test Scenarios:**
+
+1. **Idempotency Testing** - Ensures migrations can be run multiple times safely
+2. **Transaction Rollback** - Verifies all changes rollback on error
+3. **Checksum Verification** - Detects file tampering (SHA256)
+4. **Error Handling** - Tests invalid SQL and edge cases
+
+**Run Migration Tests:**
+```bash
+# Run all migration tests
+poetry -C backend run pytest tests/models/test_schema_migration.py tests/scripts/test_apply_sql_migrations.py -v
+
+# With coverage
+poetry -C backend run pytest \
+  tests/models/test_schema_migration.py \
+  tests/scripts/test_apply_sql_migrations.py \
+  --cov=app/models/schema_migration \
+  --cov=scripts/apply_sql_migrations \
+  --cov-report=term-missing
+```
+
+**Expected Results:**
+- 36 tests passed
+- SchemaMigration model: 100% coverage
+- Migration script: ~95% coverage
+
+For detailed testing strategy, see [Testing Strategy](../docs/06_testing-strategy.md#37-データベースマイグレーションテスト).
 
 ## Feature Implementation Example: TODO
 

@@ -30,6 +30,7 @@
 | users             | ユーザー情報管理              |
 | refresh_tokens    | JWT リフレッシュトークン管理  |
 | todos             | TODO アイテム管理             |
+| schema_migrations | データベースマイグレーション履歴 |
 
 ---
 
@@ -166,24 +167,90 @@ TODO アイテムを管理するテーブル。
   - `user.py` - User モデル
   - `refresh_token.py` - RefreshToken モデル
   - `todo.py` - Todo モデル
+  - `schema_migration.py` - SchemaMigration モデル（マイグレーション追跡用）
 
 ### 4.2 マイグレーション
 
-現在、スキーマ変更は以下の手順で行う:
+#### 4.2.1 新規インストール（Docker環境）
 
-1. SQLAlchemy モデルを更新
-2. `infra/mysql/init/001_init.sql` を更新
-3. 既存環境では `make db-init` でテーブル再作成
+Docker Compose起動時、`infra/mysql/init/001_init.sql`が自動実行され、全テーブルが作成されます:
 
 ```bash
-# テーブルを再作成（既存データは削除される）
-make db-init
-
-# または直接実行
-poetry -C backend run python scripts/create_tables.py
+make up                   # すべてのサービスを起動（MySQL含む）
 ```
 
-**注意:** データベースリセットは既存データを削除します。本番環境では使用しないでください。
+#### 4.2.2 既存環境へのスキーマ変更（マイグレーション）
+
+既存テーブルへのスキーマ変更は、SQLマイグレーションファイルを使用します:
+
+**手順:**
+
+1. SQLAlchemy モデルを更新（`backend/app/models/`）
+2. `infra/mysql/init/001_init.sql` を更新（新規インストール用）
+3. `infra/mysql/migrations/` に連番付きマイグレーションSQLを作成
+   ```bash
+   # 例: 002_add_status_column.sql
+   ```
+4. ローカル環境でマイグレーションをテスト
+
+**ローカル開発環境:**
+```bash
+# SQLマイグレーションを適用
+poetry -C backend run python scripts/apply_sql_migrations.py
+```
+
+**CI/CD環境（本番・ステージング）:**
+
+マイグレーションは**デプロイ時に自動実行**されます:
+
+1. GitHub Actionsがデプロイワークフローを実行
+2. Cloud Run Jobが`scripts/run_migrations.sh`を実行
+   - Step 1: テーブル作成（新規テーブルのみ）
+   - Step 2: **SQLマイグレーション自動適用**
+   - Step 3: IAM権限付与
+3. マイグレーション成功後にアプリケーションがデプロイされる
+4. マイグレーション失敗時はデプロイが中止される
+
+#### 4.2.3 マイグレーション追跡
+
+`schema_migrations`テーブルで適用済みマイグレーションを追跡します:
+
+| カラム名 | データ型 | 説明 |
+|---------|---------|------|
+| id | BIGINT | 主キー |
+| filename | VARCHAR(255) | マイグレーションファイル名（例: `001_add_role.sql`） |
+| checksum | VARCHAR(64) | SHA256ハッシュ（ファイル内容の整合性検証用） |
+| applied_at | TIMESTAMP | 適用日時 |
+
+**機能:**
+- 適用済みマイグレーションを記録
+- 重複実行を防止（べき等性）
+- ファイル変更を検出（チェックサム比較）
+
+#### 4.2.4 マイグレーション管理のベストプラクティス
+
+1. **マイグレーションファイルは不変**
+   - 一度適用したファイルは変更しない
+   - 新しい変更は新しいファイルとして作成
+
+2. **連番管理**
+   - ファイル名に連番を使用（`001_`, `002_`, ...）
+   - アルファベット順で実行される
+
+3. **破壊的変更に注意**
+   - ALTER TABLE DROP COLUMNなどは慎重に
+   - バックアップ取得を推奨
+
+4. **必ずローカルでテスト**
+   - 本番適用前にローカル環境で検証
+   - ステージング環境があればそこでも検証
+
+詳細は以下を参照してください:
+- [マイグレーションREADME](../infra/mysql/migrations/README.md) - 詳細な手順
+- [システム構成設計書](./01_system-architecture.md#82-データベースマイグレーション自動化) - CI/CDフロー
+- [開発環境ガイド](./00_development.md#スキーマ更新のワークフロー) - ローカル開発手順
+
+**注意:** 手動での`make db-init`はテーブルを再作成し、既存データが削除されます。本番環境では使用しないでください。
 
 ### 4.3 テストデータ
 

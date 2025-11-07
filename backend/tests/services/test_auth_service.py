@@ -31,6 +31,8 @@ def test_login_success(app, test_user, auth_service):
     # Verify response structure
     assert response_data.user.id == test_user
     assert response_data.user.email == "test@example.com"
+    assert response_data.user.role == "user"
+    assert response_data.user.name == "Test User"
 
     # Verify tokens are returned
     assert access_token is not None
@@ -69,6 +71,7 @@ def test_login_generates_valid_jwt_access_token(app, test_user, auth_service):
 
     assert payload["user_id"] == test_user
     assert payload["email"] == "test@example.com"
+    assert payload["role"] == "user"
     assert "exp" in payload
 
 
@@ -111,6 +114,8 @@ def test_refresh_access_token_success(app, test_user, auth_service):
     assert new_refresh_token is not None
     assert user.id == test_user
     assert user.email == "test@example.com"
+    assert user.role == "user"
+    assert user.name == "Test User"
 
     # Verify tokens are different from original
     assert new_refresh_token != refresh_token
@@ -267,7 +272,7 @@ def test_logout_with_nonexistent_token(auth_service):
 
 def test_generate_access_token_contains_user_info(app, test_user, auth_service):
     """Test that generated access token contains user information."""
-    token = auth_service._generate_access_token(test_user, "test@example.com")
+    token = auth_service._generate_access_token(test_user, "test@example.com", "user")
 
     # Decode token
     jwt_secret = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
@@ -277,6 +282,7 @@ def test_generate_access_token_contains_user_info(app, test_user, auth_service):
 
     assert payload["user_id"] == test_user
     assert payload["email"] == "test@example.com"
+    assert payload["role"] == "user"
     assert "exp" in payload
 
 
@@ -302,7 +308,7 @@ def test_generate_refresh_token_contains_jti(app, test_user, auth_service):
 
 def test_access_token_expiration(app, test_user, auth_service):
     """Test that access token has correct expiration time."""
-    token = auth_service._generate_access_token(test_user, "test@example.com")
+    token = auth_service._generate_access_token(test_user, "test@example.com", "user")
 
     # Decode token
     jwt_secret = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
@@ -330,10 +336,14 @@ def test_full_token_lifecycle(app, test_user, auth_service):
     # Step 1: Login
     response_data, access_token_1, refresh_token_1 = auth_service.login("test@example.com", "password123")
     assert response_data.user.id == test_user
+    assert response_data.user.role == "user"
+    assert response_data.user.name == "Test User"
 
     # Step 2: Refresh token
     access_token_2, refresh_token_2, user = auth_service.refresh_access_token(refresh_token_1)
     assert user.id == test_user
+    assert user.role == "user"
+    assert user.name == "Test User"
     assert refresh_token_2 != refresh_token_1
 
     # Verify old token is revoked, new token is active

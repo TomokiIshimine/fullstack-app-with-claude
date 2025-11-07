@@ -86,22 +86,24 @@ class UserFactory:
         """Build user data dictionary with unique email.
 
         Args:
-            **overrides: Fields to override defaults (email, password)
+            **overrides: Fields to override defaults (email, password, role, name)
 
         Returns:
             dict: User data with unique email
 
         Examples:
             >>> UserFactory.build()
-            {'email': 'user1@example.com', 'password': 'password123'}
+            {'email': 'user1@example.com', 'password': 'password123', 'role': 'user', 'name': 'Test User 1'}
 
-            >>> UserFactory.build(email='custom@example.com')
-            {'email': 'custom@example.com', 'password': 'password123'}
+            >>> UserFactory.build(email='custom@example.com', role='admin')
+            {'email': 'custom@example.com', 'password': 'password123', 'role': 'admin', 'name': 'Test User 1'}
         """
         cls._counter += 1
         defaults = {
             "email": f"user{cls._counter}@example.com",
             "password": "password123",
+            "role": "user",
+            "name": f"Test User {cls._counter}",
         }
         return {**defaults, **overrides}
 
