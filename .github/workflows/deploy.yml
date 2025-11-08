@@ -123,8 +123,12 @@ jobs:
         run: |
           echo "Running health check with retry logic..."
           HEALTH_URL="${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/api/health"
-          MAX_RETRIES=12
-          RETRY_INTERVAL=5
+          INITIAL_WAIT=60
+          MAX_RETRIES=10
+          RETRY_INTERVAL=15
+
+          echo "⏳ Waiting ${INITIAL_WAIT}s for server to start..."
+          sleep $INITIAL_WAIT
 
           for i in $(seq 1 $MAX_RETRIES); do
             echo "Attempt $i/$MAX_RETRIES: Checking $HEALTH_URL"
