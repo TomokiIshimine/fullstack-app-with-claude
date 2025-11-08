@@ -132,7 +132,7 @@ jobs:
 
           for i in $(seq 1 $MAX_RETRIES); do
             echo "Attempt $i/$MAX_RETRIES: Checking $HEALTH_URL"
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" --max-time 10)
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" --max-time 10) || HTTP_STATUS="000"
 
             if [ "$HTTP_STATUS" -eq 200 ]; then
               echo "✅ Health check passed (HTTP $HTTP_STATUS) after $i attempt(s)"
