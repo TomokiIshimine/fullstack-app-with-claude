@@ -11,7 +11,7 @@
 -- Or via Docker:
 --   docker exec -i fullstack-app-with-claude-db-1 mysql -u root -ppassword app_db < infra/mysql/migrations/001_add_role_and_name_to_users.sql
 
-USE app_db;
+-- Note: Database is already selected by SQLAlchemy connection, no USE statement needed
 
 -- Step 1: Add role column with default value
 -- All existing users will be assigned 'user' role by default

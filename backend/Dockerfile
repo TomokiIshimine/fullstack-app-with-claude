@@ -69,6 +69,9 @@ COPY --from=frontend-builder /frontend/dist /app/static
 COPY backend/app ./app
 COPY backend/scripts ./scripts
 
+# Copy database migrations for Cloud Run Job
+COPY infra/mysql /infra/mysql
+
 # Make scripts executable
 RUN chmod +x ./scripts/*.sh
 
