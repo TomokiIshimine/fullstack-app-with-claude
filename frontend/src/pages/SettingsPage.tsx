@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLogout } from '@/hooks/useLogout'
 import { PasswordChangeForm } from '@/components/settings/PasswordChangeForm'
 import { logger } from '@/lib/logger'
 
 export function SettingsPage() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
-  const { logout, user } = useAuth()
+  const { user } = useAuth()
+  const { handleLogout } = useLogout()
   const navigate = useNavigate()
 
   const handleSuccess = () => {
@@ -16,17 +18,6 @@ export function SettingsPage() {
     setTimeout(() => {
       setShowSuccessMessage(false)
     }, 5000)
-  }
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      logger.info('Logout successful from settings page, redirecting to login')
-      navigate('/login')
-    } catch (error) {
-      logger.error('Logout error', error as Error)
-      navigate('/login')
-    }
   }
 
   const handleBack = () => {
