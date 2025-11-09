@@ -54,6 +54,16 @@ def create_admin_user() -> None:
     admin_password_hash = os.getenv("ADMIN_PASSWORD_HASH")
     admin_password = os.getenv("ADMIN_PASSWORD")
 
+    # Diagnostic logging (mask sensitive values)
+    logger.info(f"Admin creation environment check:")
+    logger.info(f"  FLASK_ENV: {flask_env}")
+    logger.info(f"  ADMIN_EMAIL: {'(set)' if admin_email else '(not set)'}")
+    logger.info(f"  ADMIN_PASSWORD_HASH: {'(set)' if admin_password_hash else '(not set)'}")
+    logger.info(f"  ADMIN_PASSWORD: {'(set)' if admin_password else '(not set)'}")
+    if admin_password_hash:
+        # Show first 10 chars to diagnose corruption
+        logger.info(f"  ADMIN_PASSWORD_HASH prefix: {admin_password_hash[:10]}...")
+
     # Check if email is set
     if not admin_email:
         logger.warning(
