@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
+import { useLogout } from '@/hooks/useLogout'
 import { UserList } from '@/components/admin/UserList'
 import { UserCreateForm } from '@/components/admin/UserCreateForm'
 import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
@@ -18,7 +18,7 @@ export function UserManagementPage() {
     email: string
     password: string
   } | null>(null)
-  const { logout } = useAuth()
+  const { handleLogout } = useLogout()
   const navigate = useNavigate()
 
   // Load users on mount
@@ -42,18 +42,6 @@ export function UserManagementPage() {
       }
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      logger.info('Logout successful, redirecting to login')
-      navigate('/login')
-    } catch (error) {
-      logger.error('Logout error', error as Error)
-      // Navigate to login even if logout fails
-      navigate('/login')
     }
   }
 

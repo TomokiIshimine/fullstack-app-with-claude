@@ -4,7 +4,7 @@ import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
 import { useTodos } from '@/hooks/useTodos'
 import { useAuth } from '@/contexts/AuthContext'
-import { logger } from '@/lib/logger'
+import { useLogout } from '@/hooks/useLogout'
 
 export function TodoListPage() {
   const {
@@ -28,20 +28,9 @@ export function TodoListPage() {
     toggleTodoCompletion,
   } = useTodos()
 
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
+  const { handleLogout } = useLogout()
   const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      logger.info('Logout successful, redirecting to login')
-      navigate('/login')
-    } catch (error) {
-      logger.error('Logout error', error as Error)
-      // Navigate to login even if logout fails
-      navigate('/login')
-    }
-  }
 
   return (
     <div className="todo-page">
