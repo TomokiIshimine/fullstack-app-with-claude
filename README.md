@@ -177,12 +177,17 @@ GitHub Actions でのデプロイ時に、管理者アカウント情報を安�
 | シークレット名 | 説明 | 例 |
 |-------------|------|-----|
 | `ADMIN_EMAIL` | 管理者のメールアドレス | `admin@example.com` |
-| `ADMIN_PASSWORD` | 管理者のパスワード（平文） | `YourSecurePassword123` |
+| `ADMIN_PASSWORD_HASH` | 管理者のパスワード（bcryptハッシュ） | `$2b$12$LQv3...` |
+
+ハッシュの生成方法:
+```bash
+poetry -C backend run python backend/scripts/generate_admin_hash.py
+```
 
 **セキュリティ上の注意:**
 - パスワードは8文字以上で数字を含む必要があります
 - GitHub Secretsは暗号化されて保存されます
-- デプロイ時にCloud Runの環境変数として設定され、起動時に自動的にハッシュ化されます
+- bcryptハッシュを保存することで、平文パスワードの漏洩リスクを最小化します
 - GitHub Secretsは GitHub Actions のログに表示されません
 
 ## Docker Compose セットアップ
