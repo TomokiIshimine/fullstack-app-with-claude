@@ -46,9 +46,7 @@ describe('PasswordChangeForm', () => {
 
       const currentPassword = screen.getByLabelText('現在のパスワード') as HTMLInputElement
       const newPassword = screen.getByLabelText('新しいパスワード') as HTMLInputElement
-      const confirmPassword = screen.getByLabelText(
-        '新しいパスワード（確認）'
-      ) as HTMLInputElement
+      const confirmPassword = screen.getByLabelText('新しいパスワード（確認）') as HTMLInputElement
 
       await user.type(currentPassword, 'oldpassword123')
       await user.type(newPassword, 'newpassword123')
@@ -68,9 +66,7 @@ describe('PasswordChangeForm', () => {
       fireEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(
-          'すべてのフィールドを入力してください'
-        )
+        expect(screen.getByRole('alert')).toHaveTextContent('すべてのフィールドを入力してください')
       })
     })
 
@@ -183,9 +179,7 @@ describe('PasswordChangeForm', () => {
 
       const currentPassword = screen.getByLabelText('現在のパスワード') as HTMLInputElement
       const newPassword = screen.getByLabelText('新しいパスワード') as HTMLInputElement
-      const confirmPassword = screen.getByLabelText(
-        '新しいパスワード（確認）'
-      ) as HTMLInputElement
+      const confirmPassword = screen.getByLabelText('新しいパスワード（確認）') as HTMLInputElement
 
       await user.type(currentPassword, 'oldpass123')
       await user.type(newPassword, 'newpass123')

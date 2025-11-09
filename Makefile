@@ -1,4 +1,4 @@
-.PHONY: install setup up down lint test test-frontend test-backend test-fast test-cov test-parallel format pre-commit-install pre-commit-run pre-commit-update db-init db-create-user db-reset
+.PHONY: install setup up down lint format format-check test test-frontend test-backend test-fast test-cov test-parallel pre-commit-install pre-commit-run pre-commit-update db-init db-create-user db-reset
 
 PNPM ?= pnpm --dir frontend
 POETRY ?= poetry -C backend
@@ -19,6 +19,7 @@ down:
 
 lint:
 	$(PNPM) run lint
+	$(PNPM) exec tsc --noEmit
 	$(POETRY) run flake8 app tests
 	$(POETRY) run mypy app
 
@@ -49,6 +50,11 @@ format:
 	$(PNPM) run format
 	$(POETRY) run isort app tests
 	$(POETRY) run black app tests
+
+format-check:
+	$(PNPM) exec node scripts/format.mjs --check
+	$(POETRY) run isort --check-only app tests
+	$(POETRY) run black --check app tests
 
 pre-commit-install:
 	$(POETRY) run pre-commit install

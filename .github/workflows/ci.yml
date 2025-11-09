@@ -6,8 +6,94 @@ on:
   workflow_call:
 
 jobs:
-  # 共通のセットアップジョブ（キャッシュウォーミング用）
-  setup:
+  # Frontend jobs
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run ESLint
+        run: pnpm --dir frontend run lint
+
+      - name: Check TypeScript
+        run: pnpm --dir frontend exec tsc --noEmit
+
+      - name: Check formatting
+        run: pnpm --dir frontend exec prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,scss,md}"
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run tests with coverage
+        run: pnpm --dir frontend run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  # Backend jobs
+  lint-backend:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Backend
+        uses: ./.github/actions/setup-backend
+
+      - name: Run flake8
+        run: poetry -C backend run flake8 app tests
+
+      - name: Run mypy
+        run: poetry -C backend run mypy app
+
+      - name: Check formatting (isort)
+        run: poetry -C backend run isort --check-only app tests
+
+      - name: Check formatting (black)
+        run: poetry -C backend run black --check app tests
+
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Backend
+        uses: ./.github/actions/setup-backend
+
+      - name: Run tests with coverage
+        run: poetry -C backend run pytest --cov=app --cov-report=term-missing --cov-report=html
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/htmlcov/
+          retention-days: 7
+
+  # Security checks
+  security:
+    name: Security Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,35 +105,14 @@ jobs:
       - name: Setup Backend
         uses: ./.github/actions/setup-backend
 
-  # lint と test を並列実行
-  lint:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Check frontend dependencies
+        run: pnpm --dir frontend audit --audit-level=moderate
+        continue-on-error: true
 
-      - name: Setup Frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Check backend dependencies
+        run: poetry -C backend check
+        continue-on-error: true
 
-      - name: Setup Backend
-        uses: ./.github/actions/setup-backend
-
-      - name: Run lint checks
-        run: make lint
-
-  test:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Frontend
-        uses: ./.github/actions/setup-frontend
-
-      - name: Setup Backend
-        uses: ./.github/actions/setup-backend
-
-      - name: Run tests
-        run: make test
+      - name: Check for known security issues
+        run: poetry -C backend run pip-audit || echo "pip-audit not available, skipping"
+        continue-on-error: true
