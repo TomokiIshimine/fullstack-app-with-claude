@@ -55,7 +55,7 @@ def create_admin_user() -> None:
     admin_password = os.getenv("ADMIN_PASSWORD")
 
     # Diagnostic logging (mask sensitive values)
-    logger.info(f"Admin creation environment check:")
+    logger.info("Admin creation environment check:")
     logger.info(f"  FLASK_ENV: {flask_env}")
     logger.info(f"  ADMIN_EMAIL: {'(set)' if admin_email else '(not set)'}")
     logger.info(f"  ADMIN_PASSWORD_HASH: {'(set)' if admin_password_hash else '(not set)'}")
@@ -147,9 +147,9 @@ def create_admin_user() -> None:
     # Verify admin user was actually created
     try:
         with session_scope() as session:
-            admin_user = session.query(User).filter_by(email=admin_email, role="admin").first()
-            if admin_user:
-                logger.info(f"Verification successful: Admin user exists in database: {admin_email} (id={admin_user.id})")
+            verified_admin = session.query(User).filter_by(email=admin_email, role="admin").first()
+            if verified_admin:
+                logger.info(f"Verification successful: Admin user exists in database: {admin_email} (id={verified_admin.id})")
             else:
                 # This should never happen, but if it does, it's a critical error
                 logger.error(
