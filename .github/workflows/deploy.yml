@@ -110,13 +110,17 @@ jobs:
           echo "✅ Database migrations completed successfully"
 
       - name: Deploy to Cloud Run
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
         run: |
+          # Use env vars to avoid shell expansion of special characters in bcrypt hash
           gcloud run deploy ${{ needs.get-terraform-outputs.outputs.cloud_run_service_name }} \
             --image=${{ needs.get-terraform-outputs.outputs.docker_image_url_base }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
             --platform=managed \
             --region=${{ needs.get-terraform-outputs.outputs.cloud_run_location }} \
             --project=${{ env.GCP_PROJECT_ID }} \
-            --update-env-vars "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }},ADMIN_PASSWORD_HASH=${{ secrets.ADMIN_PASSWORD_HASH }},COOKIE_SECURE=true" \
+            --update-env-vars "ADMIN_EMAIL=${ADMIN_EMAIL},ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH},COOKIE_SECURE=true" \
             --quiet
 
       - name: Run Health Check

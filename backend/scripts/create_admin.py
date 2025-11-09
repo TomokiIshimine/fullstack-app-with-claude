@@ -54,12 +54,27 @@ def create_admin_user() -> None:
     admin_password_hash = os.getenv("ADMIN_PASSWORD_HASH")
     admin_password = os.getenv("ADMIN_PASSWORD")
 
+    # Diagnostic logging (mask sensitive values)
+    logger.info("Admin creation environment check:")
+    logger.info(f"  FLASK_ENV: {flask_env}")
+    logger.info(f"  ADMIN_EMAIL: {'(set)' if admin_email else '(not set)'}")
+    logger.info(f"  ADMIN_PASSWORD_HASH: {'(set)' if admin_password_hash else '(not set)'}")
+    logger.info(f"  ADMIN_PASSWORD: {'(set)' if admin_password else '(not set)'}")
+    if admin_password_hash:
+        # Show first 10 chars to diagnose corruption
+        logger.info(f"  ADMIN_PASSWORD_HASH prefix: {admin_password_hash[:10]}...")
+
     # Check if email is set
     if not admin_email:
-        logger.warning(
-            "ADMIN_EMAIL environment variable not set. Skipping admin user creation. "
-            "If you want to create an admin user, set ADMIN_EMAIL and either ADMIN_PASSWORD_HASH or ADMIN_PASSWORD."
+        error_msg = (
+            "ADMIN_EMAIL environment variable not set. Admin user will NOT be created. "
+            "CAUSE: Missing ADMIN_EMAIL in environment variables. "
+            "SOLUTION: Set ADMIN_EMAIL and either ADMIN_PASSWORD_HASH or ADMIN_PASSWORD in your deployment configuration."
         )
+        if flask_env == "production":
+            logger.error(error_msg)
+        else:
+            logger.warning(error_msg)
         return
 
     # Determine which password method to use
@@ -67,9 +82,11 @@ def create_admin_user() -> None:
         # Priority 1: Use ADMIN_PASSWORD_HASH (most secure)
         if not validate_bcrypt_hash(admin_password_hash):
             logger.error(
-                f"Invalid ADMIN_PASSWORD_HASH format. Expected bcrypt hash (starts with $2a$/$2b$/$2y$), "
-                f"but got: {admin_password_hash[:20]}... "
-                f"Use 'poetry -C backend run python backend/scripts/generate_admin_hash.py' to generate a valid hash."
+                f"Invalid ADMIN_PASSWORD_HASH format. Admin user will NOT be created. "
+                f"CAUSE: ADMIN_PASSWORD_HASH does not match bcrypt format (should start with $2a$/$2b$/$2y$). "
+                f"Got: {admin_password_hash[:20]}... "
+                f"SOLUTION: Use 'poetry -C backend run python backend/scripts/generate_admin_hash.py' to generate a valid hash, "
+                f"or check if the hash was corrupted during environment variable passing (e.g., shell expansion of $ symbols)."
             )
             return
         logger.info("Using ADMIN_PASSWORD_HASH for admin user creation")
@@ -80,10 +97,15 @@ def create_admin_user() -> None:
         logger.info("Password hashed successfully")
     else:
         # No password provided
-        logger.warning(
-            "Neither ADMIN_PASSWORD_HASH nor ADMIN_PASSWORD is set. Skipping admin user creation. "
-            "Set either ADMIN_PASSWORD_HASH (recommended) or ADMIN_PASSWORD in environment variables."
+        error_msg = (
+            "Neither ADMIN_PASSWORD_HASH nor ADMIN_PASSWORD is set. Admin user will NOT be created. "
+            "CAUSE: Missing password configuration in environment variables. "
+            "SOLUTION: Set either ADMIN_PASSWORD_HASH (recommended) or ADMIN_PASSWORD in your deployment configuration."
         )
+        if flask_env == "production":
+            logger.error(error_msg)
+        else:
+            logger.warning(error_msg)
         return
 
     # Create or update admin user
@@ -121,6 +143,28 @@ def create_admin_user() -> None:
     except Exception as e:
         logger.error(f"Failed to create admin user: {e}", exc_info=True)
         raise
+
+    # Verify admin user was actually created
+    try:
+        with session_scope() as session:
+            verified_admin = session.query(User).filter_by(email=admin_email, role="admin").first()
+            if verified_admin:
+                logger.info(f"Verification successful: Admin user exists in database: {admin_email} (id={verified_admin.id})")
+            else:
+                # This should never happen, but if it does, it's a critical error
+                logger.error(
+                    f"CRITICAL: Admin user verification FAILED. Admin user does NOT exist in database. "
+                    f"Email: {admin_email}, Role: admin. "
+                    f"CAUSE: Unknown - the creation appeared to succeed but the user is not in the database. "
+                    f"POSSIBLE REASONS: "
+                    f"1. Database transaction was rolled back after commit "
+                    f"2. User was deleted by another process immediately after creation "
+                    f"3. Database connection issues or replication lag "
+                    f"4. Session/transaction isolation issues. "
+                    f"SOLUTION: Check database logs, verify database connectivity, and ensure no other processes are modifying users."
+                )
+    except Exception as e:
+        logger.error(f"Failed to verify admin user existence: {e}", exc_info=True)
 
 
 __all__ = ["create_admin_user"]
