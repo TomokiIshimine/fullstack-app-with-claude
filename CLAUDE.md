@@ -43,8 +43,9 @@ make down                 # Stop Docker containers
 
 ### Linting and Formatting
 ```bash
-make lint                 # Lint both frontend and backend
+make lint                 # Lint both frontend and backend (includes TypeScript check)
 make format               # Format both frontend and backend
+make format-check         # Check formatting without modifying files (used in CI)
 ```
 
 ## Testing

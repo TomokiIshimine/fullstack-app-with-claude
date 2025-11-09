@@ -12,6 +12,8 @@ from sqlalchemy.exc import SQLAlchemyError
 backend_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_dir))
 
+from app.database import get_session  # noqa: E402
+from app.models import SchemaMigration  # noqa: E402
 from scripts.apply_sql_migrations import (  # noqa: E402
     apply_migration,
     apply_migrations,
@@ -20,9 +22,6 @@ from scripts.apply_sql_migrations import (  # noqa: E402
     get_migration_files,
     verify_migration_integrity,
 )
-
-from app.database import get_session  # noqa: E402
-from app.models import SchemaMigration  # noqa: E402
 
 
 class TestGetMigrationFiles:
@@ -430,9 +429,7 @@ class TestApplyMigrationsIntegration:
 
             # Verify NEITHER migration was recorded (transaction rolled back)
             session.rollback()
-            count = session.query(SchemaMigration).filter(
-                SchemaMigration.filename.in_(["500_good.sql", "501_bad.sql"])
-            ).count()
+            count = session.query(SchemaMigration).filter(SchemaMigration.filename.in_(["500_good.sql", "501_bad.sql"])).count()
             # In session_scope, if error occurs, all changes are rolled back
             # So count should be 0
             assert count == 0
@@ -450,10 +447,7 @@ class TestApplyMigrationsIntegration:
             migration2.write_text("CREATE TABLE pending2 (id INTEGER);")
 
             # Apply first migration manually
-            first_migration = SchemaMigration(
-                filename="600_pending1.sql",
-                checksum=calculate_checksum(migration1)
-            )
+            first_migration = SchemaMigration(filename="600_pending1.sql", checksum=calculate_checksum(migration1))
             session.add(first_migration)
             session.commit()
 

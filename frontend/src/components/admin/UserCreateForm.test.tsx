@@ -70,7 +70,9 @@ describe('UserCreateForm', () => {
       fireEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent('メールアドレスと名前を入力してください')
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          'メールアドレスと名前を入力してください'
+        )
       })
     })
 
@@ -85,7 +87,9 @@ describe('UserCreateForm', () => {
       fireEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent('メールアドレスと名前を入力してください')
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          'メールアドレスと名前を入力してください'
+        )
       })
     })
 

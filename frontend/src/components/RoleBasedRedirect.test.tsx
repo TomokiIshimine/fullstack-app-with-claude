@@ -16,11 +16,7 @@ const TodosPage = () => <div>Todos Page</div>
 const LoginPage = () => <div>Login Page</div>
 
 describe('RoleBasedRedirect', () => {
-  const renderWithRouter = (
-    isAuthenticated: boolean,
-    isLoading: boolean,
-    user: User | null
-  ) => {
+  const renderWithRouter = (isAuthenticated: boolean, isLoading: boolean, user: User | null) => {
     const mockLogin = vi.fn()
     const mockLogout = vi.fn()
 
