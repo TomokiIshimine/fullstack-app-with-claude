@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
 import { useLogout } from '@/hooks/useLogout'
 import { UserList } from '@/components/admin/UserList'
 import { UserCreateForm } from '@/components/admin/UserCreateForm'
