@@ -53,7 +53,7 @@
 
 ### 1. ロギング設定の一元化
 
-**ファイル:** `backend/utils/logger.py`
+**ファイル:** `backend/app/utils/logger.py`
 
 ```python
 """Centralized logging configuration."""
@@ -183,7 +183,7 @@ setup_logging(
 
 #### TodoService の例
 
-**ファイル:** `backend/services/todo.py`
+**ファイル:** `backend/app/services/todo.py`
 
 ```python
 import logging
@@ -265,7 +265,7 @@ class TodoService:
 
 #### UserService の例
 
-**ファイル:** `backend/services/user.py`
+**ファイル:** `backend/app/services/user.py`
 
 ```python
 import logging
@@ -322,7 +322,7 @@ class UserService:
 
 #### AuthService の例
 
-**ファイル:** `backend/services/auth.py`
+**ファイル:** `backend/app/services/auth.py`
 
 ```python
 import logging
@@ -479,7 +479,7 @@ def test_update_nonexistent_todo_logs_warning(db_session, user_factory, caplog):
 ## 実装チェックリスト
 
 ### ロギング設定
-- [ ] `backend/utils/logger.py` を作成
+- [ ] `backend/app/utils/logger.py` を作成
 - [ ] `RequestContextFilter` を実装
 - [ ] `CustomJsonFormatter` を実装
 - [ ] `setup_logging()` を実装
@@ -488,9 +488,9 @@ def test_update_nonexistent_todo_logs_warning(db_session, user_factory, caplog):
 - [ ] `backend/main.py` でロギング初期化を実行
 
 ### サービス層修正
-- [ ] `backend/services/todo.py` のロギングを統一
-- [ ] `backend/services/user.py` のロギングを追加
-- [ ] `backend/services/auth.py` のロギングを統一
+- [ ] `backend/app/services/todo.py` のロギングを統一
+- [ ] `backend/app/services/user.py` のロギングを追加
+- [ ] `backend/app/services/auth.py` のロギングを統一
 - [ ] すべてのサービスで機密情報をログに出力していないことを確認
 
 ### テスト

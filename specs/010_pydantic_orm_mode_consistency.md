@@ -16,7 +16,7 @@ Pydantic v2 では ORM モデルから Pydantic モデルへの変換に `from_a
 
 #### AuthRoutes（正しい実装）
 
-**ファイル:** `backend/routes/auth_routes.py`
+**ファイル:** `backend/app/routes/auth_routes.py`
 
 ```python
 from backend.schemas.user import UserResponse
@@ -35,7 +35,7 @@ def register():
 
 #### TodoRoutes（手動変換）
 
-**ファイル:** `backend/routes/todo_routes.py`
+**ファイル:** `backend/app/routes/todo_routes.py`
 
 ```python
 @todo_bp.route("", methods=["GET"])
@@ -84,7 +84,7 @@ user_response = UserResponse.model_validate(user_orm)
 
 #### UserResponse（既存）
 
-**ファイル:** `backend/schemas/user.py`
+**ファイル:** `backend/app/schemas/user.py`
 
 ```python
 from pydantic import BaseModel, ConfigDict
@@ -105,7 +105,7 @@ class UserResponse(BaseModel):
 
 #### TodoResponse の作成
 
-**ファイル:** `backend/schemas/todo.py`
+**ファイル:** `backend/app/schemas/todo.py`
 
 ```python
 from pydantic import BaseModel, ConfigDict, Field
@@ -141,7 +141,7 @@ class TodoResponse(BaseModel):
 
 #### TodoRoutes の修正
 
-**ファイル:** `backend/routes/todo_routes.py`
+**ファイル:** `backend/app/routes/todo_routes.py`
 
 #### 変更前（手動変換）
 
@@ -220,7 +220,7 @@ def update_todo(todo_id: int):
 
 複数の Response を一括変換するヘルパー：
 
-**ファイル:** `backend/utils/response.py`
+**ファイル:** `backend/app/utils/response.py`
 
 ```python
 """Response utility functions."""
@@ -284,7 +284,7 @@ def get_todo(todo_id: int):
 
 ### 4. UserRoutes の修正（存在する場合）
 
-**ファイル:** `backend/routes/user_routes.py`
+**ファイル:** `backend/app/routes/user_routes.py`
 
 ```python
 from backend.schemas.user import UserResponse
@@ -431,18 +431,18 @@ def test_serialize_models(todo_factory):
 ## 実装チェックリスト
 
 ### スキーマ修正
-- [ ] `backend/schemas/todo.py` に `TodoResponse` を作成
+- [ ] `backend/app/schemas/todo.py` に `TodoResponse` を作成
 - [ ] `model_config = ConfigDict(from_attributes=True)` を設定
-- [ ] `backend/schemas/user.py` の `UserResponse` を確認
+- [ ] `backend/app/schemas/user.py` の `UserResponse` を確認
 
 ### ヘルパー関数作成（オプション）
-- [ ] `backend/utils/response.py` を作成
+- [ ] `backend/app/utils/response.py` を作成
 - [ ] `serialize_model()` を実装
 - [ ] `serialize_models()` を実装
 
 ### ルート層修正
-- [ ] `backend/routes/todo_routes.py` をすべて Pydantic 使用に変更
-- [ ] `backend/routes/user_routes.py` を確認（存在する場合）
+- [ ] `backend/app/routes/todo_routes.py` をすべて Pydantic 使用に変更
+- [ ] `backend/app/routes/user_routes.py` を確認（存在する場合）
 - [ ] 手動変換をすべて削除
 
 ### テスト

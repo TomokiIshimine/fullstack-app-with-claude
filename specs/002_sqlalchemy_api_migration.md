@@ -14,8 +14,8 @@
 - SQLAlchemy 3.0 での `.query()` API 削除予定による将来的な互換性問題
 
 ### 影響範囲
-- `backend/repositories/user.py`
-- `backend/repositories/refresh_token.py`
+- `backend/app/repositories/user.py`
+- `backend/app/repositories/refresh_token.py`
 
 ## 修正方針
 
@@ -40,7 +40,7 @@
 
 ### 1. UserRepository の移行
 
-**ファイル:** `backend/repositories/user.py`
+**ファイル:** `backend/app/repositories/user.py`
 
 #### 変更前
 ```python
@@ -78,7 +78,7 @@ class UserRepository:
 
 ### 2. RefreshTokenRepository の移行
 
-**ファイル:** `backend/repositories/refresh_token.py`
+**ファイル:** `backend/app/repositories/refresh_token.py`
 
 #### 変更前
 ```python
@@ -127,7 +127,7 @@ class RefreshTokenRepository:
 
 ### 3. TodoRepository の確認（変更不要）
 
-**ファイル:** `backend/repositories/todo.py`
+**ファイル:** `backend/app/repositories/todo.py`
 
 すでに `select()` API を使用しているため、変更不要。参考として正しい実装例：
 

@@ -13,9 +13,9 @@
 - データ永続性の保証が不明確
 
 ### 影響範囲
-- `backend/repositories/refresh_token.py`
-- `backend/repositories/user.py`
-- `backend/repositories/todo.py`
+- `backend/app/repositories/refresh_token.py`
+- `backend/app/repositories/user.py`
+- `backend/app/repositories/todo.py`
 - `backend/main.py` (teardown_appcontext)
 
 ## 修正方針
@@ -36,7 +36,7 @@ Request → Routes → Services → Repositories → flush()
 
 ### 1. RefreshTokenRepository の修正
 
-**ファイル:** `backend/repositories/refresh_token.py`
+**ファイル:** `backend/app/repositories/refresh_token.py`
 
 #### 変更前
 ```python
@@ -118,11 +118,11 @@ def shutdown_session(exception=None):
 **UserRepository, TodoRepository** はすでに `flush()` を使用しているため、変更不要。
 
 ```python
-# backend/repositories/user.py - OK
+# backend/app/repositories/user.py - OK
 self.session.add(user)
 self.session.flush()
 
-# backend/repositories/todo.py - OK
+# backend/app/repositories/todo.py - OK
 self.session.add(todo)
 self.session.flush()
 ```

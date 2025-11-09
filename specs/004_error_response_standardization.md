@@ -46,9 +46,9 @@
 - API ドキュメントが複雑化
 
 ### 発生箇所
-- `backend/routes/auth_routes.py`
-- `backend/routes/todo_routes.py`
-- `backend/routes/user_routes.py`
+- `backend/app/routes/auth_routes.py`
+- `backend/app/routes/todo_routes.py`
+- `backend/app/routes/user_routes.py`
 - エラーハンドラ（`backend/main.py`）
 
 ## 修正方針
@@ -100,7 +100,7 @@
 
 ### 1. エラーレスポンスユーティリティの作成
 
-**新規ファイル:** `backend/utils/error_response.py`
+**新規ファイル:** `backend/app/utils/error_response.py`
 
 ```python
 """Standardized error response utilities."""
@@ -284,7 +284,7 @@ def handle_generic_exception(e):
 
 #### AuthRoutes の例
 
-**ファイル:** `backend/routes/auth_routes.py`
+**ファイル:** `backend/app/routes/auth_routes.py`
 
 ```python
 from backend.utils.error_response import (
@@ -338,7 +338,7 @@ def login():
 
 #### TodoRoutes の例
 
-**ファイル:** `backend/routes/todo_routes.py`
+**ファイル:** `backend/app/routes/todo_routes.py`
 
 ```python
 from backend.utils.error_response import (
@@ -378,7 +378,7 @@ def create_todo():
 
 ### 4. Pydantic スキーマの定義（オプション）
 
-**ファイル:** `backend/schemas/error.py`
+**ファイル:** `backend/app/schemas/error.py`
 
 ```python
 from pydantic import BaseModel, Field
@@ -520,8 +520,8 @@ def test_get_nonexistent_todo_returns_standard_error(client, auth_headers):
 ## 実装チェックリスト
 
 ### 新規ファイル作成
-- [ ] `backend/utils/error_response.py` を作成
-- [ ] `backend/schemas/error.py` を作成（オプション）
+- [ ] `backend/app/utils/error_response.py` を作成
+- [ ] `backend/app/schemas/error.py` を作成（オプション）
 - [ ] `backend/tests/utils/test_error_response.py` を作成
 
 ### エラーハンドラ修正
@@ -532,9 +532,9 @@ def test_get_nonexistent_todo_returns_standard_error(client, auth_headers):
 - [ ] 汎用 Exception ハンドラを追加
 
 ### ルート修正
-- [ ] `backend/routes/auth_routes.py` のエラーレスポンスを統一
-- [ ] `backend/routes/todo_routes.py` のエラーレスポンスを統一
-- [ ] `backend/routes/user_routes.py` のエラーレスポンスを統一
+- [ ] `backend/app/routes/auth_routes.py` のエラーレスポンスを統一
+- [ ] `backend/app/routes/todo_routes.py` のエラーレスポンスを統一
+- [ ] `backend/app/routes/user_routes.py` のエラーレスポンスを統一
 
 ### テスト
 - [ ] エラーレスポンスユーティリティのユニットテストを追加

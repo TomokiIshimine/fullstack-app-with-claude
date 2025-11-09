@@ -10,18 +10,18 @@
 
 現在、以下のように異なる例外が使用されている：
 
-1. **`backend/services/auth.py`** - `ValueError`（標準ライブラリ）
+1. **`backend/app/services/auth.py`** - `ValueError`（標準ライブラリ）
    ```python
    if not email or not password:
        raise ValueError("Email and password are required")
    ```
 
-2. **`backend/services/todo.py`** - `TodoValidationError`（カスタム例外）
+2. **`backend/app/services/todo.py`** - `TodoValidationError`（カスタム例外）
    ```python
    raise TodoValidationError("Title is required")
    ```
 
-3. **`backend/services/user.py`** - `UserValidationError`（カスタム例外）
+3. **`backend/app/services/user.py`** - `UserValidationError`（カスタム例外）
    ```python
    raise UserValidationError("Invalid email format")
    ```
@@ -59,7 +59,7 @@ AppException (基底)
 
 ### 1. 例外クラスの定義
 
-**新規ファイル:** `backend/exceptions/__init__.py`
+**新規ファイル:** `backend/app/exceptions/__init__.py`
 
 ```python
 """Custom exception classes for the application."""
@@ -311,7 +311,7 @@ def handle_app_exception(e: AppException):
 
 #### 3.1 AuthService の修正
 
-**ファイル:** `backend/services/auth.py`
+**ファイル:** `backend/app/services/auth.py`
 
 ```python
 # 変更前
@@ -330,7 +330,7 @@ if not email or not password:
 
 #### 3.2 TodoService の修正
 
-**ファイル:** `backend/services/todo.py`
+**ファイル:** `backend/app/services/todo.py`
 
 ```python
 # 変更前
@@ -356,7 +356,7 @@ if not todo:
 
 #### 3.3 UserService の修正
 
-**ファイル:** `backend/services/user.py`
+**ファイル:** `backend/app/services/user.py`
 
 ```python
 # 変更前
@@ -395,7 +395,7 @@ if not user:
 ### 4. 旧例外クラスの削除
 
 **削除対象:**
-- `backend/services/exceptions.py`（存在する場合）
+- `backend/app/services/exceptions.py`（存在する場合）
 - サービス層で定義されている個別の例外クラス
 
 ## テスト戦略
@@ -535,7 +535,7 @@ def test_not_found_exception_handler(client, auth_headers):
 ## 実装チェックリスト
 
 ### 新規ファイル作成
-- [ ] `backend/exceptions/__init__.py` を作成
+- [ ] `backend/app/exceptions/__init__.py` を作成
 - [ ] 基底クラス `AppException` を実装
 - [ ] バリデーション例外クラスを実装
 - [ ] リソース不存在例外クラスを実装
@@ -545,12 +545,12 @@ def test_not_found_exception_handler(client, auth_headers):
 - [ ] `backend/main.py` に `AppException` ハンドラを追加
 
 ### サービス層修正
-- [ ] `backend/services/auth.py` を新例外に移行
-- [ ] `backend/services/todo.py` を新例外に移行
-- [ ] `backend/services/user.py` を新例外に移行
+- [ ] `backend/app/services/auth.py` を新例外に移行
+- [ ] `backend/app/services/todo.py` を新例外に移行
+- [ ] `backend/app/services/user.py` を新例外に移行
 
 ### 旧コード削除
-- [ ] `backend/services/exceptions.py` を削除（存在する場合）
+- [ ] `backend/app/services/exceptions.py` を削除（存在する場合）
 - [ ] 旧例外クラスへの参照をすべて削除
 
 ### テスト

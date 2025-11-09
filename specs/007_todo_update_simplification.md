@@ -8,7 +8,7 @@
 
 ### 問題点
 
-**ファイル:** `backend/schemas/todo.py`
+**ファイル:** `backend/app/schemas/todo.py`
 
 ```python
 class TodoUpdateData(BaseModel):
@@ -67,7 +67,7 @@ user.model_dump(exclude_unset=True)
 
 ### 1. TodoUpdateData の簡潔化
 
-**ファイル:** `backend/schemas/todo.py`
+**ファイル:** `backend/app/schemas/todo.py`
 
 #### 変更前（複雑な実装）
 
@@ -124,7 +124,7 @@ class TodoUpdateData(BaseModel):
 
 ### 2. TodoService の修正（必要に応じて）
 
-**ファイル:** `backend/services/todo.py`
+**ファイル:** `backend/app/services/todo.py`
 
 ```python
 # 変更前
@@ -322,13 +322,13 @@ def test_update_todo_partial(client, auth_headers, todo_factory, current_user):
 ## 実装チェックリスト
 
 ### スキーマ修正
-- [ ] `backend/schemas/todo.py` の `TodoUpdateData` を簡潔化
+- [ ] `backend/app/schemas/todo.py` の `TodoUpdateData` を簡潔化
 - [ ] `_fields_set` を削除
 - [ ] `model_post_init` を削除
 - [ ] `get_update_data()` を `model_dump(exclude_unset=True)` に変更
 
 ### サービス層確認
-- [ ] `backend/services/todo.py` の `update_todo` が正しく動作することを確認
+- [ ] `backend/app/services/todo.py` の `update_todo` が正しく動作することを確認
 - [ ] 既存のロジックに影響がないことを確認
 
 ### テスト

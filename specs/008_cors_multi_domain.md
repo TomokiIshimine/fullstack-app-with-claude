@@ -164,7 +164,7 @@ CORS_MAX_AGE=86400  # 24時間
 
 セキュリティを強化したい場合、オリジンの検証を動的に行う：
 
-**ファイル:** `backend/utils/cors.py`
+**ファイル:** `backend/app/utils/cors.py`
 
 ```python
 """CORS utility functions."""
@@ -388,7 +388,7 @@ describe('CORS Tests', () => {
 - [ ] `.env.production.example` を作成（オプション）
 
 ### ユーティリティ（オプション）
-- [ ] `backend/utils/cors.py` を作成
+- [ ] `backend/app/utils/cors.py` を作成
 - [ ] `validate_origin()` を実装
 - [ ] `get_cors_config()` を実装
 

@@ -10,19 +10,19 @@
 
 環境変数が以下のファイルで個別に読み込まれている：
 
-1. **`backend/services/auth_service.py`** - JWT 設定
+1. **`backend/app/services/auth_service.py`** - JWT 設定
    ```python
    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
    ```
 
-2. **`backend/routes/auth_routes.py`** - トークン有効期限
+2. **`backend/app/routes/auth_routes.py`** - トークン有効期限
    ```python
    ACCESS_TOKEN_EXPIRES = int(os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES", "15"))
    REFRESH_TOKEN_EXPIRES = int(os.getenv("REFRESH_TOKEN_EXPIRES_DAYS", "7"))
    ```
 
-3. **`backend/extensions/limiter.py`** - Redis 接続
+3. **`backend/app/extensions/limiter.py`** - Redis 接続
    ```python
    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
    ```
@@ -306,7 +306,7 @@ settings = get_settings()
 
 #### 2.1 AuthService の修正
 
-**ファイル:** `backend/services/auth_service.py`
+**ファイル:** `backend/app/services/auth_service.py`
 
 ```python
 # 変更前
@@ -331,7 +331,7 @@ class AuthService:
 
 #### 2.2 AuthRoutes の修正
 
-**ファイル:** `backend/routes/auth_routes.py`
+**ファイル:** `backend/app/routes/auth_routes.py`
 
 ```python
 # 変更前
@@ -356,7 +356,7 @@ def login():
 
 #### 2.3 Limiter の修正
 
-**ファイル:** `backend/extensions/limiter.py`
+**ファイル:** `backend/app/extensions/limiter.py`
 
 ```python
 # 変更前
@@ -577,9 +577,9 @@ def test_auth_service_uses_config(db_session):
 - [ ] バリデータを実装
 
 ### 既存コード修正
-- [ ] `backend/services/auth_service.py` を修正
-- [ ] `backend/routes/auth_routes.py` を修正
-- [ ] `backend/extensions/limiter.py` を修正
+- [ ] `backend/app/services/auth_service.py` を修正
+- [ ] `backend/app/routes/auth_routes.py` を修正
+- [ ] `backend/app/extensions/limiter.py` を修正
 - [ ] `backend/main.py` を修正
 - [ ] `backend/database.py` を修正
 
