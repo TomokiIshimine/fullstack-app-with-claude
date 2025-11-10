@@ -23,8 +23,8 @@ try:
 except ImportError:
     pass
 
-from google.cloud.sql.connector import Connector
 import pymysql
+from google.cloud.sql.connector import Connector
 
 
 def grant_permissions():
