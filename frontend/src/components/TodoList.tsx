@@ -41,51 +41,39 @@ interface TodoItemProps {
   onDelete: (todo: Todo) => void
 }
 
-const TodoItem = memo(
-  function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
-    const handleToggle = () => onToggle(todo, !todo.isCompleted)
-    const handleEdit = () => onEdit(todo)
-    const handleDelete = () => onDelete(todo)
+const TodoItem = memo(function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
+  const handleToggle = () => onToggle(todo, !todo.isCompleted)
+  const handleEdit = () => onEdit(todo)
+  const handleDelete = () => onDelete(todo)
 
-    return (
-      <li className={`todo-item${todo.isCompleted ? ' is-completed' : ''}`}>
-        <div className="todo-item__row">
-          <label className="todo-item__title">
-            <input
-              type="checkbox"
-              checked={todo.isCompleted}
-              onChange={handleToggle}
-              aria-label={`${todo.title} を${todo.isCompleted ? '未完了に戻す' : '完了にする'}`}
-            />
-            <span>{todo.title}</span>
-          </label>
-          <div className="todo-item__actions">
-            <button type="button" onClick={handleEdit}>
-              編集
-            </button>
-            <button type="button" className="danger" onClick={handleDelete}>
-              削除
-            </button>
-          </div>
+  return (
+    <li className={`todo-item${todo.isCompleted ? ' is-completed' : ''}`}>
+      <div className="todo-item__row">
+        <label className="todo-item__title">
+          <input
+            type="checkbox"
+            checked={todo.isCompleted}
+            onChange={handleToggle}
+            aria-label={`${todo.title} を${todo.isCompleted ? '未完了に戻す' : '完了にする'}`}
+          />
+          <span>{todo.title}</span>
+        </label>
+        <div className="todo-item__actions">
+          <button type="button" onClick={handleEdit}>
+            編集
+          </button>
+          <button type="button" className="danger" onClick={handleDelete}>
+            削除
+          </button>
         </div>
+      </div>
 
-        <div className="todo-item__meta">
-          <span className="todo-item__due">
-            期限: {todo.dueDate ? formatDate(todo.dueDate) : '未設定'}
-          </span>
-          {todo.detail && <p className="todo-item__detail">{todo.detail}</p>}
-        </div>
-      </li>
-    )
-  },
-  (prevProps, nextProps) => {
-    // Custom comparison function - return true if props are equal (should NOT re-render)
-    return (
-      prevProps.todo.id === nextProps.todo.id &&
-      prevProps.todo.isCompleted === nextProps.todo.isCompleted &&
-      prevProps.todo.title === nextProps.todo.title &&
-      prevProps.todo.detail === nextProps.todo.detail &&
-      prevProps.todo.dueDate === nextProps.todo.dueDate
-    )
-  }
-)
+      <div className="todo-item__meta">
+        <span className="todo-item__due">
+          期限: {todo.dueDate ? formatDate(todo.dueDate) : '未設定'}
+        </span>
+        {todo.detail && <p className="todo-item__detail">{todo.detail}</p>}
+      </div>
+    </li>
+  )
+})
