@@ -2,19 +2,20 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { logger } from '@/lib/logger'
-import { ApiError } from '@/lib/api/todos'
+import { ErrorMessage } from '@/components/ErrorMessage'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const { error, handleError, clearError } = useErrorHandler()
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
+    clearError()
     setIsLoading(true)
 
     try {
@@ -24,12 +25,7 @@ export function LoginPage() {
       logger.info('Login successful, redirecting', { role: user.role, path: redirectPath })
       navigate(redirectPath)
     } catch (err) {
-      logger.error('Login error', err as Error)
-      if (err instanceof ApiError) {
-        setError(err.message)
-      } else {
-        setError('ログインに失敗しました')
-      }
+      handleError(err, 'Login failed')
     } finally {
       setIsLoading(false)
     }
@@ -40,11 +36,7 @@ export function LoginPage() {
       <div className="login-container">
         <h1>ログイン</h1>
         <form onSubmit={handleSubmit} className="login-form">
-          {error && (
-            <div className="error-message" role="alert">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} onDismiss={clearError} />}
           <div className="form-group">
             <label htmlFor="email">メールアドレス</label>
             <input

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { TodoForm } from '@/components/TodoForm'
 import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
+import { ErrorMessage } from '@/components/ErrorMessage'
 import { useTodos } from '@/hooks/useTodos'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLogout } from '@/hooks/useLogout'
@@ -49,18 +50,14 @@ export function TodoListPage() {
         </div>
 
         {error && (
-          <div className="todo-error" role="alert">
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={() => {
-                clearError()
-                void refresh()
-              }}
-            >
-              再読み込み
-            </button>
-          </div>
+          <ErrorMessage
+            message={error}
+            onRetry={() => {
+              clearError()
+              void refresh()
+            }}
+            onDismiss={clearError}
+          />
         )}
 
         <TodoFilterToggle

@@ -4,20 +4,21 @@ import { useLogout } from '@/hooks/useLogout'
 import { UserList } from '@/components/admin/UserList'
 import { UserCreateForm } from '@/components/admin/UserCreateForm'
 import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
+import { ErrorMessage } from '@/components/ErrorMessage'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { fetchUsers } from '@/lib/api/users'
 import type { UserResponse } from '@/types/user'
 import { logger } from '@/lib/logger'
-import { ApiError } from '@/lib/api/todos'
 
 export function UserManagementPage() {
   const [users, setUsers] = useState<UserResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [initialPassword, setInitialPassword] = useState<{
     email: string
     password: string
   } | null>(null)
+  const { error, handleError, clearError } = useErrorHandler()
   const { handleLogout } = useLogout()
   const navigate = useNavigate()
 
@@ -29,17 +30,12 @@ export function UserManagementPage() {
   const loadUsers = async () => {
     try {
       setIsLoading(true)
-      setError(null)
+      clearError()
       const data = await fetchUsers()
       setUsers(data)
       logger.info('Users loaded', { count: data.length })
     } catch (err) {
-      logger.error('Failed to load users', err as Error)
-      if (err instanceof ApiError) {
-        setError(err.message)
-      } else {
-        setError('ユーザーの読み込みに失敗しました')
-      }
+      handleError(err, 'Failed to load users')
     } finally {
       setIsLoading(false)
     }
@@ -77,12 +73,14 @@ export function UserManagementPage() {
         </div>
 
         {error && (
-          <div className="error-message" role="alert">
-            {error}
-            <button onClick={loadUsers} className="error-message__retry">
-              再試行
-            </button>
-          </div>
+          <ErrorMessage
+            message={error}
+            onRetry={() => {
+              clearError()
+              void loadUsers()
+            }}
+            onDismiss={clearError}
+          />
         )}
 
         {isLoading ? (
