@@ -32,20 +32,13 @@ export function PageHeader({
   return (
     <div className="page-header">
       {onBack && (
-        <button
-          type="button"
-          onClick={onBack}
-          className="page-header__back"
-          aria-label="戻る"
-        >
+        <button type="button" onClick={onBack} className="page-header__back" aria-label="戻る">
           ← 戻る
         </button>
       )}
       <h1 className="page-header__title">{title}</h1>
       <div className="page-header__actions">
-        {userEmail && (
-          <span className="page-header__user-email">{userEmail}</span>
-        )}
+        {userEmail && <span className="page-header__user-email">{userEmail}</span>}
         {showSettings && (
           <button
             type="button"
