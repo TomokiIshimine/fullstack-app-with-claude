@@ -122,8 +122,7 @@ def create_admin_user() -> None:
                 else:
                     # User exists with role='user', delete and recreate as admin
                     logger.info(
-                        f"User with email {admin_email} exists with role='{existing_user.role}'. "
-                        f"Deleting user (CASCADE) and creating admin user."
+                        f"User with email {admin_email} exists with role='{existing_user.role}'. " f"Deleting user (CASCADE) and creating admin user."
                     )
                     session.delete(existing_user)
                     session.flush()  # Ensure deletion completes before creating new user

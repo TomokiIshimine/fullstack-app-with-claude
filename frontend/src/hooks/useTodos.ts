@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback } from 'react'
 
 import type { Todo, TodoPayload, TodoStatus, TodoUpdatePayload, SortOrder } from '@/types/todo'
-import { ApiError, createTodo, deleteTodo, getTodos, toggleTodo, updateTodo } from '@/lib/api/todos'
-import { filterByStatus, sortTodos } from '@/lib/utils/todoFilters'
+import { ApiError } from '@/lib/api/todos'
+import { useTodoData } from './useTodoData'
+import { useTodoFilters } from './useTodoFilters'
+import { useTodoMutations } from './useTodoMutations'
+import { useTodoEditor } from './useTodoEditor'
 
 export interface UseTodosResult {
   todos: Todo[]
@@ -25,139 +28,112 @@ export interface UseTodosResult {
   toggleTodoCompletion: (id: number, isCompleted: boolean) => Promise<void>
 }
 
+/**
+ * Main hook for managing todos
+ * Composes multiple smaller hooks for better separation of concerns
+ */
 export function useTodos(): UseTodosResult {
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [status, setStatusState] = useState<TodoStatus>('active')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
+  // Data fetching
+  const { todos, isLoading, error, reload, clearError, setError } = useTodoData()
 
-  const loadTodos = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const items = await getTodos('all')
-      setTodos(items)
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  // Filtering and sorting
+  const { status, sortOrder, filteredTodos, counts, setStatus, toggleSortOrder } =
+    useTodoFilters(todos)
 
-  useEffect(() => {
-    void loadTodos()
-  }, [loadTodos])
+  // Edit state
+  const { editingTodo, startEditing, cancelEditing } = useTodoEditor()
 
-  const refresh = useCallback(async () => {
-    setError(null)
-    await loadTodos()
-  }, [loadTodos])
+  // CRUD operations
+  const mutations = useTodoMutations(reload)
 
-  const filteredTodos = useMemo(() => {
-    const filtered = filterByStatus(todos, status)
-    return sortTodos(filtered, sortOrder)
-  }, [todos, status, sortOrder])
-
-  const totalCount = todos.length
-  const activeCount = useMemo(() => filterByStatus(todos, 'active').length, [todos])
-  const completedCount = useMemo(() => filterByStatus(todos, 'completed').length, [todos])
-
+  // Unified submit handler (create or update based on edit state)
   const submitTodo = useCallback(
     async (payload: TodoPayload | TodoUpdatePayload) => {
-      setError(null)
+      clearError()
       try {
         if (editingTodo) {
-          await updateTodo(editingTodo.id, payload as TodoUpdatePayload)
+          await mutations.updateTodo(editingTodo.id, payload as TodoUpdatePayload)
+          cancelEditing()
         } else {
-          await createTodo(payload as TodoPayload)
+          await mutations.createTodo(payload as TodoPayload)
         }
-        await loadTodos()
-        setEditingTodo(null)
       } catch (err) {
-        const message = getErrorMessage(err)
+        const message = extractErrorMessage(err)
         setError(message)
         throw err
       }
     },
-    [editingTodo, loadTodos]
+    [editingTodo, mutations, cancelEditing, clearError, setError]
   )
 
+  // Delete handler with edit state cleanup
   const deleteTodoHandler = useCallback(
     async (id: number) => {
-      setError(null)
+      clearError()
       try {
-        await deleteTodo(id)
         if (editingTodo?.id === id) {
-          setEditingTodo(null)
+          cancelEditing()
         }
-        await loadTodos()
+        await mutations.deleteTodo(id)
       } catch (err) {
-        const message = getErrorMessage(err)
+        const message = extractErrorMessage(err)
         setError(message)
         throw err
       }
     },
-    [editingTodo, loadTodos]
+    [editingTodo, mutations, cancelEditing, clearError, setError]
   )
 
+  // Toggle completion handler with error handling
   const toggleTodoCompletionHandler = useCallback(
     async (id: number, isCompleted: boolean) => {
-      setError(null)
+      clearError()
       try {
-        await toggleTodo(id, isCompleted)
-        await loadTodos()
+        await mutations.toggleTodo(id, isCompleted)
       } catch (err) {
-        const message = getErrorMessage(err)
+        const message = extractErrorMessage(err)
         setError(message)
         throw err
       }
     },
-    [loadTodos]
+    [mutations, clearError, setError]
   )
 
-  const clearError = useCallback(() => setError(null), [])
-
-  const changeStatus = useCallback((next: TodoStatus) => setStatusState(next), [])
-
-  const toggleSort = useCallback(() => {
-    setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
-  }, [])
-
-  const startEditing = useCallback((todo: Todo) => {
-    setEditingTodo(todo)
-  }, [])
-
-  const cancelEditing = useCallback(() => {
-    setEditingTodo(null)
-  }, [])
-
   return {
+    // Data
     todos: filteredTodos,
-    totalCount,
-    activeCount,
-    completedCount,
-    status,
-    sortOrder,
+    totalCount: counts.total,
+    activeCount: counts.active,
+    completedCount: counts.completed,
     isLoading,
     error,
+
+    // Filter & Sort
+    status,
+    sortOrder,
+    setStatus,
+    toggleSortOrder,
+
+    // Edit state
     editingTodo,
-    refresh,
-    clearError,
-    setStatus: changeStatus,
-    toggleSortOrder: toggleSort,
     startEditing,
     cancelEditing,
+
+    // CRUD operations
     submitTodo,
     deleteTodo: deleteTodoHandler,
     toggleTodoCompletion: toggleTodoCompletionHandler,
+
+    // Other
+    refresh: reload,
+    clearError,
   }
 }
 
 /**
  * Extract error message from various error types
  */
-function getErrorMessage(error: unknown): string {
+function extractErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.message
   }
