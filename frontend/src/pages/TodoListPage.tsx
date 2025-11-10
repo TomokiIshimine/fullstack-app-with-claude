@@ -1,11 +1,10 @@
-import { useNavigate } from 'react-router-dom'
 import { TodoForm } from '@/components/TodoForm'
 import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
 import { ErrorMessage } from '@/components/ErrorMessage'
+import { PageHeader } from '@/components/PageHeader'
 import { useTodos } from '@/hooks/useTodos'
 import { useAuth } from '@/contexts/AuthContext'
-import { useLogout } from '@/hooks/useLogout'
 
 export function TodoListPage() {
   const {
@@ -30,24 +29,16 @@ export function TodoListPage() {
   } = useTodos()
 
   const { user } = useAuth()
-  const { handleLogout } = useLogout()
-  const navigate = useNavigate()
 
   return (
     <div className="todo-page">
       <div className="todo-page__content">
-        <div className="todo-page__header">
-          <h1 className="todo-page__title">TODOリスト</h1>
-          <div className="todo-page__user-info">
-            {user && <span className="user-email">{user.email}</span>}
-            <button type="button" onClick={() => navigate('/settings')} className="settings-button">
-              設定
-            </button>
-            <button type="button" onClick={handleLogout} className="logout-button">
-              ログアウト
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="TODOリスト"
+          userEmail={user?.email}
+          showSettings={true}
+          showLogout={true}
+        />
 
         {error && (
           <ErrorMessage

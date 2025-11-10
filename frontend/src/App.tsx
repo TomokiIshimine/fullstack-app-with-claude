@@ -7,6 +7,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { RoleBasedRedirect } from '@/components/RoleBasedRedirect'
 import '@/styles/todo.css'
+import '@/styles/page-header.css'
 
 function App() {
   return (

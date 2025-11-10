@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useLogout } from '@/hooks/useLogout'
 import { UserList } from '@/components/admin/UserList'
 import { UserCreateForm } from '@/components/admin/UserCreateForm'
 import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
 import { ErrorMessage } from '@/components/ErrorMessage'
+import { PageHeader } from '@/components/PageHeader'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { fetchUsers } from '@/lib/api/users'
 import type { UserResponse } from '@/types/user'
@@ -19,8 +18,6 @@ export function UserManagementPage() {
     password: string
   } | null>(null)
   const { error, handleError, clearError } = useErrorHandler()
-  const { handleLogout } = useLogout()
-  const navigate = useNavigate()
 
   // Load users on mount
   useEffect(() => {
@@ -57,20 +54,7 @@ export function UserManagementPage() {
   return (
     <div className="user-management-page">
       <div className="user-management-page__content">
-        <div className="user-management-page__header">
-          <h1 className="user-management-page__title">ユーザー管理</h1>
-          <div className="user-management-page__actions">
-            <button
-              onClick={() => navigate('/settings')}
-              className="user-management-page__settings"
-            >
-              設定
-            </button>
-            <button onClick={handleLogout} className="user-management-page__logout">
-              ログアウト
-            </button>
-          </div>
-        </div>
+        <PageHeader title="ユーザー管理" showSettings={true} showLogout={true} />
 
         {error && (
           <ErrorMessage

@@ -1,6 +1,9 @@
 import type { Todo, TodoDto, TodoPayload, TodoStatus, TodoUpdatePayload } from '@/types/todo'
 import { fetchWithLogging, buildJsonHeaders, parseJson, buildApiError } from './client'
 
+// Re-export types for convenience
+export type { Todo, TodoDto, TodoPayload, TodoStatus, TodoUpdatePayload }
+
 /**
  * API error class for handling HTTP errors
  */

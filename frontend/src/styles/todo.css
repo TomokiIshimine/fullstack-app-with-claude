@@ -17,52 +17,6 @@
   gap: 24px;
 }
 
-.todo-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.todo-page__title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.todo-page__user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-email {
-  font-size: 14px;
-  color: #64748b;
-}
-
-.logout-button {
-  padding: 8px 16px;
-  background-color: #ef4444;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.logout-button:hover {
-  background-color: #dc2626;
-}
-
-.logout-button:active {
-  background-color: #b91c1c;
-}
-
 .todo-header {
   display: flex;
   flex-wrap: wrap;
@@ -481,43 +435,6 @@
   gap: 24px;
 }
 
-.user-management-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.user-management-page__title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.user-management-page__logout {
-  padding: 8px 16px;
-  background-color: #ef4444;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.user-management-page__logout:hover {
-  background-color: #dc2626;
-}
-
-.user-management-page__logout:active {
-  background-color: #b91c1c;
-}
-
 .user-management-page__body {
   display: flex;
   flex-direction: column;
@@ -870,54 +787,6 @@
   padding: 30px;
 }
 
-.settings-page__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.settings-page__title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.settings-page__back-button {
-  padding: 8px 16px;
-  background-color: #6b7280;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.settings-page__back-button:hover {
-  background-color: #4b5563;
-}
-
-.settings-page__logout {
-  padding: 8px 16px;
-  background-color: #ef4444;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.settings-page__logout:hover {
-  background-color: #dc2626;
-}
-
 .settings-page__success {
   margin-bottom: 20px;
   padding: 12px 16px;
@@ -1025,46 +894,4 @@
 .password-change-form__submit-button:disabled {
   background-color: #93c5fd;
   cursor: not-allowed;
-}
-
-/* ================================
-   Header Action Buttons
-   ================================ */
-
-.user-management-page__actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.user-management-page__settings {
-  padding: 8px 16px;
-  background-color: #6b7280;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.user-management-page__settings:hover {
-  background-color: #4b5563;
-}
-
-.settings-button {
-  padding: 8px 16px;
-  background-color: #6b7280;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.settings-button:hover {
-  background-color: #4b5563;
 }
