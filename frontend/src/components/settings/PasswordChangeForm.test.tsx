@@ -31,11 +31,13 @@ describe('PasswordChangeForm', () => {
     it('should have password type inputs', () => {
       render(<PasswordChangeForm onSuccess={mockOnSuccess} />)
 
-      const inputs = screen.getAllByLabelText(/パスワード/)
+      const currentPassword = screen.getByLabelText('現在のパスワード')
+      const newPassword = screen.getByLabelText('新しいパスワード')
+      const confirmPassword = screen.getByLabelText('新しいパスワード（確認）')
 
-      inputs.forEach(input => {
-        expect(input).toHaveAttribute('type', 'password')
-      })
+      expect(currentPassword).toHaveAttribute('type', 'password')
+      expect(newPassword).toHaveAttribute('type', 'password')
+      expect(confirmPassword).toHaveAttribute('type', 'password')
     })
   })
 
