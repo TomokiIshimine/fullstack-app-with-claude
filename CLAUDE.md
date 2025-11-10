@@ -26,6 +26,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[Testing Strategy](docs/06_testing-strategy.md)** - Test levels, coverage goals, test data management
 - **[Documentation Guide](docs/07_documentation-guide.md)** - Overview of all documentation (meta-document)
 - **[E2E Test List](docs/08_e2e-test-list.md)** - E2E test scenarios and implementation guide
+- **[CI/CD Setup Guide](docs/09_cicd-setup-guide.md)** - CI/CD environment setup after forking the project
 
 ## Quick Start
 
