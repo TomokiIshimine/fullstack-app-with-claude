@@ -32,7 +32,7 @@ export function TodoForm({ editingTodo, onSubmit, onCancelEdit }: TodoFormProps)
     // INPUTフィールドでのみEnterキー送信を有効化（ボタンやその他の要素は除外）
     if (e.key === 'Enter' && !e.shiftKey && target.tagName === 'INPUT') {
       e.preventDefault()
-      handleSubmit(e as unknown as React.FormEvent)
+      handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>)
     }
   }
 
