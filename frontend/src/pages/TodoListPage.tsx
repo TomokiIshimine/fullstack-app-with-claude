@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { TodoForm } from '@/components/TodoForm'
 import { TodoFilterToggle } from '@/components/TodoFilterToggle'
 import { TodoList } from '@/components/TodoList'
@@ -5,6 +6,7 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
 import { useTodos } from '@/hooks/useTodos'
 import { useAuth } from '@/contexts/AuthContext'
+import type { Todo } from '@/types/todo'
 
 export function TodoListPage() {
   const {
@@ -29,6 +31,28 @@ export function TodoListPage() {
   } = useTodos()
 
   const { user } = useAuth()
+
+  // Memoized callbacks to prevent unnecessary TodoItem re-renders
+  const handleToggle = useCallback(
+    (todo: Todo, nextState: boolean) => {
+      void toggleTodoCompletion(todo.id, nextState)
+    },
+    [toggleTodoCompletion]
+  )
+
+  const handleEdit = useCallback(
+    (todo: Todo) => {
+      startEditing(todo)
+    },
+    [startEditing]
+  )
+
+  const handleDelete = useCallback(
+    (todo: Todo) => {
+      void deleteTodoById(todo.id)
+    },
+    [deleteTodoById]
+  )
 
   return (
     <div className="todo-page">
@@ -66,9 +90,9 @@ export function TodoListPage() {
             <TodoList
               todos={todos}
               isLoading={isLoading}
-              onToggle={(todo, nextState) => void toggleTodoCompletion(todo.id, nextState)}
-              onEdit={startEditing}
-              onDelete={todo => void deleteTodoById(todo.id)}
+              onToggle={handleToggle}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
           <div className="todo-layout__form">
