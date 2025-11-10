@@ -67,7 +67,11 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
   return (
     <div className="password-change-form">
       <h2 className="password-change-form__title">パスワード変更</h2>
-      <form onSubmit={handleSubmit} className="password-change-form__form" aria-label="パスワード変更フォーム">
+      <form
+        onSubmit={handleSubmit}
+        className="password-change-form__form"
+        aria-label="パスワード変更フォーム"
+      >
         {error && (
           <div className="password-change-form__error" role="alert">
             {error}

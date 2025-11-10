@@ -62,7 +62,12 @@ const TodoItem = memo(function TodoItem({ todo, onToggle, onEdit, onDelete }: To
           <button type="button" onClick={handleEdit} aria-label={`${todo.title}を編集`}>
             編集
           </button>
-          <button type="button" className="danger" onClick={handleDelete} aria-label={`${todo.title}を削除`}>
+          <button
+            type="button"
+            className="danger"
+            onClick={handleDelete}
+            aria-label={`${todo.title}を削除`}
+          >
             削除
           </button>
         </div>

@@ -39,7 +39,12 @@ export function TodoForm({ editingTodo, onSubmit, onCancelEdit }: TodoFormProps)
   return (
     <section className="todo-form-wrapper">
       <h2 className="todo-form__title">{editingTodo ? 'TODOを編集' : 'TODOを追加'}</h2>
-      <form className="todo-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} aria-label="TODOフォーム">
+      <form
+        className="todo-form"
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        aria-label="TODOフォーム"
+      >
         <div className="todo-form__field">
           <label htmlFor="todo-title">タイトル</label>
           <input
