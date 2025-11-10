@@ -27,10 +27,17 @@ export function TodoForm({ editingTodo, onSubmit, onCancelEdit }: TodoFormProps)
     handleSubmit,
   } = useTodoForm({ editingTodo, onSubmit })
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+      e.preventDefault()
+      handleSubmit(e as unknown as React.FormEvent)
+    }
+  }
+
   return (
     <section className="todo-form-wrapper">
       <h2 className="todo-form__title">{editingTodo ? 'TODOを編集' : 'TODOを追加'}</h2>
-      <form className="todo-form" onSubmit={handleSubmit} aria-label="TODOフォーム">
+      <form className="todo-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} aria-label="TODOフォーム">
         <div className="todo-form__field">
           <label htmlFor="todo-title">タイトル</label>
           <input
@@ -78,7 +85,11 @@ export function TodoForm({ editingTodo, onSubmit, onCancelEdit }: TodoFormProps)
         {submitError && <p className="todo-form__error">{submitError}</p>}
 
         <div className="todo-form__actions">
-          <button type="submit" disabled={isSubmitting}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            aria-label={editingTodo ? 'TODOを更新' : 'TODOを追加'}
+          >
             {submitLabel}
           </button>
           {editingTodo && (
@@ -87,6 +98,7 @@ export function TodoForm({ editingTodo, onSubmit, onCancelEdit }: TodoFormProps)
               className="secondary"
               onClick={onCancelEdit}
               disabled={isSubmitting}
+              aria-label="編集をキャンセル"
             >
               キャンセル
             </button>
