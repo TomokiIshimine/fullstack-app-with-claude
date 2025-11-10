@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useLogout } from '@/hooks/useLogout'
+import { PageHeader } from '@/components/PageHeader'
 import { PasswordChangeForm } from '@/components/settings/PasswordChangeForm'
 import { logger } from '@/lib/logger'
 
 export function SettingsPage() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const { user } = useAuth()
-  const { handleLogout } = useLogout()
   const navigate = useNavigate()
 
   const handleSuccess = () => {
@@ -29,15 +28,7 @@ export function SettingsPage() {
   return (
     <div className="settings-page">
       <div className="settings-page__content">
-        <div className="settings-page__header">
-          <button onClick={handleBack} className="settings-page__back-button">
-            ← 戻る
-          </button>
-          <h1 className="settings-page__title">設定</h1>
-          <button onClick={handleLogout} className="settings-page__logout">
-            ログアウト
-          </button>
-        </div>
+        <PageHeader title="設定" onBack={handleBack} showLogout={true} />
 
         {showSuccessMessage && (
           <div className="settings-page__success" role="alert">

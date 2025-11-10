@@ -1,0 +1,108 @@
+/**
+ * PageHeader コンポーネント用スタイル
+ * 全ページで共通のヘッダーレイアウトを提供
+ */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+  gap: 1rem;
+}
+
+.page-header__title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0;
+  flex: 1;
+}
+
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-header__user-email {
+  margin-right: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* 戻るボタン */
+.page-header__back {
+  padding: 0.5rem 1rem;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.page-header__back:hover {
+  background-color: #4b5563;
+}
+
+/* 設定ボタン */
+.page-header__settings {
+  padding: 0.5rem 1rem;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.page-header__settings:hover {
+  background-color: #4b5563;
+}
+
+/* ログアウトボタン */
+.page-header__logout {
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.page-header__logout:hover {
+  background-color: #dc2626;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 640px) {
+  .page-header {
+    flex-wrap: wrap;
+  }
+
+  .page-header__title {
+    order: 1;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header__back {
+    order: 0;
+  }
+
+  .page-header__actions {
+    order: 2;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .page-header__user-email {
+    display: none;
+  }
+}
