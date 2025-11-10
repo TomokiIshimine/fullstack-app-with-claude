@@ -35,7 +35,7 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-container">
         <h1>ログイン</h1>
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit} className="login-form" aria-label="ログインフォーム">
           {error && <ErrorMessage message={error} onDismiss={clearError} />}
           <div className="form-group">
             <label htmlFor="email">メールアドレス</label>

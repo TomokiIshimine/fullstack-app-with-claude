@@ -162,7 +162,7 @@ describe('TodoList', () => {
       const todo = createMockTodo({ id: 1, title: 'Test Todo' })
       render(<TodoList {...defaultProps} todos={[todo]} />)
 
-      const editButton = screen.getByRole('button', { name: '編集' })
+      const editButton = screen.getByRole('button', { name: 'Test Todoを編集' })
       await userEvent.click(editButton)
 
       expect(mockOnEdit).toHaveBeenCalledTimes(1)
@@ -173,7 +173,7 @@ describe('TodoList', () => {
       const todo = createMockTodo({ id: 1, title: 'Test Todo' })
       render(<TodoList {...defaultProps} todos={[todo]} />)
 
-      const deleteButton = screen.getByRole('button', { name: '削除' })
+      const deleteButton = screen.getByRole('button', { name: 'Test Todoを削除' })
       await userEvent.click(deleteButton)
 
       expect(mockOnDelete).toHaveBeenCalledTimes(1)
@@ -188,11 +188,13 @@ describe('TodoList', () => {
 
       render(<TodoList {...defaultProps} todos={todos} />)
 
-      const editButtons = screen.getAllByRole('button', { name: '編集' })
-      const deleteButtons = screen.getAllByRole('button', { name: '削除' })
+      // Check edit buttons with aria-labels
+      expect(screen.getByRole('button', { name: 'Todo 1を編集' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Todo 2を編集' })).toBeInTheDocument()
 
-      expect(editButtons).toHaveLength(2)
-      expect(deleteButtons).toHaveLength(2)
+      // Check delete buttons with aria-labels
+      expect(screen.getByRole('button', { name: 'Todo 1を削除' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Todo 2を削除' })).toBeInTheDocument()
     })
   })
 
@@ -240,8 +242,8 @@ describe('TodoList', () => {
 
       render(<TodoList {...defaultProps} todos={todos} />)
 
-      const editButtons = screen.getAllByRole('button', { name: '編集' })
-      await userEvent.click(editButtons[1])
+      const editButton = screen.getByRole('button', { name: 'Todo 2を編集' })
+      await userEvent.click(editButton)
 
       expect(mockOnEdit).toHaveBeenCalledWith(todos[1])
       expect(mockOnEdit).not.toHaveBeenCalledWith(todos[0])
