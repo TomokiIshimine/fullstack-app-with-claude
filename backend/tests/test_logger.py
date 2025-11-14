@@ -97,7 +97,7 @@ def test_structured_text_formatter_appends_extra_data():
     assert "status_code=201" in output
 
 
-def test_setup_logging_adds_console_handler(tmp_path):
+def test_setup_logging_production_uses_console_only(tmp_path):
     logger = logging.getLogger("test-setup-logger")
     log_directory = Path(tmp_path)
 
@@ -111,4 +111,21 @@ def test_setup_logging_adds_console_handler(tmp_path):
 
     root_handlers = logging.getLogger().handlers
     assert any(isinstance(handler, logging.StreamHandler) for handler in root_handlers)
-    assert any(handler for handler in root_handlers if isinstance(handler, logging.FileHandler))
+    assert not any(isinstance(handler, logging.FileHandler) for handler in root_handlers)
+
+
+def test_setup_logging_development_includes_file_handler(tmp_path):
+    logger = logging.getLogger("test-dev-logger")
+    log_directory = Path(tmp_path)
+
+    setup_logging(
+        app_logger=logger,
+        log_dir=str(log_directory),
+        log_level="INFO",
+        is_development=True,
+        is_testing=False,
+    )
+
+    root_handlers = logging.getLogger().handlers
+    assert any(isinstance(handler, logging.StreamHandler) for handler in root_handlers)
+    assert any(isinstance(handler, logging.FileHandler) for handler in root_handlers)
