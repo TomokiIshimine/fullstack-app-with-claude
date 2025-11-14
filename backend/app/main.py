@@ -18,13 +18,25 @@ from .routes import api_bp
 def _register_error_handlers(app: Flask) -> None:
     @app.errorhandler(HTTPException)
     def handle_http_exception(err: HTTPException):
-        app.logger.warning(f"HTTP exception: {err.code} - {err.description}")
+        app.logger.warning(
+            "HTTP exception",
+            extra={
+                "status_code": err.code,
+                "description": err.description,
+                "path": request.path,
+                "http_method": request.method,
+            },
+        )
         response = jsonify(error={"code": err.code, "message": err.description})
         return response, err.code
 
     @app.errorhandler(Exception)
     def handle_unexpected_exception(err: Exception):
-        app.logger.error(f"Unhandled application error: {type(err).__name__}: {err}", exc_info=True)
+        app.logger.error(
+            "Unhandled application error",
+            exc_info=True,
+            extra={"error_type": type(err).__name__, "path": request.path, "http_method": request.method},
+        )
         response = jsonify(error={"code": 500, "message": "Internal server error"})
         return response, 500
 
@@ -43,11 +55,17 @@ def _register_request_hooks(app: Flask) -> None:
         """Log request completion with timing information."""
         if hasattr(g, "start_time") and hasattr(g, "request_id"):
             elapsed_ms = (time.time() - g.start_time) * 1000
+            forwarded_for = request.headers.get("X-Forwarded-For")
+            client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.remote_addr or "unknown")
             app.logger.info(
-                f"Request completed: {request.method} {request.path} - "
-                f"status={response.status_code} - "
-                f"duration={elapsed_ms:.2f}ms - "
-                f"request_id={g.request_id}"
+                "Request completed",
+                extra={
+                    "http_method": request.method,
+                    "path": request.path,
+                    "status_code": response.status_code,
+                    "duration_ms": round(elapsed_ms, 2),
+                    "client_ip": client_ip,
+                },
             )
         return response
 
@@ -67,10 +85,17 @@ def _register_session_hooks(app: Flask) -> None:
             if exception is None:
                 session.commit()
             else:
-                app.logger.warning(f"Rolling back database session due to exception: {exception}")
+                app.logger.warning(
+                    "Rolling back database session due to exception",
+                    extra={"exception": str(exception)},
+                )
                 session.rollback()
         except Exception as e:
-            app.logger.error(f"Error during session cleanup: {e}", exc_info=True)
+            app.logger.error(
+                "Error during session cleanup",
+                exc_info=True,
+                extra={"exception": str(e)},
+            )
             session.rollback()
             raise
         finally:
