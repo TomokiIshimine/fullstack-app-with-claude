@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import Any
 
 from flask import g, has_request_context
 
@@ -32,44 +33,86 @@ class SensitiveDataFilter(logging.Filter):
         (re.compile(r"(api[_-]?key['\"\s:=]+)[\w\S]+", re.IGNORECASE), r"\1***"),
         (re.compile(r"(secret['\"\s:=]+)[\w\S]+", re.IGNORECASE), r"\1***"),
         (re.compile(r"(authorization['\"\s:=]+bearer\s+)[\w\S]+", re.IGNORECASE), r"\1***"),
+        (re.compile(r"([\w.+-]+@\w+\.[\w.-]+)"), "***"),
     ]
 
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Mask sensitive information in log messages."""
-        if hasattr(record, "msg") and isinstance(record.msg, str):
-            msg = record.msg
-            for pattern, replacement in self.SENSITIVE_PATTERNS:
-                msg = pattern.sub(replacement, msg)
-            record.msg = msg
+    SENSITIVE_KEYWORDS = (
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "api_key",
+        "apikey",
+        "credential",
+        "authorization",
+        "auth",
+        "email",
+    )
 
-        # Also filter args if present
+    def _mask_string(self, value: str) -> str:
+        masked = value
+        for pattern, replacement in self.SENSITIVE_PATTERNS:
+            masked = pattern.sub(replacement, masked)
+        return masked
+
+    def _should_mask_key(self, key: Any) -> bool:
+        if key is None:
+            return False
+        try:
+            key_str = str(key).lower()
+        except Exception:
+            return False
+        return any(keyword in key_str for keyword in self.SENSITIVE_KEYWORDS)
+
+    def _sanitize(self, value: Any, *, key: Any | None = None) -> Any:
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            if key is not None and self._should_mask_key(key):
+                return "***"
+            return self._mask_string(value)
+
+        if isinstance(value, dict):
+            sanitized_dict: dict[Any, Any] = {}
+            for dict_key, dict_value in value.items():
+                if self._should_mask_key(dict_key):
+                    sanitized_dict[dict_key] = "***"
+                else:
+                    sanitized_dict[dict_key] = self._sanitize(dict_value)
+            return sanitized_dict
+
+        if isinstance(value, list):
+            return [self._sanitize(item) for item in value]
+
+        if isinstance(value, tuple):
+            return tuple(self._sanitize(item) for item in value)
+
+        return value
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Mask sensitive information in log messages and structured data."""
+        if hasattr(record, "msg") and isinstance(record.msg, str):
+            record.msg = self._mask_string(record.msg)
+
         if hasattr(record, "args") and record.args:
             try:
                 if isinstance(record.args, dict):
-                    filtered_args_dict = {}
-                    for key, value in record.args.items():
-                        if isinstance(value, str):
-                            filtered_value = value
-                            for pattern, replacement in self.SENSITIVE_PATTERNS:
-                                filtered_value = pattern.sub(replacement, filtered_value)
-                            filtered_args_dict[key] = filtered_value
-                        else:
-                            filtered_args_dict[key] = value
-                    record.args = filtered_args_dict  # type: ignore
+                    record.args = {
+                        key: ("***" if self._should_mask_key(key) else self._sanitize(value, key=key)) for key, value in record.args.items()
+                    }
                 elif isinstance(record.args, (list, tuple)):
-                    filtered_args_list = []
-                    for arg in record.args:
-                        if isinstance(arg, str):
-                            filtered_arg = arg
-                            for pattern, replacement in self.SENSITIVE_PATTERNS:
-                                filtered_arg = pattern.sub(replacement, filtered_arg)
-                            filtered_args_list.append(filtered_arg)
-                        else:
-                            filtered_args_list.append(arg)  # type: ignore
-                    record.args = tuple(filtered_args_list) if isinstance(record.args, tuple) else filtered_args_list  # type: ignore
+                    sanitized_args = [self._sanitize(arg) for arg in record.args]
+                    record.args = tuple(sanitized_args) if isinstance(record.args, tuple) else sanitized_args
+                else:
+                    record.args = self._sanitize(record.args)
             except Exception:
-                # If filtering args fails, keep original to avoid breaking logging
                 pass
+
+        for attr, value in list(record.__dict__.items()):
+            if attr in LOG_RECORD_RESERVED_ATTRS:
+                continue
+            record.__dict__[attr] = self._sanitize(value, key=attr)
 
         return True
 
@@ -97,7 +140,78 @@ class JsonFormatter(logging.Formatter):
             log_data["line"] = record.lineno
             log_data["function"] = record.funcName
 
-        return json.dumps(log_data, ensure_ascii=False)
+        extra_data = {key: value for key, value in record.__dict__.items() if key not in LOG_RECORD_RESERVED_ATTRS and key not in log_data}
+
+        if extra_data:
+            log_data.update(extra_data)
+
+        return json.dumps(log_data, ensure_ascii=False, default=_json_serialize)
+
+
+class StructuredTextFormatter(logging.Formatter):
+    """Text formatter that appends structured key/value pairs."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        base_message = super().format(record)
+        extra_parts = []
+        for key, value in record.__dict__.items():
+            if key in LOG_RECORD_RESERVED_ATTRS or key == "message":
+                continue
+            extra_parts.append(f"{key}={_stringify(value)}")
+
+        if extra_parts:
+            return f"{base_message} | {' '.join(extra_parts)}"
+        return base_message
+
+
+def _stringify(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float, bool)) or value is None:
+        return str(value)
+    try:
+        return json.dumps(value, ensure_ascii=False)
+    except TypeError:
+        return str(value)
+
+
+def _json_serialize(value: Any) -> Any:
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, dict):
+        return {key: _json_serialize(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_serialize(item) for item in value]
+    if hasattr(value, "model_dump"):
+        return _json_serialize(value.model_dump())
+    return str(value)
+
+
+LOG_RECORD_RESERVED_ATTRS = {
+    "name",
+    "msg",
+    "args",
+    "levelname",
+    "levelno",
+    "pathname",
+    "filename",
+    "module",
+    "exc_info",
+    "exc_text",
+    "stack_info",
+    "lineno",
+    "funcName",
+    "created",
+    "msecs",
+    "relativeCreated",
+    "thread",
+    "threadName",
+    "processName",
+    "process",
+    "message",
+    "asctime",
+    "request_id",
+}
 
 
 def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: str, is_development: bool, is_testing: bool = False) -> None:
@@ -140,7 +254,7 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     if is_production:
         formatter = JsonFormatter()  # type: ignore
     else:
-        formatter = logging.Formatter(
+        formatter = StructuredTextFormatter(
             fmt="%(asctime)s - [%(request_id)s] - %(name)s - %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
@@ -199,14 +313,13 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     # Add file handler to root logger (all loggers inherit)
     root_logger.addHandler(file_handler)
 
-    # Add console handler only in development
-    if is_development:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(numeric_level)
-        console_handler.setFormatter(formatter)
-        console_handler.addFilter(request_id_filter)
-        console_handler.addFilter(sensitive_data_filter)
-        root_logger.addHandler(console_handler)
+    # Always add console handler for compatibility with containerized environments
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(numeric_level)
+    console_handler.setFormatter(formatter)
+    console_handler.addFilter(request_id_filter)
+    console_handler.addFilter(sensitive_data_filter)
+    root_logger.addHandler(console_handler)
 
     # Configure werkzeug logger to reduce noise in production
     werkzeug_logger = logging.getLogger("werkzeug")
@@ -218,8 +331,8 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
         werkzeug_logger.setLevel(numeric_level)
 
     format_type = "JSON" if is_production else "text"
-    console_status = "enabled" if is_development else "disabled"
-    app_logger.info(f"Logging initialized: level={log_level}, format={format_type}, file={log_file}, console={console_status}")
+    outputs = [f"file={log_file}", "console=stdout"]
+    app_logger.info(f"Logging initialized: level={log_level}, format={format_type}, outputs={', '.join(outputs)}")
 
 
 __all__ = ["setup_logging"]
