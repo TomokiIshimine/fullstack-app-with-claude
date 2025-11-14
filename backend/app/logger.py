@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sys
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -265,7 +266,7 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
 
     # In testing mode, use console only (no file logging to avoid resource warnings)
     if is_testing:
-        console_handler = logging.StreamHandler()
+        console_handler = logging.StreamHandler(stream=sys.stdout)
         console_handler.setLevel(numeric_level)
         console_handler.setFormatter(formatter)
         console_handler.addFilter(request_id_filter)
@@ -277,7 +278,7 @@ def setup_logging(app_logger: logging.Logger, log_dir: str | Path, log_level: st
     handlers: list[logging.Handler] = []
 
     # Always add console handler for compatibility with containerized environments
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setLevel(numeric_level)
     console_handler.setFormatter(formatter)
     console_handler.addFilter(request_id_filter)
