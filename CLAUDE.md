@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a full-stack monorepo containing a React + TypeScript frontend and a Flask + SQLAlchemy backend, currently implementing a TODO application. The project uses Docker Compose for local development with MySQL.
 
+The system is designed around Clean Architecture principles: inner layers (domain and use cases) must remain independent from outer layers (frameworks, UI, infrastructure). When adding new functionality, keep dependencies flowing inward and isolate infrastructure-specific code at the edges of the system.
+
 **For detailed documentation:**
 - Backend: See [backend/CLAUDE.md](backend/CLAUDE.md)
 - Frontend: See [frontend/CLAUDE.md](frontend/CLAUDE.md)
