@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import logging
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from pydantic import ValidationError
 
 from app.database import get_session
-from app.schemas.user import UserCreateRequest, UserListResponse, UserValidationError
+from app.schemas.user import (
+    UserCreateRequest,
+    UserListResponse,
+    UserUpdateRequest,
+    UserUpdateResponse,
+    UserValidationError,
+)
 from app.services.user_service import UserService
 from app.utils.auth_decorator import require_auth, require_role
 
@@ -100,6 +106,62 @@ def create_user():
 
     logger.info(f"POST /api/users - User created successfully: {data.email} (id={result.user.id})")
     return jsonify(result.model_dump()), 201
+
+
+@user_bp.patch("/me")
+@require_auth
+def update_current_user():
+    """
+    Update current user's profile information.
+
+    Request body:
+        {
+            "email": "new@example.com",
+            "name": "New Name"
+        }
+
+    Returns:
+        {
+            "message": "プロフィールを更新しました",
+            "user": {
+                "id": 1,
+                "email": "new@example.com",
+                "name": "New Name",
+                "role": "user"
+            }
+        }
+    """
+    user_id = g.user_id
+    logger.info(f"PATCH /api/users/me - Updating profile for user_id={user_id}")
+
+    payload = request.get_json()
+    if not payload:
+        logger.warning("PATCH /api/users/me - Request body is required")
+        return jsonify({"error": "Request body is required"}), 400
+
+    try:
+        data = UserUpdateRequest.model_validate(payload)
+    except ValidationError as e:
+        logger.warning(f"PATCH /api/users/me - Validation error: {e}")
+        errors = [
+            {"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]}
+            for err in e.errors()
+        ]
+        return jsonify({"error": "Validation error", "details": errors}), 400
+    except UserValidationError as e:
+        logger.warning(f"PATCH /api/users/me - Validation error: {e}")
+        return jsonify({"error": str(e)}), 400
+
+    session = get_session()
+    user_service = UserService(session)
+    updated_user = user_service.update_user_profile(user_id=user_id, email=data.email, name=data.name)
+
+    response = UserUpdateResponse(message="プロフィールを更新しました", user=updated_user)
+    logger.info(
+        "PATCH /api/users/me - Profile updated successfully",
+        extra={"user_id": user_id, "email": data.email},
+    )
+    return jsonify(response.model_dump()), 200
 
 
 @user_bp.delete("/<int:user_id>")

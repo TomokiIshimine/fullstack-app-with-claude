@@ -40,6 +40,23 @@ class UserRepository:
         """
         return self.session.query(User).filter(User.id == user_id).first()
 
+    def find_by_email_excluding_id(self, email: str, user_id: int) -> User | None:
+        """
+        Find a user by email address excluding a specific user ID.
+
+        Args:
+            email: Email address to search for
+            user_id: User ID to exclude from search
+
+        Returns:
+            User if found (excluding the specified user), None otherwise
+        """
+        return (
+            self.session.query(User)
+            .filter(User.email == email, User.id != user_id)
+            .first()
+        )
+
     def find_all(self) -> Sequence[User]:
         """
         Find all users ordered by created_at.
@@ -64,6 +81,22 @@ class UserRepository:
         """
         user = User(email=email, password_hash=password_hash, role=role, name=name)
         self.session.add(user)
+        return user
+
+    def update(self, user: User, *, email: str, name: str) -> User:
+        """
+        Update user attributes.
+
+        Args:
+            user: User instance to update
+            email: New email address
+            name: New display name
+
+        Returns:
+            Updated User instance
+        """
+        user.email = email
+        user.name = name
         return user
 
     def delete(self, user: User) -> None:

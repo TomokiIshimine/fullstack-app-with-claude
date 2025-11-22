@@ -3,20 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/PageHeader'
 import { PasswordChangeForm } from '@/components/settings/PasswordChangeForm'
+import { ProfileUpdateForm } from '@/components/settings/ProfileUpdateForm'
 import { logger } from '@/lib/logger'
 import { getHomePathForRole } from '@/lib/utils/routing'
+import type { User } from '@/types/auth'
 
 export function SettingsPage() {
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
-  const { user } = useAuth()
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const { user, updateUser } = useAuth()
   const navigate = useNavigate()
 
-  const handleSuccess = () => {
-    setShowSuccessMessage(true)
-    logger.info('Password change success message displayed')
-    // Hide success message after 5 seconds
+  const handleSuccess = (message: string) => {
+    setSuccessMessage(message)
+    logger.info('Settings success message displayed', { message })
     setTimeout(() => {
-      setShowSuccessMessage(false)
+      setSuccessMessage(null)
     }, 5000)
   }
 
@@ -26,19 +27,29 @@ export function SettingsPage() {
     navigate(backPath)
   }
 
+  const handleProfileUpdate = (updatedUser: User) => {
+    updateUser(updatedUser)
+    handleSuccess('プロフィールを更新しました')
+  }
+
   return (
     <div className="settings-page">
       <div className="settings-page__content">
-        <PageHeader title="設定" onBack={handleBack} showLogout={true} />
+        <PageHeader
+          title="設定"
+          onBack={user?.role === 'admin' ? handleBack : undefined}
+          showLogout={true}
+        />
 
-        {showSuccessMessage && (
+        {successMessage && (
           <div className="settings-page__success" role="alert">
-            パスワードを変更しました
+            {successMessage}
           </div>
         )}
 
         <div className="settings-page__body">
-          <PasswordChangeForm onSuccess={handleSuccess} />
+          <ProfileUpdateForm user={user} onSuccess={handleProfileUpdate} />
+          <PasswordChangeForm onSuccess={() => handleSuccess('パスワードを変更しました')} />
         </div>
       </div>
     </div>
