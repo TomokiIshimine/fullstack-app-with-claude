@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createUser as createUserApi, deleteUser as deleteUserApi, fetchUsers } from '@/lib/api/users'
+import {
+  createUser as createUserApi,
+  deleteUser as deleteUserApi,
+  fetchUsers,
+} from '@/lib/api/users'
 import { useErrorHandler } from './useErrorHandler'
 import type { UserCreateRequest, UserCreateResponse, UserResponse } from '@/types/user'
 import { logger } from '@/lib/logger'
@@ -45,7 +49,7 @@ export function useUserManagement() {
         throw err
       }
     },
-    [handleError, loadUsers],
+    [handleError, loadUsers]
   )
 
   const deleteUser = useCallback(
@@ -59,7 +63,7 @@ export function useUserManagement() {
         throw err
       }
     },
-    [handleError, loadUsers],
+    [handleError, loadUsers]
   )
 
   const resetInitialPassword = useCallback(() => {

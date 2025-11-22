@@ -6,10 +6,7 @@ import * as usersApi from '@/lib/api/users'
 import type { UserCreateRequest, UserCreateResponse } from '@/types/user'
 
 describe('UserCreateForm', () => {
-  const mockOnCreate = vi.fn<
-    [payload: UserCreateRequest],
-    Promise<UserCreateResponse>
-  >()
+  const mockOnCreate = vi.fn<[payload: UserCreateRequest], Promise<UserCreateResponse>>()
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
 
@@ -22,11 +19,7 @@ describe('UserCreateForm', () => {
   describe('Rendering', () => {
     it('should render form with all fields', () => {
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       expect(screen.getByLabelText('メールアドレス *')).toBeInTheDocument()
@@ -37,11 +30,7 @@ describe('UserCreateForm', () => {
 
     it('should have correct placeholders', () => {
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       expect(screen.getByPlaceholderText('user@example.com')).toBeInTheDocument()
@@ -53,11 +42,7 @@ describe('UserCreateForm', () => {
     it('should allow typing in email field', async () => {
       const user = userEvent.setup()
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const emailInput = screen.getByLabelText('メールアドレス *') as HTMLInputElement
@@ -69,11 +54,7 @@ describe('UserCreateForm', () => {
     it('should allow typing in name field', async () => {
       const user = userEvent.setup()
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const nameInput = screen.getByLabelText('名前 *') as HTMLInputElement
@@ -84,11 +65,7 @@ describe('UserCreateForm', () => {
 
     it('should enforce maxLength on name field', () => {
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const nameInput = screen.getByLabelText('名前 *') as HTMLInputElement
@@ -100,11 +77,7 @@ describe('UserCreateForm', () => {
   describe('Validation', () => {
     it('should show error when email is empty', async () => {
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const submitButton = screen.getByRole('button', { name: '作成' })
@@ -120,11 +93,7 @@ describe('UserCreateForm', () => {
     it('should show error when name is empty', async () => {
       const user = userEvent.setup()
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const emailInput = screen.getByLabelText('メールアドレス *')
@@ -143,11 +112,7 @@ describe('UserCreateForm', () => {
     it('should show error when name exceeds 100 characters', async () => {
       const user = userEvent.setup()
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const emailInput = screen.getByLabelText('メールアドレス *')
@@ -181,11 +146,7 @@ describe('UserCreateForm', () => {
       })
 
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
@@ -217,11 +178,7 @@ describe('UserCreateForm', () => {
       mockOnCreate.mockResolvedValue(mockResponse)
 
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
@@ -249,11 +206,7 @@ describe('UserCreateForm', () => {
       })
 
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const emailInput = screen.getByLabelText('メールアドレス *') as HTMLInputElement
@@ -281,11 +234,7 @@ describe('UserCreateForm', () => {
       mockOnCreate.mockReturnValue(createPromise)
 
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
@@ -319,11 +268,7 @@ describe('UserCreateForm', () => {
       mockOnCreate.mockRejectedValue(apiError)
 
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
@@ -340,11 +285,7 @@ describe('UserCreateForm', () => {
     it('should clear previous error on successful submission', async () => {
       const user = userEvent.setup()
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       // First submission - empty form (error)
@@ -380,11 +321,7 @@ describe('UserCreateForm', () => {
   describe('Cancel Button', () => {
     it('should call onCancel when cancel button is clicked', () => {
       render(
-        <UserCreateForm
-          onCreate={mockOnCreate}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />
+        <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
       const cancelButton = screen.getByRole('button', { name: 'キャンセル' })
