@@ -9,22 +9,17 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+from google.cloud.sql.connector import Connector
+
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-try:
-    from dotenv import load_dotenv
-
-    # Load environment variables if .env file exists
-    env_file = backend_dir / ".env"
-    if env_file.exists():
-        load_dotenv(env_file)
-except ImportError:
-    pass
-
-import pymysql
-from google.cloud.sql.connector import Connector
+# Load environment variables if .env file exists
+env_file = backend_dir / ".env"
+if env_file.exists():
+    load_dotenv(env_file)
 
 
 def grant_permissions():
