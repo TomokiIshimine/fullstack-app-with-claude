@@ -160,3 +160,48 @@ jobs:
           echo "📱 Frontend: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/"
           echo "⚙️  Backend API: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/api"
           echo "🏥 Health Check: ${{ needs.get-terraform-outputs.outputs.cloud_run_url }}/api/health"
+
+  create-release:
+    name: "Create GitHub Release"
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    # Only run on tag pushes, not on manual workflow dispatch
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tag comparison
+
+      - name: Make release notes script executable
+        run: chmod +x .github/scripts/generate-release-notes.sh
+
+      - name: Generate Release Notes
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          CURRENT_TAG="${{ github.ref_name }}"
+          RELEASE_NOTES=$(.github/scripts/generate-release-notes.sh "$CURRENT_TAG")
+
+          # Save release notes to file for GitHub Release
+          echo "$RELEASE_NOTES" > release_notes.md
+
+          # Also output for logging
+          echo "Generated release notes:"
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}  # Mark as prerelease if tag contains hyphen (e.g., v1.0.0-rc.1)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
