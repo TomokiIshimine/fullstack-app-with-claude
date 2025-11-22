@@ -53,8 +53,8 @@ export function UserManagementPage() {
 
             {showCreateForm && (
               <UserCreateForm
-                onCreate={async payload => {
-                  await createUser(payload)
+                onCreate={createUser}
+                onSuccess={() => {
                   setShowCreateForm(false)
                 }}
                 onCancel={() => setShowCreateForm(false)}
@@ -63,9 +63,7 @@ export function UserManagementPage() {
 
             <UserList
               users={users}
-              onDeleteUser={async user => {
-                await deleteUser(user)
-              }}
+              onDeleteUser={deleteUser}
             />
           </div>
         )}

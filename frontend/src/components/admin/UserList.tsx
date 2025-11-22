@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import type { UserResponse } from '@/types/user'
 import { ApiError } from '@/lib/api/client'
+import { deleteUser as deleteUserApi } from '@/lib/api/users'
 
 interface UserListProps {
   users: UserResponse[]
-  onDeleteUser: (user: UserResponse) => Promise<void>
+  onDeleteUser?: (user: UserResponse) => Promise<void>
+  onUsersChange?: () => void | Promise<void>
 }
 
-export function UserList({ users, onDeleteUser }: UserListProps) {
+export function UserList({ users, onDeleteUser, onUsersChange }: UserListProps) {
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
 
   const handleDelete = async (user: UserResponse) => {
@@ -20,7 +22,9 @@ export function UserList({ users, onDeleteUser }: UserListProps) {
     setDeletingUserId(user.id)
 
     try {
-      await onDeleteUser(user)
+      const deleteUser = onDeleteUser ?? (async (target: UserResponse) => deleteUserApi(target.id))
+      await deleteUser(user)
+      await onUsersChange?.()
     } catch (err) {
       if (err instanceof ApiError) {
         alert(`削除に失敗しました: ${err.message}`)

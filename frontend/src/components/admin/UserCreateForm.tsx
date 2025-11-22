@@ -1,14 +1,16 @@
 import { useState, type FormEvent } from 'react'
 import type { UserCreateRequest, UserCreateResponse } from '@/types/user'
 import { ApiError } from '@/lib/api/client'
+import { createUser as createUserApi } from '@/lib/api/users'
 import { logger } from '@/lib/logger'
 
 interface UserCreateFormProps {
-  onCreate: (payload: UserCreateRequest) => Promise<UserCreateResponse>
+  onCreate?: (payload: UserCreateRequest) => Promise<UserCreateResponse>
+  onSuccess?: (response: UserCreateResponse) => void
   onCancel: () => void
 }
 
-export function UserCreateForm({ onCreate, onCancel }: UserCreateFormProps) {
+export function UserCreateForm({ onCreate, onSuccess, onCancel }: UserCreateFormProps) {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -32,10 +34,13 @@ export function UserCreateForm({ onCreate, onCancel }: UserCreateFormProps) {
     setIsSubmitting(true)
 
     try {
-      await onCreate({ email, name })
+      const createUser = onCreate ?? createUserApi
+      const response = await createUser({ email, name })
+      setError(null)
       // Reset form
       setEmail('')
       setName('')
+      onSuccess?.(response)
     } catch (err) {
       logger.error('Failed to create user', err as Error)
       if (err instanceof ApiError) {
