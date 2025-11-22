@@ -328,10 +328,12 @@ class TestApplyMigrationsIntegration:
 
     def test_apply_migrations_with_no_files(self, app: Flask, tmp_path, monkeypatch, capfd):
         """Test apply_migrations when no migration files exist."""
+        # Mock init_engine to prevent database engine re-initialization
         # Mock get_migration_files to return empty list
-        with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[]):
-            with app.app_context():
-                result = apply_migrations()
+        with patch("scripts.apply_sql_migrations.init_engine"):
+            with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[]):
+                with app.app_context():
+                    result = apply_migrations()
 
         assert result == 0
         captured = capfd.readouterr()
@@ -355,8 +357,10 @@ class TestApplyMigrationsIntegration:
             migration.checksum = calculate_checksum(mock_file)
             session.commit()
 
-            with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[mock_file]):
-                result = apply_migrations()
+            # Mock init_engine to prevent database engine re-initialization
+            with patch("scripts.apply_sql_migrations.init_engine"):
+                with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[mock_file]):
+                    result = apply_migrations()
 
         assert result == 0
         captured = capfd.readouterr()
@@ -371,23 +375,25 @@ class TestApplyMigrationsIntegration:
             migration_file = tmp_path / "400_idempotency_test.sql"
             migration_file.write_text("CREATE TABLE idempotency_test (id INTEGER);")
 
+            # Mock init_engine to prevent database engine re-initialization
             # Mock get_migration_files
-            with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[migration_file]):
-                # First run
-                result1 = apply_migrations()
-                assert result1 == 0
+            with patch("scripts.apply_sql_migrations.init_engine"):
+                with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[migration_file]):
+                    # First run
+                    result1 = apply_migrations()
+                    assert result1 == 0
 
-                # Count records
-                count1 = session.query(SchemaMigration).filter_by(filename="400_idempotency_test.sql").count()
-                assert count1 == 1
+                    # Count records
+                    count1 = session.query(SchemaMigration).filter_by(filename="400_idempotency_test.sql").count()
+                    assert count1 == 1
 
-                # Second run (should skip)
-                result2 = apply_migrations()
-                assert result2 == 0
+                    # Second run (should skip)
+                    result2 = apply_migrations()
+                    assert result2 == 0
 
-                # Count should still be 1
-                count2 = session.query(SchemaMigration).filter_by(filename="400_idempotency_test.sql").count()
-                assert count2 == 1
+                    # Count should still be 1
+                    count2 = session.query(SchemaMigration).filter_by(filename="400_idempotency_test.sql").count()
+                    assert count2 == 1
 
     def test_apply_migrations_creates_schema_migrations_table(self, app: Flask, tmp_path):
         """Test that apply_migrations creates schema_migrations table if not exists."""
@@ -400,9 +406,11 @@ class TestApplyMigrationsIntegration:
             engine = get_engine()
             SchemaMigration.__table__.drop(engine, checkfirst=True)
 
+            # Mock init_engine to prevent database engine re-initialization
             # Run apply_migrations with no files
-            with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[]):
-                result = apply_migrations()
+            with patch("scripts.apply_sql_migrations.init_engine"):
+                with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[]):
+                    result = apply_migrations()
 
             # Verify table was created
             inspector = inspect(engine)
@@ -421,11 +429,13 @@ class TestApplyMigrationsIntegration:
             bad_migration = tmp_path / "501_bad.sql"
             bad_migration.write_text("INVALID SQL HERE;")
 
+            # Mock init_engine to prevent database engine re-initialization
             # Mock get_migration_files to return both files
-            with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[good_migration, bad_migration]):
-                # Should raise exception and rollback
-                with pytest.raises(SQLAlchemyError):
-                    apply_migrations()
+            with patch("scripts.apply_sql_migrations.init_engine"):
+                with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[good_migration, bad_migration]):
+                    # Should raise exception and rollback
+                    with pytest.raises(SQLAlchemyError):
+                        apply_migrations()
 
             # Verify NEITHER migration was recorded (transaction rolled back)
             session.rollback()
@@ -451,9 +461,11 @@ class TestApplyMigrationsIntegration:
             session.add(first_migration)
             session.commit()
 
+            # Mock init_engine to prevent database engine re-initialization
             # Mock get_migration_files to return both files
-            with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[migration1, migration2]):
-                result = apply_migrations()
+            with patch("scripts.apply_sql_migrations.init_engine"):
+                with patch("scripts.apply_sql_migrations.get_migration_files", return_value=[migration1, migration2]):
+                    result = apply_migrations()
 
             assert result == 0
             captured = capfd.readouterr()
@@ -471,20 +483,22 @@ class TestMainExecution:
     def test_main_execution_success(self, app: Flask, monkeypatch):
         """Test successful execution of main block."""
         with app.app_context():
+            # Mock init_engine to prevent database engine re-initialization
             # Mock apply_migrations to return 0
-            with patch("scripts.apply_sql_migrations.apply_migrations", return_value=0):
-                # Mock sys.exit
-                with patch("sys.exit"):
-                    # Import and execute
-                    import scripts.apply_sql_migrations
+            with patch("scripts.apply_sql_migrations.init_engine"):
+                with patch("scripts.apply_sql_migrations.apply_migrations", return_value=0):
+                    # Mock sys.exit
+                    with patch("sys.exit"):
+                        # Import and execute
+                        import scripts.apply_sql_migrations
 
-                    # Call the main block logic
-                    try:
-                        exit_code = scripts.apply_sql_migrations.apply_migrations()
-                        # In normal execution, it would call sys.exit(exit_code)
-                        assert exit_code == 0
-                    except SystemExit:
-                        pass
+                        # Call the main block logic
+                        try:
+                            exit_code = scripts.apply_sql_migrations.apply_migrations()
+                            # In normal execution, it would call sys.exit(exit_code)
+                            assert exit_code == 0
+                        except SystemExit:
+                            pass
 
     def test_main_execution_handles_exception(self, app: Flask, capfd):
         """Test that main block handles exceptions correctly."""
