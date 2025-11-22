@@ -11,7 +11,7 @@ from tests.helpers import create_user
 @pytest.fixture
 def user_service(app):
     """Create UserService instance with test database session."""
-    from app.database import get_session, get_session_factory
+    from app.database import get_session
 
     with app.app_context():
         session = get_session()

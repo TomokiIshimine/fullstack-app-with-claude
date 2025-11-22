@@ -12,13 +12,7 @@ from werkzeug.exceptions import BadRequest, Conflict, Forbidden, InternalServerE
 
 from app.database import get_session
 from app.schemas.user import UserValidationError
-from app.services.user_service import (
-    CannotDeleteAdminError,
-    UserAlreadyExistsError,
-    UserNotFoundError,
-    UserService,
-    UserServiceError,
-)
+from app.services.user_service import CannotDeleteAdminError, UserAlreadyExistsError, UserNotFoundError, UserService, UserServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +49,7 @@ def with_user_service(func: RouteCallable) -> RouteCallable:
         except UserServiceError as exc:
             logger.error("User service error", exc_info=True)
             raise InternalServerError(description=str(exc)) from exc
-        except Exception as exc:  # pragma: no cover - unexpected error path
+        except Exception:  # pragma: no cover - unexpected error path
             logger.error("Unexpected error in user route", exc_info=True)
             raise
 
@@ -77,9 +71,7 @@ def validate_request_body(schema: type[SchemaType]) -> Callable[[RouteCallable],
                 data = schema.model_validate(payload)
             except ValidationError as exc:
                 messages = ", ".join(err.get("msg", "Invalid value") for err in exc.errors())
-                logger.warning(
-                    "Validation failed for request body", extra={"path": request.path, "messages": messages}
-                )
+                logger.warning("Validation failed for request body", extra={"path": request.path, "messages": messages})
                 raise BadRequest(description=f"Validation error: {messages}") from exc
             except UserValidationError as exc:
                 logger.warning("Domain validation failed", extra={"path": request.path, "message": str(exc)})
