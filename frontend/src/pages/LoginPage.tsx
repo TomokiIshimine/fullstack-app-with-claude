@@ -21,7 +21,7 @@ export function LoginPage() {
     try {
       const user = await login(email, password)
       // Redirect based on user role
-      const redirectPath = user.role === 'admin' ? '/admin/users' : '/todos'
+      const redirectPath = user.role === 'admin' ? '/admin/users' : '/settings'
       logger.info('Login successful, redirecting', { role: user.role, path: redirectPath })
       navigate(redirectPath)
     } catch (err) {
