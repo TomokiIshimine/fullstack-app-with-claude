@@ -2,13 +2,8 @@ name: Deploy
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - 'infra/terraform/**'
-      - '.github/workflows/terraform.yml'
-      - '**.md'
-      - 'docs/**'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -113,6 +108,7 @@ jobs:
         env:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
+          APP_VERSION: ${{ github.ref_name }}
         run: |
           # Use env vars to avoid shell expansion of special characters in bcrypt hash
           gcloud run deploy ${{ needs.get-terraform-outputs.outputs.cloud_run_service_name }} \
@@ -120,7 +116,7 @@ jobs:
             --platform=managed \
             --region=${{ needs.get-terraform-outputs.outputs.cloud_run_location }} \
             --project=${{ env.GCP_PROJECT_ID }} \
-            --update-env-vars "ADMIN_EMAIL=${ADMIN_EMAIL},ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH},COOKIE_SECURE=true" \
+            --update-env-vars "ADMIN_EMAIL=${ADMIN_EMAIL},ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH},COOKIE_SECURE=true,APP_VERSION=${APP_VERSION}" \
             --quiet
 
       - name: Run Health Check
