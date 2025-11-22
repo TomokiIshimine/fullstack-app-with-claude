@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from flask import Blueprint, g, jsonify, request
-from pydantic import ValidationError
+from flask import Blueprint, g, jsonify
 
-from app.database import get_session
-from app.schemas.user import UserCreateRequest, UserListResponse, UserUpdateRequest, UserUpdateResponse, UserValidationError
+from app.routes.dependencies import validate_request_body, with_user_service
+from app.schemas.user import UserCreateRequest, UserListResponse, UserUpdateRequest, UserUpdateResponse
 from app.services.user_service import UserService
 from app.utils.auth_decorator import require_auth, require_role
 
@@ -20,7 +19,8 @@ user_bp = Blueprint("users", __name__, url_prefix="/users")
 @user_bp.get("")
 @require_auth
 @require_role("admin")
-def list_users():
+@with_user_service
+def list_users(*, user_service: UserService):
     """
     List all users endpoint (Admin only).
 
@@ -40,8 +40,6 @@ def list_users():
     """
     logger.info("GET /api/users - Retrieving all users")
 
-    session = get_session()
-    user_service = UserService(session)
     users = user_service.list_users()
 
     response = UserListResponse(users=users)
@@ -52,7 +50,9 @@ def list_users():
 @user_bp.post("")
 @require_auth
 @require_role("admin")
-def create_user():
+@with_user_service
+@validate_request_body(UserCreateRequest)
+def create_user(*, data: UserCreateRequest, user_service: UserService):
     """
     Create a new user endpoint (Admin only).
 
@@ -76,26 +76,6 @@ def create_user():
     """
     logger.info("POST /api/users - Creating new user")
 
-    # Parse and validate request
-    payload = request.get_json()
-    if not payload:
-        logger.warning("POST /api/users - Request body is required")
-        return jsonify({"error": "Request body is required"}), 400
-
-    try:
-        data = UserCreateRequest.model_validate(payload)
-    except ValidationError as e:
-        logger.warning(f"POST /api/users - Validation error: {e}")
-        # Extract error messages from Pydantic validation errors
-        errors = [{"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]} for err in e.errors()]
-        return jsonify({"error": "Validation error", "details": errors}), 400
-    except UserValidationError as e:
-        logger.warning(f"POST /api/users - Validation error: {e}")
-        return jsonify({"error": str(e)}), 400
-
-    # Create user
-    session = get_session()
-    user_service = UserService(session)
     result = user_service.create_user(email=data.email, name=data.name)
 
     logger.info(f"POST /api/users - User created successfully: {data.email} (id={result.user.id})")
@@ -104,7 +84,9 @@ def create_user():
 
 @user_bp.patch("/me")
 @require_auth
-def update_current_user():
+@with_user_service
+@validate_request_body(UserUpdateRequest)
+def update_current_user(*, data: UserUpdateRequest, user_service: UserService):
     """
     Update current user's profile information.
 
@@ -128,23 +110,6 @@ def update_current_user():
     user_id = g.user_id
     logger.info(f"PATCH /api/users/me - Updating profile for user_id={user_id}")
 
-    payload = request.get_json()
-    if not payload:
-        logger.warning("PATCH /api/users/me - Request body is required")
-        return jsonify({"error": "Request body is required"}), 400
-
-    try:
-        data = UserUpdateRequest.model_validate(payload)
-    except ValidationError as e:
-        logger.warning(f"PATCH /api/users/me - Validation error: {e}")
-        errors = [{"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]} for err in e.errors()]
-        return jsonify({"error": "Validation error", "details": errors}), 400
-    except UserValidationError as e:
-        logger.warning(f"PATCH /api/users/me - Validation error: {e}")
-        return jsonify({"error": str(e)}), 400
-
-    session = get_session()
-    user_service = UserService(session)
     updated_user = user_service.update_user_profile(user_id=user_id, email=data.email, name=data.name)
 
     response = UserUpdateResponse(message="プロフィールを更新しました", user=updated_user)
@@ -158,7 +123,8 @@ def update_current_user():
 @user_bp.delete("/<int:user_id>")
 @require_auth
 @require_role("admin")
-def delete_user(user_id: int):
+@with_user_service
+def delete_user(user_id: int, *, user_service: UserService):
     """
     Delete a user endpoint (Admin only).
 
@@ -170,8 +136,6 @@ def delete_user(user_id: int):
     """
     logger.info(f"DELETE /api/users/{user_id} - Deleting user")
 
-    session = get_session()
-    user_service = UserService(session)
     user_service.delete_user(user_id)
 
     logger.info(f"DELETE /api/users/{user_id} - User deleted successfully")

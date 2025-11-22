@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 
 from sqlalchemy.orm import Session
-from werkzeug.exceptions import Conflict, Forbidden, HTTPException, NotFound
 
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import UserResponse
@@ -16,34 +15,31 @@ from app.utils.password_generator import generate_initial_password
 logger = logging.getLogger(__name__)
 
 
-class UserServiceError(HTTPException):
+class UserServiceError(Exception):
     """Base exception for user service errors."""
 
-    pass
 
-
-class UserAlreadyExistsError(UserServiceError, Conflict):
+class UserAlreadyExistsError(UserServiceError):
     """Raised when attempting to create a user with duplicate email."""
 
     def __init__(self, email: str):
-        """Initialize error with email."""
-        super().__init__(description=f"User with email '{email}' already exists")
+        super().__init__(f"User with email '{email}' already exists")
+        self.email = email
 
 
-class UserNotFoundError(UserServiceError, NotFound):
+class UserNotFoundError(UserServiceError):
     """Raised when user is not found."""
 
     def __init__(self, user_id: int):
-        """Initialize error with user ID."""
-        super().__init__(description=f"User with id {user_id} not found")
+        super().__init__(f"User with id {user_id} not found")
+        self.user_id = user_id
 
 
-class CannotDeleteAdminError(UserServiceError, Forbidden):
+class CannotDeleteAdminError(UserServiceError):
     """Raised when attempting to delete an admin user."""
 
     def __init__(self):
-        """Initialize error."""
-        super().__init__(description="Admin user cannot be deleted")
+        super().__init__("Admin user cannot be deleted")
 
 
 class UserService:
@@ -55,164 +51,82 @@ class UserService:
         self.user_repo = UserRepository(session)
 
     def list_users(self) -> list[UserResponse]:
-        """
-        Get all users.
-
-        Returns:
-            List of UserResponse objects
-
-        Raises:
-            UserServiceError: If database operation fails
-        """
+        """Get all users."""
         try:
             users = self.user_repo.find_all()
             logger.info(f"Retrieved {len(users)} users")
             return [UserResponse(id=user.id, email=user.email, role=user.role, name=user.name, created_at=user.created_at) for user in users]
-        except Exception as e:
-            logger.error(f"Failed to list users: {e}", exc_info=True)
-            raise UserServiceError(description="Failed to retrieve users")
+        except Exception as exc:  # pragma: no cover - unexpected errors are logged and re-raised
+            logger.error(f"Failed to list users: {exc}", exc_info=True)
+            raise UserServiceError("Failed to retrieve users") from exc
 
     def create_user(self, email: str, name: str) -> UserCreateResponse:
-        """
-        Create a new user with random initial password.
+        """Create a new user with random initial password."""
+        existing_user = self.user_repo.find_by_email(email)
+        if existing_user:
+            logger.warning(f"User creation failed: email already exists - {email}")
+            raise UserAlreadyExistsError(email)
 
-        Args:
-            email: User's email address
-            name: User's display name
+        initial_password = generate_initial_password()
+        password_hash = hash_password(initial_password)
 
-        Returns:
-            UserCreateResponse containing user info and initial password
+        user = self.user_repo.create(
+            email=email,
+            password_hash=password_hash,
+            role="user",
+            name=name,
+        )
 
-        Raises:
-            UserAlreadyExistsError: If email already exists
-            UserServiceError: If user creation fails
-        """
-        try:
-            # Check if email already exists
-            existing_user = self.user_repo.find_by_email(email)
-            if existing_user:
-                logger.warning(f"User creation failed: email already exists - {email}")
-                raise UserAlreadyExistsError(email)
+        # Flush to assign IDs and load defaults without committing the transaction
+        self.session.flush()
+        self.session.refresh(user)
 
-            # Generate initial password
-            initial_password = generate_initial_password()
-            password_hash = hash_password(initial_password)
+        logger.info(f"User created successfully: {email} (id={user.id}, name={name})")
 
-            # Create user with role='user'
-            user = self.user_repo.create(
-                email=email,
-                password_hash=password_hash,
-                role="user",
-                name=name,
-            )
-
-            self.session.commit()
-            logger.info(f"User created successfully: {email} (id={user.id}, name={name})")
-
-            user_response = UserResponse(id=user.id, email=user.email, role=user.role, name=user.name, created_at=user.created_at)
-            return UserCreateResponse(user=user_response, initial_password=initial_password)
-
-        except UserAlreadyExistsError:
-            # Re-raise this specific error
-            self.session.rollback()
-            raise
-        except Exception as e:
-            self.session.rollback()
-            logger.error(f"Failed to create user {email}: {e}", exc_info=True)
-            raise UserServiceError(description="Failed to create user")
+        user_response = UserResponse(id=user.id, email=user.email, role=user.role, name=user.name, created_at=user.created_at)
+        return UserCreateResponse(user=user_response, initial_password=initial_password)
 
     def update_user_profile(self, user_id: int, email: str, name: str) -> UserResponse:
-        """
-        Update an existing user's profile information.
+        """Update an existing user's profile information."""
+        user = self.user_repo.find_by_id(user_id)
+        if not user:
+            logger.warning(f"Profile update failed: user not found - id={user_id}")
+            raise UserNotFoundError(user_id)
 
-        Args:
-            user_id: ID of the user to update
-            email: New email address
-            name: New display name
-
-        Returns:
-            Updated UserResponse instance
-
-        Raises:
-            UserNotFoundError: If user does not exist
-            UserAlreadyExistsError: If another user has the same email
-            UserServiceError: If update fails
-        """
-        try:
-            user = self.user_repo.find_by_id(user_id)
-            if not user:
-                logger.warning(f"Profile update failed: user not found - id={user_id}")
-                raise UserNotFoundError(user_id)
-
-            existing_user = self.user_repo.find_by_email_excluding_id(email, user_id)
-            if existing_user:
-                logger.warning(
-                    "Profile update failed: email already in use",
-                    extra={"email": email, "user_id": user_id},
-                )
-                raise UserAlreadyExistsError(email)
-
-            updated_user = self.user_repo.update(user, email=email, name=name)
-            self.session.commit()
-            logger.info(
-                "User profile updated successfully",
-                extra={"user_id": user_id, "email": email, "display_name": name},
+        existing_user = self.user_repo.find_by_email_excluding_id(email, user_id)
+        if existing_user:
+            logger.warning(
+                "Profile update failed: email already in use",
+                extra={"email": email, "user_id": user_id},
             )
-            return UserResponse(
-                id=updated_user.id,
-                email=updated_user.email,
-                role=updated_user.role,
-                name=updated_user.name,
-                created_at=updated_user.created_at,
-            )
-        except (UserAlreadyExistsError, UserNotFoundError):
-            self.session.rollback()
-            raise
-        except Exception as e:
-            self.session.rollback()
-            logger.error(
-                f"Failed to update user profile for id={user_id}: {e}",
-                exc_info=True,
-            )
-            raise UserServiceError(description="Failed to update user")
+            raise UserAlreadyExistsError(email)
+
+        updated_user = self.user_repo.update(user, email=email, name=name)
+        logger.info(
+            "User profile updated successfully",
+            extra={"user_id": user_id, "email": email, "display_name": name},
+        )
+        return UserResponse(
+            id=updated_user.id,
+            email=updated_user.email,
+            role=updated_user.role,
+            name=updated_user.name,
+            created_at=updated_user.created_at,
+        )
 
     def delete_user(self, user_id: int) -> None:
-        """
-        Delete a user by ID.
+        """Delete a user by ID."""
+        user = self.user_repo.find_by_id(user_id)
+        if not user:
+            logger.warning(f"User deletion failed: user not found - id={user_id}")
+            raise UserNotFoundError(user_id)
 
-        Args:
-            user_id: ID of user to delete
+        if user.role == "admin":
+            logger.warning(f"User deletion failed: cannot delete admin user - id={user_id}, email={user.email}")
+            raise CannotDeleteAdminError()
 
-        Raises:
-            UserNotFoundError: If user doesn't exist
-            CannotDeleteAdminError: If attempting to delete admin user
-            UserServiceError: If deletion fails
-        """
-        try:
-            # Find user
-            user = self.user_repo.find_by_id(user_id)
-            if not user:
-                logger.warning(f"User deletion failed: user not found - id={user_id}")
-                raise UserNotFoundError(user_id)
-
-            # Check if user is admin
-            if user.role == "admin":
-                logger.warning(f"User deletion failed: cannot delete admin user - id={user_id}, email={user.email}")
-                raise CannotDeleteAdminError()
-
-            # Delete user
-            self.user_repo.delete(user)
-            self.session.commit()
-            logger.info(f"User deleted successfully: id={user_id}, email={user.email}")
-
-        except (UserNotFoundError, CannotDeleteAdminError):
-            # Re-raise these specific errors
-            self.session.rollback()
-            raise
-        except Exception as e:
-            self.session.rollback()
-            logger.error(f"Failed to delete user {user_id}: {e}", exc_info=True)
-            raise UserServiceError(description="Failed to delete user")
+        self.user_repo.delete(user)
+        logger.info(f"User deleted successfully: id={user_id}, email={user.email}")
 
 
 __all__ = [
