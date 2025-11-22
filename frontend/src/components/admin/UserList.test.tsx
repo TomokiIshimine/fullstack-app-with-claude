@@ -6,7 +6,7 @@ import * as usersApi from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 
 describe('UserList', () => {
-  const mockOnUsersChange = vi.fn()
+  const mockOnDeleteUser = vi.fn<(user: UserResponse) => Promise<void>>()
   let confirmSpy: ReturnType<typeof vi.spyOn>
   let alertSpy: ReturnType<typeof vi.spyOn>
 
@@ -37,7 +37,8 @@ describe('UserList', () => {
   beforeEach(() => {
     confirmSpy = vi.spyOn(window, 'confirm')
     alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
-    mockOnUsersChange.mockClear()
+    mockOnDeleteUser.mockReset()
+    mockOnDeleteUser.mockResolvedValue()
   })
 
   afterEach(() => {
@@ -48,7 +49,7 @@ describe('UserList', () => {
 
   describe('Rendering', () => {
     it('should display user list with all users', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       expect(screen.getByText('admin@example.com')).toBeInTheDocument()
       expect(screen.getByText('Admin User')).toBeInTheDocument()
@@ -58,13 +59,13 @@ describe('UserList', () => {
     })
 
     it('should display empty message when no users', () => {
-      render(<UserList users={[]} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={[]} onDeleteUser={mockOnDeleteUser} />)
 
       expect(screen.getByText('ユーザーが登録されていません')).toBeInTheDocument()
     })
 
     it('should display "-" for null name', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const rows = screen.getAllByRole('row')
       const user2Row = rows.find(row => row.textContent?.includes('user2@example.com'))
@@ -74,14 +75,14 @@ describe('UserList', () => {
     })
 
     it('should display role labels correctly', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       expect(screen.getByText('管理者')).toBeInTheDocument()
       expect(screen.getAllByText('ユーザー')).toHaveLength(2)
     })
 
     it('should format dates correctly', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       expect(screen.getByText('2025/11/1')).toBeInTheDocument()
       expect(screen.getByText('2025/11/2')).toBeInTheDocument()
@@ -91,7 +92,7 @@ describe('UserList', () => {
 
   describe('Delete Button Visibility', () => {
     it('should not show delete button for admin user', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.queryAllByRole('button', { name: /削除/ })
 
@@ -100,7 +101,7 @@ describe('UserList', () => {
     })
 
     it('should show "-" for admin user instead of delete button', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const rows = screen.getAllByRole('row')
       const adminRow = rows.find(row => row.textContent?.includes('admin@example.com'))
@@ -110,7 +111,7 @@ describe('UserList', () => {
     })
 
     it('should show delete button for regular users', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: /削除/ })
 
@@ -122,7 +123,7 @@ describe('UserList', () => {
     it('should show confirmation dialog when delete button is clicked', async () => {
       confirmSpy.mockReturnValue(false)
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
@@ -134,29 +135,25 @@ describe('UserList', () => {
 
     it('should not delete user if confirmation is cancelled', async () => {
       confirmSpy.mockReturnValue(false)
-      const deleteUserSpy = vi.spyOn(usersApi, 'deleteUser')
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
 
-      expect(deleteUserSpy).not.toHaveBeenCalled()
-      expect(mockOnUsersChange).not.toHaveBeenCalled()
+      expect(mockOnDeleteUser).not.toHaveBeenCalled()
     })
 
     it('should delete user successfully when confirmed', async () => {
       confirmSpy.mockReturnValue(true)
-      const deleteUserSpy = vi.spyOn(usersApi, 'deleteUser').mockResolvedValue()
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(deleteUserSpy).toHaveBeenCalledWith(2)
-        expect(mockOnUsersChange).toHaveBeenCalled()
+        expect(mockOnDeleteUser).toHaveBeenCalledWith(mockUsers[1])
       })
     })
 
@@ -166,9 +163,9 @@ describe('UserList', () => {
       const deletePromise = new Promise<void>(resolve => {
         resolveDelete = resolve
       })
-      vi.spyOn(usersApi, 'deleteUser').mockReturnValue(deletePromise)
+      mockOnDeleteUser.mockReturnValue(deletePromise)
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
@@ -186,9 +183,9 @@ describe('UserList', () => {
       const deletePromise = new Promise<void>(resolve => {
         resolveDelete = resolve
       })
-      vi.spyOn(usersApi, 'deleteUser').mockReturnValue(deletePromise)
+      mockOnDeleteUser.mockReturnValue(deletePromise)
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
@@ -204,39 +201,53 @@ describe('UserList', () => {
     it('should show error alert on deletion failure', async () => {
       confirmSpy.mockReturnValue(true)
       const error = new Error('Network error')
-      vi.spyOn(usersApi, 'deleteUser').mockRejectedValue(error)
+      mockOnDeleteUser.mockRejectedValue(error)
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('ユーザーの削除に失敗しました')
-        expect(mockOnUsersChange).not.toHaveBeenCalled()
+        expect(mockOnDeleteUser).toHaveBeenCalledWith(mockUsers[1])
       })
     })
 
     it('should show API error message on deletion failure with ApiError', async () => {
       confirmSpy.mockReturnValue(true)
       const apiError = new ApiError(403, 'Admin user cannot be deleted', {})
-      vi.spyOn(usersApi, 'deleteUser').mockRejectedValue(apiError)
+      mockOnDeleteUser.mockRejectedValue(apiError)
 
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('削除に失敗しました: Admin user cannot be deleted')
-        expect(mockOnUsersChange).not.toHaveBeenCalled()
+        expect(mockOnDeleteUser).toHaveBeenCalledWith(mockUsers[1])
+      })
+    })
+
+    it('should call deleteUserApi when onDeleteUser is not provided', async () => {
+      confirmSpy.mockReturnValue(true)
+      const deleteUserSpy = vi.spyOn(usersApi, 'deleteUser').mockResolvedValue()
+
+      render(<UserList users={mockUsers} />)
+
+      const deleteButtons = screen.getAllByRole('button', { name: '削除' })
+      fireEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(deleteUserSpy).toHaveBeenCalledWith(2)
       })
     })
   })
 
   describe('Table Structure', () => {
     it('should have correct table headers', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       expect(screen.getByText('メールアドレス')).toBeInTheDocument()
       expect(screen.getByText('名前')).toBeInTheDocument()
@@ -246,7 +257,7 @@ describe('UserList', () => {
     })
 
     it('should have correct number of rows', () => {
-      render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const rows = screen.getAllByRole('row')
 
@@ -257,7 +268,7 @@ describe('UserList', () => {
 
   describe('CSS Classes', () => {
     it('should apply correct CSS classes to role badges', () => {
-      const { container } = render(<UserList users={mockUsers} onUsersChange={mockOnUsersChange} />)
+      const { container } = render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const adminRole = container.querySelector('.user-list__role--admin')
       const userRoles = container.querySelectorAll('.user-list__role--user')
