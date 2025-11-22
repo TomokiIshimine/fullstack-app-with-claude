@@ -1,55 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { UserList } from '@/components/admin/UserList'
 import { UserCreateForm } from '@/components/admin/UserCreateForm'
 import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
-import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { fetchUsers } from '@/lib/api/users'
-import type { UserResponse } from '@/types/user'
-import { logger } from '@/lib/logger'
+import { useUserManagement } from '@/hooks/useUserManagement'
 
 export function UserManagementPage() {
-  const [users, setUsers] = useState<UserResponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [initialPassword, setInitialPassword] = useState<{
-    email: string
-    password: string
-  } | null>(null)
-  const { error, handleError, clearError } = useErrorHandler()
-
-  // Load users on mount
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
-    try {
-      setIsLoading(true)
-      clearError()
-      const data = await fetchUsers()
-      setUsers(data)
-      logger.info('Users loaded', { count: data.length })
-    } catch (err) {
-      handleError(err, 'Failed to load users')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleCreateSuccess = (response: { user: UserResponse; initial_password: string }) => {
-    // Show initial password modal
-    setInitialPassword({ email: response.user.email, password: response.initial_password })
-    // Hide create form
-    setShowCreateForm(false)
-    // Reload users list
-    loadUsers()
-  }
-
-  const handleClosePasswordModal = () => {
-    setInitialPassword(null)
-  }
+  const {
+    users,
+    isLoading,
+    error,
+    initialPassword,
+    clearError,
+    createUser,
+    deleteUser,
+    loadUsers,
+    resetInitialPassword,
+  } = useUserManagement()
 
   return (
     <div className="user-management-page">
@@ -84,12 +53,15 @@ export function UserManagementPage() {
 
             {showCreateForm && (
               <UserCreateForm
-                onSuccess={handleCreateSuccess}
+                onCreate={createUser}
+                onSuccess={() => {
+                  setShowCreateForm(false)
+                }}
                 onCancel={() => setShowCreateForm(false)}
               />
             )}
 
-            <UserList users={users} onUsersChange={loadUsers} />
+            <UserList users={users} onDeleteUser={deleteUser} />
           </div>
         )}
 
@@ -97,7 +69,7 @@ export function UserManagementPage() {
           <InitialPasswordModal
             email={initialPassword.email}
             password={initialPassword.password}
-            onClose={handleClosePasswordModal}
+            onClose={resetInitialPassword}
           />
         )}
       </div>
