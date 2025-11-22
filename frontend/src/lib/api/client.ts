@@ -74,7 +74,7 @@ export function buildApiError(response: Response, json: unknown): ApiError {
   if (isErrorResponseWithMessage(json)) {
     return new ApiError(response.status, json.error.message ?? 'Request failed', json)
   }
-  if (isErrorResponseWithString(json)) {
+  if (isErrorResponse(json)) {
     return new ApiError(response.status, json.error ?? 'Request failed', json)
   }
   return new ApiError(response.status, response.statusText || 'Request failed', json)
@@ -90,13 +90,6 @@ export function isErrorResponse(json: unknown): json is { error: string } {
       'error' in (json as Record<string, unknown>) &&
       typeof (json as { error: unknown }).error === 'string'
   )
-}
-
-/**
- * Type guard to check if response is an error response with string error
- */
-function isErrorResponseWithString(json: unknown): json is { error: string } {
-  return isErrorResponse(json)
 }
 
 /**
