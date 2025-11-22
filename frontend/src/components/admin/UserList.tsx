@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { UserResponse } from '@/types/user'
 import { deleteUser } from '@/lib/api/users'
 import { logger } from '@/lib/logger'
-import { ApiError } from '@/lib/api/todos'
+import { ApiError } from '@/lib/api/client'
 
 interface UserListProps {
   users: UserResponse[]

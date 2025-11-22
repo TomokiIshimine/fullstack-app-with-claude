@@ -3,7 +3,7 @@
 **作成日:** 2025-10-28
 **最終更新:** 2025-11-06
 **バージョン:** 1.0
-**対象システム:** TODO アプリケーション
+**対象システム:** フルスタックWebアプリケーション
 
 ---
 
@@ -99,72 +99,53 @@ graph TB
 #### バックエンド（pytest）
 
 ```python
-# tests/services/test_todo_service.py
+# tests/services/test_auth_service.py
 import pytest
-from app.services.todo_service import TodoService
+from app.services.auth_service import AuthService
 
-def test_create_todo_success():
-    """TODO作成の正常系テスト"""
-    service = TodoService()
-    todo_data = {
-        "title": "買い物",
-        "detail": "野菜を買う",
-        "due_date": "2025-10-30"
-    }
-    user_id = 1
-
-    result = service.create_todo(user_id, todo_data)
-
-    assert result["title"] == "買い物"
-    assert result["user_id"] == user_id
-    assert result["is_completed"] is False
-
-def test_create_todo_with_invalid_date():
-    """過去の期限日でエラー"""
-    service = TodoService()
-    todo_data = {
-        "title": "買い物",
-        "due_date": "2020-01-01"  # 過去の日付
+def test_login_success():
+    """ログインの正常系テスト"""
+    service = AuthService()
+    credentials = {
+        "email": "test@example.com",
+        "password": "password123"
     }
 
-    with pytest.raises(ValueError, match="期限日は今日以降"):
-        service.create_todo(1, todo_data)
+    result = service.login(credentials)
+
+    assert result["email"] == "test@example.com"
+    assert "access_token" in result
+
+def test_login_with_invalid_password():
+    """無効なパスワードでエラー"""
+    service = AuthService()
+    credentials = {
+        "email": "test@example.com",
+        "password": "wrong"
+    }
+
+    with pytest.raises(ValueError, match="Invalid credentials"):
+        service.login(credentials)
 ```
 
 #### フロントエンド（Vitest）
 
 ```typescript
-// src/lib/utils/todoFilters.test.ts
+// src/lib/utils/validation.test.ts
 import { describe, it, expect } from 'vitest'
-import { filterByStatus, sortTodos } from './todoFilters'
-import type { Todo } from '@/types/todo'
+import { validateEmail, validatePassword } from './validation'
 
-describe('todoFilters', () => {
-  const mockTodos: Todo[] = [
-    {
-      id: 1,
-      title: 'Active Todo 1',
-      dueDate: '2024-06-20',
-      isCompleted: false,
-    },
-    {
-      id: 2,
-      title: 'Completed Todo',
-      dueDate: '2024-06-15',
-      isCompleted: true,
-    },
-  ]
-
-  it('returns only active todos when status is "active"', () => {
-    const result = filterByStatus(mockTodos, 'active')
-    expect(result).toHaveLength(1)
-    expect(result.every(todo => !todo.isCompleted)).toBe(true)
+describe('validation', () => {
+  it('validates email correctly', () => {
+    expect(validateEmail('test@example.com')).toBe(true)
+    expect(validateEmail('invalid-email')).toBe(false)
+    expect(validateEmail('')).toBe(false)
   })
 
-  it('sorts todos by due date in ascending order', () => {
-    const result = sortTodos(mockTodos, 'asc')
-    expect(result[0].dueDate).toBe('2024-06-15')
-    expect(result[1].dueDate).toBe('2024-06-20')
+  it('validates password correctly', () => {
+    expect(validatePassword('password123')).toBe(true)
+    expect(validatePassword('short')).toBe(false)
+    expect(validatePassword('nodigits')).toBe(false)
   })
 })
 ```

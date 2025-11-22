@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { changePassword } from '@/lib/api/password'
 import { logger } from '@/lib/logger'
-import { ApiError } from '@/lib/api/todos'
+import { ApiError } from '@/lib/api/client'
 
 interface PasswordChangeFormProps {
   onSuccess: () => void

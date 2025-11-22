@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/PageHeader'
 import { PasswordChangeForm } from '@/components/settings/PasswordChangeForm'
 import { logger } from '@/lib/logger'
+import { getHomePathForRole } from '@/lib/utils/routing'
 
 export function SettingsPage() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
@@ -20,7 +21,7 @@ export function SettingsPage() {
   }
 
   const handleBack = () => {
-    const backPath = user?.role === 'admin' ? '/admin/users' : '/todos'
+    const backPath = getHomePathForRole(user?.role)
     logger.info('Navigating back from settings', { role: user?.role, path: backPath })
     navigate(backPath)
   }

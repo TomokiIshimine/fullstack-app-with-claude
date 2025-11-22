@@ -12,7 +12,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 
 // Mock components for routes
 const AdminUsersPage = () => <div>Admin Users Page</div>
-const TodosPage = () => <div>Todos Page</div>
+const SettingsPage = () => <div>Settings Page</div>
 const LoginPage = () => <div>Login Page</div>
 
 describe('RoleBasedRedirect', () => {
@@ -34,7 +34,7 @@ describe('RoleBasedRedirect', () => {
         <Routes>
           <Route path="/" element={<RoleBasedRedirect />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/todos" element={<TodosPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/login" element={<LoginPage />} />
         </Routes>
       </MemoryRouter>
@@ -52,7 +52,7 @@ describe('RoleBasedRedirect', () => {
       renderWithRouter(false, true, null)
 
       expect(screen.queryByText('Admin Users Page')).not.toBeInTheDocument()
-      expect(screen.queryByText('Todos Page')).not.toBeInTheDocument()
+      expect(screen.queryByText('Settings Page')).not.toBeInTheDocument()
       expect(screen.queryByText('Login Page')).not.toBeInTheDocument()
     })
   })
@@ -88,7 +88,7 @@ describe('RoleBasedRedirect', () => {
     it('should not redirect to /todos for admin users', () => {
       renderWithRouter(true, false, adminUser)
 
-      expect(screen.queryByText('Todos Page')).not.toBeInTheDocument()
+      expect(screen.queryByText('Settings Page')).not.toBeInTheDocument()
     })
 
     it('should not show loading spinner for admin users', () => {
@@ -106,10 +106,10 @@ describe('RoleBasedRedirect', () => {
       name: 'Regular User',
     }
 
-    it('should redirect to /todos for regular users', () => {
+    it('should redirect to /settings for regular users', () => {
       renderWithRouter(true, false, regularUser)
 
-      expect(screen.getByText('Todos Page')).toBeInTheDocument()
+      expect(screen.getByText('Settings Page')).toBeInTheDocument()
     })
 
     it('should not redirect to /admin/users for regular users', () => {
@@ -148,7 +148,7 @@ describe('RoleBasedRedirect', () => {
           <Routes>
             <Route path="/" element={<RoleBasedRedirect />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/todos" element={<TodosPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
         </MemoryRouter>
@@ -170,7 +170,7 @@ describe('RoleBasedRedirect', () => {
           <Routes>
             <Route path="/" element={<RoleBasedRedirect />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/todos" element={<TodosPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
         </MemoryRouter>
@@ -194,7 +194,7 @@ describe('RoleBasedRedirect', () => {
           <Routes>
             <Route path="/" element={<RoleBasedRedirect />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/todos" element={<TodosPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
         </MemoryRouter>
@@ -216,7 +216,7 @@ describe('RoleBasedRedirect', () => {
           <Routes>
             <Route path="/" element={<RoleBasedRedirect />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/todos" element={<TodosPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
         </MemoryRouter>
@@ -231,8 +231,8 @@ describe('RoleBasedRedirect', () => {
       // This is an edge case that should not happen in practice
       renderWithRouter(true, false, null)
 
-      // Should redirect to /todos as fallback
-      expect(screen.getByText('Todos Page')).toBeInTheDocument()
+      // Should redirect to /settings as fallback
+      expect(screen.getByText('Settings Page')).toBeInTheDocument()
     })
 
     it('should handle user without role field', () => {
@@ -245,8 +245,8 @@ describe('RoleBasedRedirect', () => {
 
       renderWithRouter(true, false, userWithoutRole)
 
-      // Should redirect to /todos as fallback
-      expect(screen.getByText('Todos Page')).toBeInTheDocument()
+      // Should redirect to /settings as fallback
+      expect(screen.getByText('Settings Page')).toBeInTheDocument()
     })
   })
 

@@ -26,19 +26,19 @@ repos:
         pass_filenames: true
       - id: backend-isort
         name: backend isort
-        entry: python backend/scripts/run_poetry_tool.py isort
+        entry: python3 backend/scripts/run_poetry_tool.py isort
         language: system
         files: ^backend/.*\.py$
         pass_filenames: true
       - id: backend-black
         name: backend black
-        entry: python backend/scripts/run_poetry_tool.py black
+        entry: python3 backend/scripts/run_poetry_tool.py black
         language: system
         files: ^backend/.*\.py$
         pass_filenames: true
       - id: backend-flake8
         name: backend flake8
-        entry: python backend/scripts/run_poetry_tool.py flake8
+        entry: python3 backend/scripts/run_poetry_tool.py flake8
         language: system
         files: ^backend/.*\.py$
         pass_filenames: true

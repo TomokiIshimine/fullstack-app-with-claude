@@ -44,7 +44,7 @@ class User(Base):
     )
 
     # Relationships
-    todos: Mapped[list["Todo"]] = relationship("Todo", back_populates="user", cascade="all, delete-orphan")  # type: ignore  # noqa: F821
+
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(  # type: ignore  # noqa: F821
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
