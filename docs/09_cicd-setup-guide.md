@@ -30,7 +30,7 @@
 本ガイドに従うことで、以下が実現できます：
 
 1. プルリクエスト作成時に自動的にコードの品質チェックとテストが実行される
-2. main ブランチへのマージ時に自動的に本番環境へデプロイされる（オプション）
+2. バージョンタグのプッシュ時に自動的に本番環境へデプロイされる（オプション）
 3. インフラ変更時に Terraform が自動適用される（オプション）
 
 ---
@@ -44,7 +44,7 @@
 | ワークフロー | ファイル | トリガー | 目的 |
 |------------|---------|---------|------|
 | CI | `.github/workflows/ci.yml` | プルリクエスト作成時 | コード品質チェック・テスト実行 |
-| Deploy | `.github/workflows/deploy.yml` | main ブランチへの push | 本番環境へのデプロイ |
+| Deploy | `.github/workflows/deploy.yml` | バージョンタグ (v*) の push | 本番環境へのデプロイ・GitHub Release作成 |
 | Terraform | `.github/workflows/terraform.yml` | Terraform ファイル変更時 | インフラの計画・適用 |
 | Terraform Unlock | `.github/workflows/terraform-unlock.yml` | 手動実行 | Terraform ステートロック解除 |
 
@@ -84,7 +84,7 @@ CI ワークフローは、以下のジョブで構成されています：
 
 ### 2.3 デプロイワークフローの詳細
 
-Deploy ワークフローは、Google Cloud Platform の Cloud Run にアプリケーションをデプロイします：
+Deploy ワークフローは、バージョンタグ（例: `v1.0.0`）のプッシュ時に実行され、Google Cloud Platform の Cloud Run にアプリケーションをデプロイします：
 
 1. **CI の実行** - 上記の CI ワークフローを呼び出し
 2. **インフラ情報の取得** - Terraform の output から Cloud Run の情報を取得
@@ -92,8 +92,12 @@ Deploy ワークフローは、Google Cloud Platform の Cloud Run にアプリ�
    - Docker イメージのビルド（Frontend + Backend を含む）
    - Artifact Registry へのプッシュ
    - データベースマイグレーションの実行
-   - Cloud Run へのデプロイ
+   - Cloud Run へのデプロイ（`APP_VERSION` 環境変数にタグ名を設定）
    - ヘルスチェック実行
+4. **GitHub Release の自動作成**（タグプッシュ時のみ）
+   - PRベースのリリースノート自動生成
+   - カテゴリ別分類（新機能、バグ修正、パフォーマンス改善など）
+   - GitHub Release の作成
 
 ---
 
@@ -398,14 +402,31 @@ terraform apply \
 
 1. **main ブランチに変更をマージ**
 
-   Pull Request を main ブランチにマージすると、自動的に Deploy ワークフローが実行されます。
+   Pull Request を main ブランチにマージします。この時点ではデプロイは実行されません。
 
-2. **デプロイの進行状況を確認**
+2. **バージョンタグを作成・プッシュ**
+
+   デプロイするタイミングで、バージョンタグを作成してプッシュします：
+
+   ```bash
+   # mainブランチに切り替え
+   git checkout main
+   git pull origin main
+
+   # バージョンタグを作成（セマンティックバージョニング推奨）
+   git tag v1.0.0
+
+   # タグをプッシュ（デプロイが自動実行される）
+   git push origin v1.0.0
+   ```
+
+3. **デプロイの進行状況を確認**
 
    - GitHub の Actions タブで Deploy ワークフローの実行状況を確認
    - 各ステップのログを確認
+   - デプロイには通常5-10分程度かかります
 
-3. **デプロイされたアプリケーションにアクセス**
+4. **デプロイされたアプリケーションにアクセス**
 
    Deploy ワークフローの最後に表示される URL にアクセス：
    ```
@@ -413,7 +434,22 @@ terraform apply \
    🌐 Application URL: https://YOUR_SERVICE-RANDOM_ID-an.a.run.app
    ```
 
-4. **ログインして動作確認**
+5. **GitHub Release の確認**
+
+   - リポジトリの Releases ページで新しいリリースが自動作成されていることを確認
+   - リリースノートにPR情報がカテゴリ別に整理されていることを確認
+
+6. **バージョン情報の確認**
+
+   - デプロイされたアプリケーションにアクセス
+   - ヘッダー右上にバージョン情報（例: `v1.0.0`）が表示されることを確認
+   - または `/api/health` エンドポイントで確認：
+     ```bash
+     curl https://YOUR_SERVICE-RANDOM_ID-an.a.run.app/api/health
+     # {"status": "healthy", "database": "connected", "version": "v1.0.0"}
+     ```
+
+7. **ログインして動作確認**
 
    - 設定した管理者メールアドレスとパスワードでログイン
    - アプリケーションが正常に動作することを確認
