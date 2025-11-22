@@ -81,6 +81,28 @@ poetry -C backend run pytest backend/tests/routes/test_auth_routes.py::test_logi
 
 **For detailed testing strategy, see [docs/06_testing-strategy.md](docs/06_testing-strategy.md)**
 
+## Manual Testing and Browser Automation
+
+### Browser Testing with Playwright MCP
+
+When verifying UI functionality or performing manual testing, use the **mcp__playwright** tools provided by the Playwright MCP server. These tools allow Claude Code to interact with the browser directly.
+
+**Common workflow:**
+1. Start the application: `make up`
+2. Use `mcp__playwright__browser_navigate` to open the application (e.g., `http://localhost:5173`)
+3. Use `mcp__playwright__browser_snapshot` to capture the current page state
+4. Interact with elements using `mcp__playwright__browser_click`, `mcp__playwright__browser_type`, etc.
+5. Verify expected behaviors and take screenshots with `mcp__playwright__browser_take_screenshot`
+
+**Example use cases:**
+- Verify user registration and login flows
+- Test form validations and error messages
+- Check responsive design and UI components
+- Validate API integrations from the frontend
+- Confirm navigation and routing behavior
+
+**Note:** These tools are for manual verification and exploratory testing. Automated E2E tests should be implemented using the project's test framework (see [docs/08_e2e-test-list.md](docs/08_e2e-test-list.md)).
+
 ## Database Management
 
 ### Quick Commands
