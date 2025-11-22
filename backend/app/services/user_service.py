@@ -121,6 +121,61 @@ class UserService:
             logger.error(f"Failed to create user {email}: {e}", exc_info=True)
             raise UserServiceError(description="Failed to create user")
 
+    def update_user_profile(self, user_id: int, email: str, name: str) -> UserResponse:
+        """
+        Update an existing user's profile information.
+
+        Args:
+            user_id: ID of the user to update
+            email: New email address
+            name: New display name
+
+        Returns:
+            Updated UserResponse instance
+
+        Raises:
+            UserNotFoundError: If user does not exist
+            UserAlreadyExistsError: If another user has the same email
+            UserServiceError: If update fails
+        """
+        try:
+            user = self.user_repo.find_by_id(user_id)
+            if not user:
+                logger.warning(f"Profile update failed: user not found - id={user_id}")
+                raise UserNotFoundError(user_id)
+
+            existing_user = self.user_repo.find_by_email_excluding_id(email, user_id)
+            if existing_user:
+                logger.warning(
+                    "Profile update failed: email already in use",
+                    extra={"email": email, "user_id": user_id},
+                )
+                raise UserAlreadyExistsError(email)
+
+            updated_user = self.user_repo.update(user, email=email, name=name)
+            self.session.commit()
+            logger.info(
+                "User profile updated successfully",
+                extra={"user_id": user_id, "email": email, "display_name": name},
+            )
+            return UserResponse(
+                id=updated_user.id,
+                email=updated_user.email,
+                role=updated_user.role,
+                name=updated_user.name,
+                created_at=updated_user.created_at,
+            )
+        except (UserAlreadyExistsError, UserNotFoundError):
+            self.session.rollback()
+            raise
+        except Exception as e:
+            self.session.rollback()
+            logger.error(
+                f"Failed to update user profile for id={user_id}: {e}",
+                exc_info=True,
+            )
+            raise UserServiceError(description="Failed to update user")
+
     def delete_user(self, user_id: int) -> None:
         """
         Delete a user by ID.

@@ -35,3 +35,19 @@ export interface UserCreateResponse {
 export interface UserListResponse {
   users: UserResponse[]
 }
+
+/**
+ * User update request payload
+ */
+export interface UserUpdateRequest {
+  email: string
+  name: string
+}
+
+/**
+ * User update response
+ */
+export interface UserUpdateResponse {
+  message: string
+  user: UserResponse
+}

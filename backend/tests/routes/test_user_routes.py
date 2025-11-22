@@ -186,3 +186,56 @@ def test_delete_user_unauthorized_without_auth(client):
     response = client.delete("/api/users/1")
 
     assert_response_error(response, 401)
+
+
+# PATCH /api/users/me tests
+
+
+def test_update_current_user_success(app):
+    """Test that authenticated user can update their own profile."""
+    user_id = create_user(
+        app,
+        email="user@example.com",
+        password="password123",
+        role="user",
+        name="Old Name",
+    )
+    client = create_auth_client(app, user_id, email="user@example.com", role="user")
+
+    response = client.patch(
+        "/api/users/me",
+        json={"email": "new@example.com", "name": "New Name"},
+    )
+
+    data = assert_response_success(response, 200)
+    assert data["message"] == "プロフィールを更新しました"
+    assert data["user"]["email"] == "new@example.com"
+    assert data["user"]["name"] == "New Name"
+    assert data["user"]["role"] == "user"
+
+
+def test_update_current_user_duplicate_email(app):
+    """Test that updating to an existing email returns conflict."""
+    user_id = create_user(app, email="user@example.com", password="password123", role="user")
+    create_user(app, email="existing@example.com", password="password123", role="user")
+    client = create_auth_client(app, user_id, email="user@example.com", role="user")
+
+    response = client.patch(
+        "/api/users/me",
+        json={"email": "existing@example.com", "name": "User"},
+    )
+
+    assert_response_error(response, 409)
+
+
+def test_update_current_user_invalid_email(app):
+    """Test that invalid email format returns validation error."""
+    user_id = create_user(app, email="user@example.com", password="password123", role="user")
+    client = create_auth_client(app, user_id, email="user@example.com", role="user")
+
+    response = client.patch(
+        "/api/users/me",
+        json={"email": "invalid-email", "name": "User"},
+    )
+
+    assert_response_error(response, 400)
