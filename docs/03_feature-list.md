@@ -96,7 +96,8 @@ graph TB
 
 | 機能 | エンドポイント | 実装箇所 | 詳細 |
 |------|--------------|---------|------|
-| **ヘルスチェック** | `GET /health` | FE: なし<br/>BE: `health.py` | アプリケーションとデータベースの状態確認。200 OK（正常）または 503 Service Unavailable（異常）を返す |
+| **ヘルスチェック** | `GET /api/health` | FE: `useVersion.ts`<br/>BE: `health.py` | アプリケーションとデータベースの状態確認。<br/>**レスポンス例**: `{"status": "healthy", "database": "connected", "version": "v1.0.0"}`<br/>**ステータスコード**: 200 OK（正常）/ 503 Service Unavailable（異常） |
+| **バージョン表示** | - | FE: `PageHeader.tsx`<br/>FE: `useVersion.ts` | ヘッダー右上にアプリケーションバージョンを表示。<br/>`/api/health` から取得した `APP_VERSION` 環境変数の値を表示。<br/>**デスクトップ**: 表示<br/>**モバイル**: 非表示 |
 
 ### 5.2 認証 API
 
