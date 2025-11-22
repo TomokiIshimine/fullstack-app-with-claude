@@ -137,10 +137,7 @@ def update_current_user():
         data = UserUpdateRequest.model_validate(payload)
     except ValidationError as e:
         logger.warning(f"PATCH /api/users/me - Validation error: {e}")
-        errors = [
-            {"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]}
-            for err in e.errors()
-        ]
+        errors = [{"field": err["loc"][0] if err["loc"] else "unknown", "message": err["msg"]} for err in e.errors()]
         return jsonify({"error": "Validation error", "details": errors}), 400
     except UserValidationError as e:
         logger.warning(f"PATCH /api/users/me - Validation error: {e}")

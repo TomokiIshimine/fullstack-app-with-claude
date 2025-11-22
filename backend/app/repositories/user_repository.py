@@ -51,11 +51,7 @@ class UserRepository:
         Returns:
             User if found (excluding the specified user), None otherwise
         """
-        return (
-            self.session.query(User)
-            .filter(User.email == email, User.id != user_id)
-            .first()
-        )
+        return self.session.query(User).filter(User.email == email, User.id != user_id).first()
 
     def find_all(self) -> Sequence[User]:
         """
