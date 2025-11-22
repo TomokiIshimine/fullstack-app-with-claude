@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { login, logout, refreshToken } from './auth'
-import { ApiError } from './todos'
+import { ApiError } from "./client";
 import { createMockUser, createMockUserDto } from '@/test/helpers/mockData'
 import { createMockResponse, restoreFetch, createMockEmptyResponse } from '@/test/helpers/mockApi'
 

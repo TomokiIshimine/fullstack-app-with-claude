@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { UserList } from './UserList'
 import type { UserResponse } from '@/types/user'
 import * as usersApi from '@/lib/api/users'
-import { ApiError } from '@/lib/api/todos'
+import { ApiError } from "@/lib/api/client";
 
 describe('UserList', () => {
   const mockOnUsersChange = vi.fn()
@@ -36,7 +36,7 @@ describe('UserList', () => {
 
   beforeEach(() => {
     confirmSpy = vi.spyOn(window, 'confirm')
-    alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { })
     mockOnUsersChange.mockClear()
   })
 

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 /**
  * Component that redirects to the appropriate page based on user role
  * - Admin users are redirected to /admin/users
- * - Regular users are redirected to /todos
+ * - Regular users are redirected to /settings
  * - Unauthenticated users are redirected to /login
  */
 export function RoleBasedRedirect() {
@@ -28,6 +28,6 @@ export function RoleBasedRedirect() {
   if (user?.role === 'admin') {
     return <Navigate to="/admin/users" replace />
   } else {
-    return <Navigate to="/todos" replace />
+    return <Navigate to="/settings" replace />
   }
 }

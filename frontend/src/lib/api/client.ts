@@ -1,5 +1,17 @@
 import { logger } from '@/lib/logger'
-import { ApiError } from './todos'
+/**
+ * Custom error class for API errors
+ */
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public message: string,
+    public data?: unknown
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
 
 /**
  * Wrapper for fetch with automatic logging, timing, and credentials
@@ -74,9 +86,9 @@ export function buildApiError(response: Response, json: unknown): ApiError {
 export function isErrorResponse(json: unknown): json is { error: string } {
   return Boolean(
     json &&
-      typeof json === 'object' &&
-      'error' in (json as Record<string, unknown>) &&
-      typeof (json as { error: unknown }).error === 'string'
+    typeof json === 'object' &&
+    'error' in (json as Record<string, unknown>) &&
+    typeof (json as { error: unknown }).error === 'string'
   )
 }
 
@@ -93,9 +105,9 @@ function isErrorResponseWithString(json: unknown): json is { error: string } {
 function isErrorResponseWithMessage(json: unknown): json is { error: { message?: string } } {
   return Boolean(
     json &&
-      typeof json === 'object' &&
-      'error' in (json as Record<string, unknown>) &&
-      typeof (json as { error: unknown }).error === 'object' &&
-      (json as { error: unknown }).error !== null
+    typeof json === 'object' &&
+    'error' in (json as Record<string, unknown>) &&
+    typeof (json as { error: unknown }).error === 'object' &&
+    (json as { error: unknown }).error !== null
   )
 }

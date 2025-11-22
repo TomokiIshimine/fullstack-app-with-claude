@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { ApiError } from '@/lib/api/todos'
+import { ApiError } from '@/lib/api/client'
 import { logger } from '@/lib/logger'
 
 export function useErrorHandler() {
