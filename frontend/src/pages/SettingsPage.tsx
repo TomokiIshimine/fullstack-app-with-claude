@@ -20,7 +20,7 @@ export function SettingsPage() {
   }
 
   const handleBack = () => {
-    const backPath = user?.role === 'admin' ? '/admin/users' : '/todos'
+    const backPath = user?.role === 'admin' ? '/admin/users' : '/'
     logger.info('Navigating back from settings', { role: user?.role, path: backPath })
     navigate(backPath)
   }
