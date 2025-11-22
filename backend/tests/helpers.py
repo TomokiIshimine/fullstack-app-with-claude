@@ -15,30 +15,6 @@ from flask import Flask
 from werkzeug.test import TestResponse
 
 
-def create_todo(auth_client, **overrides) -> dict[str, Any]:
-    """Create a todo via API with default values.
-
-    Args:
-        auth_client: Authenticated test client
-        **overrides: Fields to override default values (title, detail, due_date)
-
-    Returns:
-        dict: Created todo data from API response
-
-    Raises:
-        AssertionError: If todo creation fails
-    """
-    defaults = {
-        "title": "Test Todo",
-    }
-    data = {**defaults, **overrides}
-
-    response = auth_client.post("/api/todos", json=data)
-    assert response.status_code == 201, f"Failed to create todo: {response.get_json()}"
-
-    return response.get_json()
-
-
 def create_user(app: Flask, email: str = "test@example.com", password: str = "password123", role: str = "user", name: str | None = None) -> int:
     """Create a user directly in the database.
 
@@ -178,18 +154,3 @@ def assert_cookie_set(response: TestResponse, cookie_name: str, should_be_cleare
         # Find the specific cookie and check if it has max-age=0
         cookie_header = next((h for h in set_cookie_headers if cookie_name in h), "")
         assert "max-age=0" in cookie_header.lower(), f"Cookie '{cookie_name}' should be cleared (max-age=0), got: {cookie_header}"
-
-
-def assert_todo_matches(todo_data: dict[str, Any], **expected) -> None:
-    """Assert that todo data matches expected values.
-
-    Args:
-        todo_data: Todo data from API response
-        **expected: Expected field values
-
-    Raises:
-        AssertionError: If fields don't match expectations
-    """
-    for field, value in expected.items():
-        assert field in todo_data, f"Field '{field}' not found in todo data: {todo_data}"
-        assert todo_data[field] == value, f"Expected {field}={value}, got {todo_data[field]}"

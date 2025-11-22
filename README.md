@@ -1,6 +1,6 @@
 # Full Stack App Monorepo
 
-React + TypeScript フロントエンドと Flask + SQLAlchemy バックエンドを含むフルスタックモノレポです。現在は TODO アプリケーションを実装しており、Docker Compose を使用した MySQL によるローカル開発環境を提供しています。
+React + TypeScript フロントエンドと Flask + SQLAlchemy バックエンドを含むフルスタックモノレポです。ユーザー認証機能を持つWebアプリケーションを実装しており、Docker Compose を使用した MySQL によるローカル開発環境を提供しています。
 
 ## ディレクトリ構造
 
@@ -85,13 +85,13 @@ make test-parallel        # backend テストを並列実行
 
 ```bash
 # Frontend - 特定のテストファイルを実行
-pnpm --dir frontend run test src/lib/api/todos.test.ts
+pnpm --dir frontend run test src/lib/api/auth.test.ts
 
 # Backend - 特定のテストファイルを実行
-poetry -C backend run pytest backend/tests/routes/test_todo_routes.py
+poetry -C backend run pytest backend/tests/routes/test_auth_routes.py
 
 # Backend - 特定のテスト関数を実行
-poetry -C backend run pytest backend/tests/routes/test_todo_routes.py::test_create_todo
+poetry -C backend run pytest backend/tests/routes/test_auth_routes.py::test_login_success
 ```
 
 詳細なテスト戦略については、[docs/06_testing-strategy.md](docs/06_testing-strategy.md) を参照してください。

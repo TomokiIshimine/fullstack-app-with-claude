@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a full-stack monorepo containing a React + TypeScript frontend and a Flask + SQLAlchemy backend, currently implementing a TODO application. The project uses Docker Compose for local development with MySQL.
+This is a full-stack monorepo containing a React + TypeScript frontend and a Flask + SQLAlchemy backend, implementing a web application with user authentication. The project uses Docker Compose for local development with MySQL.
 
 The system is designed around Clean Architecture principles: inner layers (domain and use cases) must remain independent from outer layers (frameworks, UI, infrastructure). When adding new functionality, keep dependencies flowing inward and isolate infrastructure-specific code at the edges of the system.
 
@@ -70,13 +70,13 @@ make test-parallel        # Run backend tests in parallel
 ### Run Individual Tests
 ```bash
 # Frontend - run specific test file
-pnpm --dir frontend run test src/lib/api/todos.test.ts
+pnpm --dir frontend run test src/lib/api/auth.test.ts
 
 # Backend - run specific test file
-poetry -C backend run pytest backend/tests/routes/test_todo_routes.py
+poetry -C backend run pytest backend/tests/routes/test_auth_routes.py
 
 # Backend - run specific test function
-poetry -C backend run pytest backend/tests/routes/test_todo_routes.py::test_create_todo
+poetry -C backend run pytest backend/tests/routes/test_auth_routes.py::test_login_success
 ```
 
 **For detailed testing strategy, see [docs/06_testing-strategy.md](docs/06_testing-strategy.md)**

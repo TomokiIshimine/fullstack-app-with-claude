@@ -2,7 +2,7 @@
 
 **作成日:** 2025-10-28
 **バージョン:** 1.0
-**対象システム:** TODO アプリケーション
+**対象システム:** フルスタックWebアプリケーション
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### 1.1 システムの目的
 
-本システムは、ユーザー認証機能を備えたTODO管理アプリケーションです。ユーザーは個人のTODOリストを作成・管理でき、期限設定や完了状態の管理が可能です。
+本システムは、ユーザー認証機能を備えたWebアプリケーションです。ユーザーは安全に認証され、個人のデータを管理できます。
 
 ### 1.2 システムの特徴
 
@@ -93,22 +93,17 @@ app/
 ├── routes/             # APIエンドポイント定義
 │   ├── __init__.py     # Blueprintの統合
 │   ├── auth_routes.py  # 認証関連エンドポイント
-│   ├── todo_routes.py  # TODO関連エンドポイント
 │   └── health.py       # ヘルスチェックエンドポイント
 ├── services/           # ビジネスロジック
-│   ├── auth_service.py
-│   └── todo_service.py
+│   └── auth_service.py
 ├── repositories/       # データアクセス層
 │   ├── user_repository.py
-│   ├── todo_repository.py
 │   └── refresh_token_repository.py
 ├── models/             # SQLAlchemy ORM モデル
 │   ├── user.py
-│   ├── todo.py
 │   └── refresh_token.py
 ├── schemas/            # Pydantic スキーマ (バリデーション)
-│   ├── auth.py
-│   └── todo.py
+│   └── auth.py
 ├── utils/              # ユーティリティ
 │   ├── auth_decorator.py  # 認証デコレータ
 │   └── password.py        # パスワードハッシュ化

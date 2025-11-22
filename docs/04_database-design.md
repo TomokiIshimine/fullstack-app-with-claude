@@ -3,7 +3,7 @@
 **作成日:** 2025-10-28
 **最終更新:** 2025-11-06
 **バージョン:** 1.0
-**対象システム:** TODO アプリケーション
+**対象システム:** フルスタックWebアプリケーション
 
 ---
 
@@ -29,7 +29,6 @@
 |-------------------|------------------------------|
 | users             | ユーザー情報管理              |
 | refresh_tokens    | JWT リフレッシュトークン管理  |
-| todos             | TODO アイテム管理             |
 | schema_migrations | データベースマイグレーション履歴 |
 
 ---
@@ -39,7 +38,6 @@
 ```mermaid
 erDiagram
     users ||--o{ refresh_tokens : "has"
-    users ||--o{ todos : "owns"
 
     users {
         BIGINT id PK "ユーザーID"
@@ -55,17 +53,6 @@ erDiagram
         VARCHAR token UK "リフレッシュトークン"
         DATETIME expires_at "有効期限"
         TINYINT is_revoked "無効化フラグ"
-        TIMESTAMP created_at "作成日時"
-        TIMESTAMP updated_at "更新日時"
-    }
-
-    todos {
-        BIGINT id PK "TODO ID"
-        BIGINT user_id FK "ユーザーID"
-        VARCHAR title "タイトル"
-        TEXT detail "詳細"
-        DATE due_date "期限日"
-        TINYINT is_completed "完了フラグ"
         TIMESTAMP created_at "作成日時"
         TIMESTAMP updated_at "更新日時"
     }
@@ -125,36 +112,6 @@ JWT リフレッシュトークンを管理するテーブル。
 
 ---
 
-### 3.3 todos テーブル
-
-TODO アイテムを管理するテーブル。
-
-| カラム名        | データ型           | 制約                     | 説明                        |
-|----------------|-------------------|-------------------------|----------------------------|
-| id             | BIGINT UNSIGNED   | PRIMARY KEY, AUTO_INC   | TODO ID                    |
-| user_id        | BIGINT UNSIGNED   | NOT NULL, FOREIGN KEY   | ユーザーID (users.id)       |
-| title          | VARCHAR(120)      | NOT NULL                | TODOタイトル                |
-| detail         | TEXT              | NULL                    | TODO詳細                    |
-| due_date       | DATE              | NULL                    | 期限日                      |
-| is_completed   | TINYINT(1)        | NOT NULL, DEFAULT 0     | 完了フラグ                   |
-| created_at     | TIMESTAMP         | NOT NULL, DEFAULT NOW   | レコード作成日時             |
-| updated_at     | TIMESTAMP         | NOT NULL, ON UPDATE NOW | レコード更新日時             |
-
-**インデックス:**
-- `idx_todos_user_id` on `user_id` (ユーザー別TODO取得の高速化)
-- `idx_todos_due_date` on `due_date` (期限別ソート)
-- `idx_todos_completed` on `is_completed` (完了状態フィルタ)
-
-**外部キー:**
-- `user_id` → `users.id` (ON DELETE CASCADE)
-
-**ビジネスルール:**
-- title は必須項目
-- detail と due_date はオプション
-- is_completed は 0 (未完了) または 1 (完了)
-
----
-
 ## 4. データベーススキーマ管理
 
 ### 4.1 スキーマファイル
@@ -166,7 +123,6 @@ TODO アイテムを管理するテーブル。
 - **SQLAlchemy モデル**: `backend/app/models/`
   - `user.py` - User モデル
   - `refresh_token.py` - RefreshToken モデル
-  - `todo.py` - Todo モデル
   - `schema_migration.py` - SchemaMigration モデル（マイグレーション追跡用）
 
 ### 4.2 マイグレーション
@@ -276,11 +232,6 @@ poetry -C backend run python scripts/create_user.py test@example.com password123
 - `token` にインデックス（トークン検証の高速化）
 - `user_id` にインデックス（ユーザー別トークン取得）
 - `expires_at` にインデックス（期限切れトークンのクリーンアップ）
-
-**todos テーブル:**
-- `user_id` にインデックス（ユーザー別TODO取得）
-- `due_date` にインデックス（期限別ソート）
-- `is_completed` にインデックス（完了状態フィルタ）
 
 ### 5.2 クエリ最適化
 

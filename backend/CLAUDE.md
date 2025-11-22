@@ -17,7 +17,7 @@ The backend uses a global SQLAlchemy engine and scoped session factory initializ
 ### API Structure
 
 - All API routes are under `/api` prefix (defined in `app/routes/__init__.py`)
-- Feature routes are organized as Flask Blueprints (e.g., `todo_bp` at `/api/todos`)
+- Feature routes are organized as Flask Blueprints (e.g., `auth_bp` at `/api/auth`)
 - Routes delegate business logic to service layer (`app/services/`)
 - Models use SQLAlchemy ORM with a shared `Base` class (`app/models/__init__.py`)
 
@@ -111,23 +111,24 @@ The backend uses **Pydantic v2** for request/response validation:
 
 ```python
 # Schema definition
-class TodoCreateData(BaseModel):
-    title: str
+class PasswordChangeData(BaseModel):
+    current_password: str
+    new_password: str
 
-    @field_validator("title")
+    @field_validator("new_password")
     @classmethod
-    def validate_title(cls, v: str) -> str:
-        trimmed = v.strip()
-        if not trimmed:
-            raise TodoValidationError("Title is required")
-        return trimmed
+    def validate_new_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
 
 # Route handler
-@todo_bp.post("")
-def create_todo():
+@auth_bp.post("/change-password")
+@require_auth
+def change_password(user_id: int):
     payload = request.get_json()
-    data = TodoCreateData.model_validate(payload)  # Auto-validates
-    return service.create_todo(data)
+    data = PasswordChangeData.model_validate(payload)  # Auto-validates
+    return service.change_password(user_id, data)
 ```
 
 ## Logging
@@ -207,9 +208,9 @@ Each HTTP request is automatically assigned a unique UUID (`request_id`) for tra
 
 **Example request flow**:
 ```
-2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.routes.todo_routes - INFO - POST /api/todos - Creating new todo
-2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.services.todo_service - INFO - Todo created successfully: id=22
-2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.main - INFO - Request completed: POST /api/todos - status=201 - duration=19.52ms
+2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.routes.auth_routes - INFO - POST /api/auth/login - User login attempt
+2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.services.auth_service - INFO - User logged in successfully: user_id=22
+2025-10-27 04:13:15 - [fa53eeb4-f88c-4f77-9f77-9ccad67e88b6] - app.main - INFO - Request completed: POST /api/auth/login - status=200 - duration=19.52ms
 ```
 
 ### Performance Tracking
@@ -222,7 +223,7 @@ Request completion logs include timing information:
 
 **Example**:
 ```
-Request completed: GET /api/todos - status=200 - duration=77.57ms - request_id=660258eb-2348-4534-859c-c8629c69da74
+Request completed: GET /api/auth/refresh - status=200 - duration=77.57ms - request_id=660258eb-2348-4534-859c-c8629c69da74
 ```
 
 ### Sensitive Data Masking
@@ -285,37 +286,37 @@ logger = logging.getLogger(__name__)
 **Routes Layer** (`app/routes/`):
 ```python
 # Request start (INFO)
-logger.info(f"POST /api/todos - Creating new todo")
+logger.info(f"POST /api/auth/login - User login attempt")
 
 # Success (INFO)
-logger.info(f"POST /api/todos - Todo created successfully: id={todo.id}")
+logger.info(f"POST /api/auth/login - User logged in successfully: user_id={user.id}")
 
 # Validation error (WARNING)
-logger.warning(f"POST /api/todos - Validation error: {exc}")
+logger.warning(f"POST /api/auth/login - Validation error: {exc}")
 
 # Unexpected error (ERROR)
-logger.error(f"POST /api/todos - Unexpected error: {exc}", exc_info=True)
+logger.error(f"POST /api/auth/login - Unexpected error: {exc}", exc_info=True)
 ```
 
 **Service Layer** (`app/services/`):
 ```python
 # Business operation success (INFO)
-logger.info(f"Todo created successfully: id={result.id}, title='{result.title}'")
+logger.info(f"User logged in successfully: user_id={result.id}, email='{result.email}'")
 
 # Not found (WARNING)
-logger.warning(f"Todo not found for update: id={todo_id}")
+logger.warning(f"User not found for authentication: email={email}")
 
 # Business logic error (ERROR)
-logger.error(f"Failed to create todo: {exc}", exc_info=True)
+logger.error(f"Failed to authenticate user: {exc}", exc_info=True)
 ```
 
 **Repository Layer** (`app/repositories/`):
 ```python
 # Query result (DEBUG) - only when investigating issues
-logger.debug(f"Retrieved {len(result)} active todos from database")
+logger.debug(f"Retrieved {len(result)} users from database")
 
 # Complex query (DEBUG)
-logger.debug(f"Executing complex query with filters: {filters}")
+logger.debug(f"Executing user query with filters: {filters}")
 ```
 
 **Database Layer** (`app/database.py`):
@@ -593,25 +594,23 @@ poetry -C backend run pytest \
 
 For detailed testing strategy, see [Testing Strategy](../docs/06_testing-strategy.md#37-データベースマイグレーションテスト).
 
-## Feature Implementation Example: TODO
+## Feature Implementation Example: User Authentication
 
-The TODO feature demonstrates the full backend stack:
+The authentication feature demonstrates the full backend stack:
 
 ### Files
 
-- **Model**: `app/models/todo.py` - SQLAlchemy ORM model
-- **Schema**: `app/schemas/todo_schemas.py` - Pydantic request/response schemas
-- **Routes**: `app/routes/todo_routes.py` - Flask Blueprint with endpoints
-- **Service**: `app/services/todo_service.py` - Business logic layer
-- **Tests**: `backend/tests/test_todo*.py` - Unit and integration tests
+- **Model**: `app/models/user.py` - SQLAlchemy ORM model
+- **Schema**: `app/schemas/auth.py` - Pydantic request/response schemas
+- **Routes**: `app/routes/auth_routes.py` - Flask Blueprint with endpoints
+- **Service**: `app/services/auth_service.py` - Business logic layer
+- **Tests**: `backend/tests/test_auth*.py` - Unit and integration tests
 
 ### API Endpoints
 
-- `GET /api/todos` - List todos (supports `?status=active|completed|all` query param)
-- `POST /api/todos` - Create todo
-- `PATCH /api/todos/<id>` - Update todo
-- `DELETE /api/todos/<id>` - Delete todo
-- `PATCH /api/todos/<id>/complete` - Toggle todo completion status
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/refresh` - Refresh access token
 
 ### Implementation Pattern
 
@@ -619,47 +618,47 @@ The TODO feature demonstrates the full backend stack:
    ```python
    from sqlalchemy.orm import Mapped, mapped_column
 
-   class Todo(Base):
-       __tablename__ = "todos"
+   class User(Base):
+       __tablename__ = "users"
        id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-       title: Mapped[str] = mapped_column(String(length=120), nullable=False)
-       is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+       email: Mapped[str] = mapped_column(String(length=255), nullable=False, unique=True)
+       password_hash: Mapped[str] = mapped_column(String(length=255), nullable=False)
    ```
 
 2. **Define Schemas** (`app/schemas/`)
    ```python
-   class TodoCreateData(BaseModel):
-       title: str
+   class LoginData(BaseModel):
+       email: str
+       password: str
 
-   class TodoResponse(BaseModel):
+   class UserResponse(BaseModel):
        id: int
-       title: str
-       is_completed: bool
+       email: str
    ```
 
 3. **Implement Service** (`app/services/`)
    ```python
-   def create_todo(data: TodoCreateData) -> TodoResponse:
+   def login(data: LoginData) -> UserResponse:
        session = get_session()
-       todo = Todo(title=data.title)
-       session.add(todo)
-       session.commit()
-       return TodoResponse.model_validate(todo, from_attributes=True)
+       user = session.query(User).filter_by(email=data.email).first()
+       if not user or not verify_password(data.password, user.password_hash):
+           raise AuthenticationError("Invalid credentials")
+       return UserResponse.model_validate(user, from_attributes=True)
    ```
 
 4. **Create Routes** (`app/routes/`)
    ```python
-   @todo_bp.post("")
-   def create_todo():
+   @auth_bp.post("/login")
+   def login():
        payload = request.get_json()
-       data = TodoCreateData.model_validate(payload)
-       result = service.create_todo(data)
-       return result.model_dump(), 201
+       data = LoginData.model_validate(payload)
+       result = service.login(data)
+       return result.model_dump(), 200
    ```
 
 5. **Write Tests** (`backend/tests/`)
    ```python
-   def test_create_todo(client):
-       response = client.post("/api/todos", json={"title": "Test"})
-       assert response.status_code == 201
+   def test_login(client):
+       response = client.post("/api/auth/login", json={"email": "test@example.com", "password": "password123"})
+       assert response.status_code == 200
    ```
