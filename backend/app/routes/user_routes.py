@@ -8,13 +8,7 @@ from flask import Blueprint, g, jsonify, request
 from pydantic import ValidationError
 
 from app.database import get_session
-from app.schemas.user import (
-    UserCreateRequest,
-    UserListResponse,
-    UserUpdateRequest,
-    UserUpdateResponse,
-    UserValidationError,
-)
+from app.schemas.user import UserCreateRequest, UserListResponse, UserUpdateRequest, UserUpdateResponse, UserValidationError
 from app.services.user_service import UserService
 from app.utils.auth_decorator import require_auth, require_role
 
