@@ -26,6 +26,12 @@
   gap: 0.75rem;
 }
 
+.page-header__version {
+  margin-right: 0.5rem;
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
 .page-header__user-email {
   margin-right: 0.5rem;
   color: #6b7280;
@@ -100,6 +106,10 @@
     order: 2;
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .page-header__version {
+    display: none;
   }
 
   .page-header__user-email {

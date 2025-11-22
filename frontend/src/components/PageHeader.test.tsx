@@ -11,6 +11,15 @@ vi.mock('@/hooks/useLogout', () => ({
   }),
 }))
 
+// useVersion フックのモック（デフォルト値）
+const mockUseVersion = vi.fn(() => ({
+  version: 'v1.0.0',
+  isLoading: false,
+}))
+vi.mock('@/hooks/useVersion', () => ({
+  useVersion: () => mockUseVersion(),
+}))
+
 // useNavigate フックのモック
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -24,6 +33,11 @@ vi.mock('react-router-dom', async () => {
 describe('PageHeader', () => {
   beforeEach(() => {
     mockNavigate.mockClear()
+    // Reset useVersion mock to default values
+    mockUseVersion.mockReturnValue({
+      version: 'v1.0.0',
+      isLoading: false,
+    })
   })
 
   const renderPageHeader = (props: React.ComponentProps<typeof PageHeader>) => {
@@ -137,6 +151,83 @@ describe('PageHeader', () => {
       })
 
       expect(screen.queryByRole('button', { name: 'ログアウト' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('バージョン表示', () => {
+    it('バージョン情報が正しく表示される', () => {
+      mockUseVersion.mockReturnValue({
+        version: 'v1.2.3',
+        isLoading: false,
+      })
+
+      renderPageHeader({ title: 'テストページ' })
+
+      expect(screen.getByText('v1.2.3')).toBeInTheDocument()
+    })
+
+    it('ローディング中はバージョンが表示されない', () => {
+      mockUseVersion.mockReturnValue({
+        version: 'v1.0.0',
+        isLoading: true,
+      })
+
+      renderPageHeader({ title: 'テストページ' })
+
+      expect(screen.queryByText('v1.0.0')).not.toBeInTheDocument()
+    })
+
+    it('バージョンが "unknown" の場合も表示される', () => {
+      mockUseVersion.mockReturnValue({
+        version: 'unknown',
+        isLoading: false,
+      })
+
+      renderPageHeader({ title: 'テストページ' })
+
+      expect(screen.getByText('unknown')).toBeInTheDocument()
+    })
+
+    it('バージョンはユーザーメールの左側に表示される', () => {
+      mockUseVersion.mockReturnValue({
+        version: 'v2.0.0',
+        isLoading: false,
+      })
+
+      renderPageHeader({
+        title: 'テストページ',
+        userEmail: 'test@example.com',
+      })
+
+      const version = screen.getByText('v2.0.0')
+      const email = screen.getByText('test@example.com')
+      const actions = version.parentElement
+
+      expect(actions).toContainElement(version)
+      expect(actions).toContainElement(email)
+
+      // Check that version appears before email in the DOM
+      const children = Array.from(actions?.children || [])
+      const versionIndex = children.indexOf(version)
+      const emailIndex = children.indexOf(email)
+      expect(versionIndex).toBeLessThan(emailIndex)
+    })
+
+    it('異なるバージョン形式が正しく表示される', () => {
+      const versions = ['v1.0.0', 'v2.1.0-beta.1', 'v3.0.0-rc.2']
+
+      versions.forEach(version => {
+        mockUseVersion.mockReturnValue({
+          version,
+          isLoading: false,
+        })
+
+        const { unmount } = renderPageHeader({ title: 'テストページ' })
+
+        expect(screen.getByText(version)).toBeInTheDocument()
+
+        unmount()
+      })
     })
   })
 

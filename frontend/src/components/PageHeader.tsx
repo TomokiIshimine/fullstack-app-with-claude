@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useLogout } from '@/hooks/useLogout'
+import { useVersion } from '@/hooks/useVersion'
 
 interface PageHeaderProps {
   title: string
@@ -28,6 +29,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   const navigate = useNavigate()
   const { handleLogout } = useLogout()
+  const { version, isLoading } = useVersion()
 
   return (
     <div className="page-header">
@@ -38,6 +40,7 @@ export function PageHeader({
       )}
       <h1 className="page-header__title">{title}</h1>
       <div className="page-header__actions">
+        {!isLoading && version && <span className="page-header__version">{version}</span>}
         {userEmail && <span className="page-header__user-email">{userEmail}</span>}
         {showSettings && (
           <button
