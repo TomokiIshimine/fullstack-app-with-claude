@@ -1,9 +1,4 @@
-
 import type { User, UserDto } from '@/types/auth'
-
-
-
-
 
 /**
  * Factory function to create mock User objects
@@ -30,7 +25,3 @@ export function createMockUserDto(overrides?: Partial<UserDto>): UserDto {
     ...overrides,
   }
 }
-
-
-
-

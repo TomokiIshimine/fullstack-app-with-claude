@@ -15,15 +15,12 @@ import jwt
 
 from tests.helpers import assert_response_error, create_auth_client
 
-
 # Authentication Requirement Tests
 
 
 def test_unauthenticated_cannot_change_password(client):
     """Test that unauthenticated users cannot change password."""
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -51,9 +48,7 @@ def test_invalid_token_is_rejected(client):
     """Test that invalid JWT tokens are rejected."""
     client.set_cookie("access_token", "invalid_jwt_token")
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -71,9 +66,7 @@ def test_expired_token_is_rejected(client, test_user):
 
     client.set_cookie("access_token", expired_token)
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -91,9 +84,7 @@ def test_token_with_wrong_signature_is_rejected(client, test_user):
 
     client.set_cookie("access_token", tampered_token)
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -110,9 +101,7 @@ def test_token_without_user_id_is_rejected(client):
 
     client.set_cookie("access_token", invalid_token)
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -129,9 +118,7 @@ def test_token_for_nonexistent_user_is_accepted(client):
 
     client.set_cookie("access_token", valid_token)
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Authentication passes (200/400/404), but business logic may fail
     # Key: Should NOT return 401 (token is valid)
@@ -142,9 +129,7 @@ def test_missing_token_is_rejected(client):
     """Test that requests without token are rejected."""
     # Don't set any cookie
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -156,9 +141,7 @@ def test_missing_token_is_rejected(client):
 def test_cannot_use_refresh_token_after_logout(client, test_user):
     """Test that refresh token becomes invalid after logout."""
     # Login to get both tokens
-    login_response = client.post(
-        "/api/auth/login", json={"email": "test@example.com", "password": "password123"}
-    )
+    login_response = client.post("/api/auth/login", json={"email": "test@example.com", "password": "password123"})
     assert login_response.status_code == 200
 
     # Logout (revokes refresh token)
@@ -178,9 +161,7 @@ def test_malformed_token_format(client):
     # Set a malformed token (not proper JWT format)
     client.set_cookie("access_token", "not.a.jwt")
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -190,9 +171,7 @@ def test_empty_token_is_rejected(client):
     """Test that empty token is rejected."""
     client.set_cookie("access_token", "")
 
-    response = client.post(
-        "/api/password/change", json={"current_password": "old123", "new_password": "new123"}
-    )
+    response = client.post("/api/password/change", json={"current_password": "old123", "new_password": "new123"})
 
     # Should return 401 Unauthorized
     assert_response_error(response, 401)
@@ -214,22 +193,16 @@ def test_complete_security_scenario(app, client, test_user):
     assert auth_response.status_code != 401
 
     # 2. Unauthenticated user cannot access protected endpoints
-    unauth_response = client.post(
-        "/api/password/change", json={"current_password": "old", "new_password": "new"}
-    )
+    unauth_response = client.post("/api/password/change", json={"current_password": "old", "new_password": "new"})
     assert unauth_response.status_code == 401
 
     # 3. Invalid token is rejected
     client.set_cookie("access_token", "fake_token")
-    invalid_response = client.post(
-        "/api/password/change", json={"current_password": "old", "new_password": "new"}
-    )
+    invalid_response = client.post("/api/password/change", json={"current_password": "old", "new_password": "new"})
     assert invalid_response.status_code == 401
 
     # 4. After logout, refresh token is revoked
-    login_response = client.post(
-        "/api/auth/login", json={"email": "test@example.com", "password": "password123"}
-    )
+    login_response = client.post("/api/auth/login", json={"email": "test@example.com", "password": "password123"})
     assert login_response.status_code == 200
 
     logout_response = client.post("/api/auth/logout")
