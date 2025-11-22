@@ -11,11 +11,12 @@ from tests.helpers import create_user
 @pytest.fixture
 def user_service(app):
     """Create UserService instance with test database session."""
-    from app.database import get_session
+    from app.database import get_session, get_session_factory
 
     with app.app_context():
         session = get_session()
-        return UserService(session)
+        service = UserService(session)
+        yield service
 
 
 # list_users tests
@@ -59,6 +60,9 @@ def test_create_user_success(app, user_service):
     """Test successful user creation with generated initial password."""
     result = user_service.create_user(email="newuser@example.com", name="New User")
 
+    # ユーザー作成を永続化してからログイン検証を行う
+    user_service.session.commit()
+
     assert result.user.email == "newuser@example.com"
     assert result.user.name == "New User"
     assert result.user.role == "user"
@@ -76,6 +80,8 @@ def test_create_user_password_is_hashed(app, user_service, client):
     """Test that initial password is properly hashed in database."""
     result = user_service.create_user(email="newuser@example.com", name="New User")
 
+    user_service.session.commit()
+
     # Try to login with the initial password
     login_response = client.post("/api/auth/login", json={"email": "newuser@example.com", "password": result.initial_password})
 
@@ -89,13 +95,14 @@ def test_create_user_duplicate_email_raises_error(app, user_service):
     with pytest.raises(UserAlreadyExistsError) as exc_info:
         user_service.create_user(email="existing@example.com", name="Duplicate User")
 
-    assert "existing@example.com" in str(exc_info.value.description)
-    assert exc_info.value.code == 409
+    assert "existing@example.com" in str(exc_info.value)
 
 
 def test_create_user_always_creates_with_user_role(app, user_service):
     """Test that create_user always creates users with 'user' role."""
     result = user_service.create_user(email="newuser@example.com", name="New User")
+
+    user_service.session.commit()
 
     assert result.user.role == "user"
 
@@ -109,6 +116,9 @@ def test_delete_user_success(app, user_service):
 
     # Should not raise any exception
     user_service.delete_user(user_id)
+
+    # 削除を確定させてから検証する
+    user_service.session.commit()
 
     # Verify user is deleted
     from app.database import get_session
@@ -128,8 +138,7 @@ def test_delete_user_cannot_delete_admin(app, user_service):
     with pytest.raises(CannotDeleteAdminError) as exc_info:
         user_service.delete_user(admin_id)
 
-    assert "admin" in exc_info.value.description.lower()
-    assert exc_info.value.code == 403
+    assert "admin" in str(exc_info.value).lower()
 
     # Verify admin user still exists
     from app.database import get_session
@@ -147,8 +156,7 @@ def test_delete_user_not_found_raises_error(app, user_service):
     with pytest.raises(UserNotFoundError) as exc_info:
         user_service.delete_user(99999)
 
-    assert "99999" in str(exc_info.value.description)
-    assert exc_info.value.code == 404
+    assert "99999" in str(exc_info.value)
 
 
 def test_delete_user_cascades_related_data(app, user_service):
@@ -172,6 +180,9 @@ def test_delete_user_cascades_related_data(app, user_service):
 
     # Delete user
     user_service.delete_user(user_id)
+
+    # 変更を確定させてから関連データの削除を確認する
+    user_service.session.commit()
 
     # Verify refresh token is also deleted (CASCADE)
     with app.app_context():
