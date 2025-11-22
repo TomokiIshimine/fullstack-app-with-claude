@@ -26,26 +26,31 @@ Vite dev server proxies `/api/*` requests to backend:
 **Example API call:**
 
 ```typescript
-// Frontend makes request to /api/todos
-// Vite proxies it to http://localhost:5000/api/todos
-const response = await fetch('/api/todos')
+// Frontend makes request to /api/auth/login
+// Vite proxies it to http://localhost:5000/api/auth/login
+const response = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password }),
+})
 ```
 
 ### Component Organization
 
 ```
 src/
-├── pages/           # Page-level components (e.g., TodoListPage.tsx)
-├── components/      # Reusable UI components (e.g., TodoForm.tsx, TodoList.tsx)
-├── styles/          # CSS files (e.g., todo.css)
+├── pages/           # Page-level components (e.g., LoginPage.tsx)
+├── components/      # Reusable UI components (e.g., ProtectedRoute.tsx)
+├── contexts/        # React Context (e.g., AuthContext.tsx)
+├── styles/          # CSS files
 ├── App.tsx          # Root component with routing
 └── main.tsx         # Application entry point
 ```
 
 **Component conventions:**
 
-- Page components: `<FeatureName>Page.tsx` (e.g., `TodoListPage.tsx`)
-- UI components: `<ComponentName>.tsx` (e.g., `TodoForm.tsx`, `TodoList.tsx`)
+- Page components: `<FeatureName>Page.tsx` (e.g., `LoginPage.tsx`)
+- UI components: `<ComponentName>.tsx` (e.g., `ProtectedRoute.tsx`)
 - One component per file
 - Co-locate styles when possible
 
@@ -65,17 +70,19 @@ Uses **Vitest** with **Testing Library** for component testing.
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 
-describe('TodoForm', () => {
-  it('should submit form with valid input', () => {
-    render(<TodoForm onSubmit={mockSubmit} />);
+describe('LoginForm', () => {
+  it('should submit form with valid credentials', () => {
+    render(<LoginForm onSubmit={mockSubmit} />);
 
-    const input = screen.getByRole('textbox');
-    fireEvent.change(input, { target: { value: 'Test' } });
+    const emailInput = screen.getByLabelText('Email');
+    const passwordInput = screen.getByLabelText('Password');
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
 
     const button = screen.getByRole('button');
     fireEvent.click(button);
 
-    expect(mockSubmit).toHaveBeenCalledWith('Test');
+    expect(mockSubmit).toHaveBeenCalledWith({ email: 'test@example.com', password: 'password123' });
   });
 });
 ```
@@ -187,19 +194,17 @@ const TodoForm: React.FC<TodoFormProps> = ({ onSubmit, disabled = false }) => {
 - **Utilities**: camelCase (e.g., `apiClient.ts`, `helpers.ts`)
 - **Test files**: Match source file with `.test` suffix (e.g., `TodoForm.test.tsx`)
 
-## Feature Implementation Example: TODO
+## Feature Implementation Example: User Authentication
 
-The TODO feature demonstrates the full frontend stack:
+The authentication feature demonstrates the full frontend stack:
 
 ### Files
 
-- **Page**: `src/pages/TodoListPage.tsx` - Main TODO page
+- **Page**: `src/pages/LoginPage.tsx` - Main login page
+- **Context**: `src/contexts/AuthContext.tsx` - Authentication state management
 - **Components**:
-  - `src/components/TodoForm.tsx` - Form for creating todos
-  - `src/components/TodoList.tsx` - List of todos
-  - `src/components/TodoItem.tsx` - Individual todo item
-  - `src/components/TodoFilter.tsx` - Filter by status
-- **Styles**: `src/styles/todo.css` - TODO-specific styles
+  - `src/components/ProtectedRoute.tsx` - Route guard for authenticated pages
+- **Styles**: `src/styles/auth.css` - Authentication-specific styles
 - **Tests**: `src/**/*.test.tsx` - Component tests
 
 ### Implementation Pattern
@@ -207,56 +212,62 @@ The TODO feature demonstrates the full frontend stack:
 1. **Define Types**
 
    ```typescript
-   interface Todo {
+   interface User {
      id: number
-     title: string
-     is_completed: boolean
+     email: string
    }
 
-   type TodoStatus = 'active' | 'completed' | 'all'
+   interface LoginCredentials {
+     email: string
+     password: string
+   }
    ```
 
 2. **Create API Functions**
 
    ```typescript
-   const fetchTodos = async (status: TodoStatus): Promise<Todo[]> => {
-     const response = await fetch(`/api/todos?status=${status}`)
-     return response.json()
-   }
-
-   const createTodo = async (title: string): Promise<Todo> => {
-     const response = await fetch('/api/todos', {
+   const login = async (credentials: LoginCredentials): Promise<User> => {
+     const response = await fetch('/api/auth/login', {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ title }),
+       body: JSON.stringify(credentials),
      })
-     return response.json()
+     const data = await response.json()
+     return data.user
+   }
+
+   const logout = async (): Promise<void> => {
+     await fetch('/api/auth/logout', { method: 'POST' })
    }
    ```
 
 3. **Build UI Components**
 
    ```typescript
-   const TodoForm: React.FC<{ onSubmit: (title: string) => void }> = ({ onSubmit }) => {
-     const [title, setTitle] = useState('');
+   const LoginForm: React.FC<{ onSubmit: (credentials: LoginCredentials) => void }> = ({ onSubmit }) => {
+     const [email, setEmail] = useState('');
+     const [password, setPassword] = useState('');
 
      const handleSubmit = (e: React.FormEvent) => {
        e.preventDefault();
-       if (title.trim()) {
-         onSubmit(title);
-         setTitle('');
-       }
+       onSubmit({ email, password });
      };
 
      return (
        <form onSubmit={handleSubmit}>
          <input
-           type="text"
-           value={title}
-           onChange={(e) => setTitle(e.target.value)}
-           placeholder="Enter todo title"
+           type="email"
+           value={email}
+           onChange={(e) => setEmail(e.target.value)}
+           placeholder="Email"
          />
-         <button type="submit">Add Todo</button>
+         <input
+           type="password"
+           value={password}
+           onChange={(e) => setPassword(e.target.value)}
+           placeholder="Password"
+         />
+         <button type="submit">Login</button>
        </form>
      );
    };
@@ -265,24 +276,23 @@ The TODO feature demonstrates the full frontend stack:
 4. **Compose Page**
 
    ```typescript
-   const TodoListPage: React.FC = () => {
-     const [todos, setTodos] = useState<Todo[]>([]);
-     const [status, setStatus] = useState<TodoStatus>('all');
+   const LoginPage: React.FC = () => {
+     const { login: authLogin } = useAuth();
+     const navigate = useNavigate();
 
-     useEffect(() => {
-       fetchTodos(status).then(setTodos);
-     }, [status]);
-
-     const handleCreate = async (title: string) => {
-       const newTodo = await createTodo(title);
-       setTodos([...todos, newTodo]);
+     const handleLogin = async (credentials: LoginCredentials) => {
+       try {
+         await authLogin(credentials);
+         navigate('/dashboard');
+       } catch (error) {
+         console.error('Login failed:', error);
+       }
      };
 
      return (
        <div>
-         <TodoFilter status={status} onStatusChange={setStatus} />
-         <TodoForm onSubmit={handleCreate} />
-         <TodoList todos={todos} />
+         <h1>Login</h1>
+         <LoginForm onSubmit={handleLogin} />
        </div>
      );
    };
@@ -291,18 +301,24 @@ The TODO feature demonstrates the full frontend stack:
 5. **Write Tests**
 
    ```typescript
-   describe('TodoForm', () => {
-     it('should create a new todo on submit', async () => {
+   describe('LoginForm', () => {
+     it('should submit credentials on form submit', async () => {
        const mockOnSubmit = vi.fn();
-       render(<TodoForm onSubmit={mockOnSubmit} />);
+       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-       const input = screen.getByPlaceholderText('Enter todo title');
-       await userEvent.type(input, 'New Todo');
+       const emailInput = screen.getByPlaceholderText('Email');
+       await userEvent.type(emailInput, 'test@example.com');
 
-       const button = screen.getByText('Add Todo');
+       const passwordInput = screen.getByPlaceholderText('Password');
+       await userEvent.type(passwordInput, 'password123');
+
+       const button = screen.getByText('Login');
        await userEvent.click(button);
 
-       expect(mockOnSubmit).toHaveBeenCalledWith('New Todo');
+       expect(mockOnSubmit).toHaveBeenCalledWith({
+         email: 'test@example.com',
+         password: 'password123'
+       });
      });
    });
    ```
@@ -354,13 +370,13 @@ API requests are automatically logged with timing information:
 **Error responses** (status >= 400) are logged as warnings:
 
 ```
-[2025-10-27T04:13:15.300Z] WARN: API Response: POST /api/todos - 400 (25.50ms)
+[2025-10-27T04:13:15.300Z] WARN: API Response: POST /api/auth/login - 401 (25.50ms)
 ```
 
 **Network errors** are logged with full error details:
 
 ```
-[2025-10-27T04:13:15.400Z] ERROR: API Error: GET /api/todos {"duration":150.25}
+[2025-10-27T04:13:15.400Z] ERROR: API Error: POST /api/auth/login {"duration":150.25}
 ```
 
 ### Sensitive Data Masking
@@ -409,10 +425,10 @@ import { logger } from '@/lib/logger'
 
 ```typescript
 // User action (INFO)
-logger.info('Todo filter changed', { status: 'active' })
+logger.info('User logged in', { userId: user.id })
 
 // Component error (ERROR)
-logger.error('Failed to render TodoList', error, { todoCount: todos.length })
+logger.error('Failed to render LoginPage', error)
 ```
 
 **API Layer** (`lib/api/`):
@@ -422,34 +438,34 @@ logger.error('Failed to render TodoList', error, { todoCount: todos.length })
 // No manual logging needed for request/response
 
 // Business logic error (ERROR)
-logger.error('Failed to parse API response', error, { endpoint: '/api/todos' })
+logger.error('Failed to parse API response', error, { endpoint: '/api/auth/login' })
 ```
 
 **Hooks** (`hooks/`):
 
 ```typescript
 // State change (DEBUG)
-logger.debug('Todos state updated', { count: todos.length })
+logger.debug('Auth state updated', { isAuthenticated: true })
 
 // Hook error (ERROR)
-logger.error('useTodos hook error', error)
+logger.error('useAuth hook error', error)
 ```
 
 **Performance Measurement**:
 
 ```typescript
 // Async operation
-const result = await logger.measureAsync('Fetch todos', async () => {
-  return await getTodos('all')
+const result = await logger.measureAsync('User login', async () => {
+  return await login(credentials)
 })
 
 // Sync operation
-const filtered = logger.measure(
-  'Filter todos',
+const validated = logger.measure(
+  'Validate credentials',
   () => {
-    return filterByStatus(todos, 'active')
+    return validateCredentials(email, password)
   },
-  { todoCount: todos.length }
+  { email }
 )
 ```
 

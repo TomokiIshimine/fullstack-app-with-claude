@@ -3,7 +3,7 @@
 **作成日:** 2025-11-10
 **最終更新:** 2025-11-10
 **バージョン:** 1.0
-**対象システム:** TODO アプリケーション
+**対象システム:** フルスタックWebアプリケーション
 
 **更新履歴:**
 - v1.0 (2025-11-10): 初版作成
@@ -143,8 +143,8 @@ CI ワークフローは GitHub Actions の標準機能のみを使用してい�
 
 **症状:**
 ```
-FAIL src/components/TodoList.test.tsx
-  ✕ should render todos
+FAIL src/components/UserList.test.tsx
+  ✕ should render users
 ```
 
 **原因:** テストコードまたはアプリケーションコードに問題がある
@@ -218,7 +218,7 @@ CI に加えて、GCP へのデプロイまで自動化する場合の手順で�
 
 1. [Google Cloud Console](https://console.cloud.google.com/) にログイン
 2. 新しいプロジェクトを作成
-3. プロジェクト ID をメモ（例：`my-todo-app-123456`）
+3. プロジェクト ID をメモ（例：`my-fullstack-app-123456`）
 
 #### ステップ2: 必要な API の有効化
 
@@ -416,7 +416,7 @@ terraform apply \
 4. **ログインして動作確認**
 
    - 設定した管理者メールアドレスとパスワードでログイン
-   - TODO の作成・編集・削除が正常に動作することを確認
+   - アプリケーションが正常に動作することを確認
 
 ### 4.8 デプロイのトラブルシューティング
 

@@ -165,7 +165,6 @@ make up                   # すべてのサービスを起動（MySQL含む）
 MySQL コンテナは初回起動時に `infra/mysql/init/001_init.sql` を実行し、以下のテーブルを作成します:
 - `users` - ユーザー認証
 - `refresh_tokens` - JWT トークン管理
-- `todos` - TODO アイテム（ユーザーと関連付け）
 
 ### 手動スキーマ管理
 

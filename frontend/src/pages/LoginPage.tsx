@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { logger } from '@/lib/logger'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { getDefaultPathForRole } from '@/lib/utils/routing'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -21,7 +22,7 @@ export function LoginPage() {
     try {
       const user = await login(email, password)
       // Redirect based on user role
-      const redirectPath = user.role === 'admin' ? '/admin/users' : '/todos'
+      const redirectPath = getDefaultPathForRole(user.role)
       logger.info('Login successful, redirecting', { role: user.role, path: redirectPath })
       navigate(redirectPath)
     } catch (err) {

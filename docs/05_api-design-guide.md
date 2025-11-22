@@ -3,7 +3,7 @@
 **作成日:** 2025-10-28
 **最終更新:** 2025-11-06
 **バージョン:** 1.0
-**対象システム:** TODO アプリケーション
+**対象システム:** フルスタックWebアプリケーション
 
 ---
 
@@ -11,7 +11,7 @@
 
 ### 1.1 本ドキュメントの目的
 
-本ドキュメントは、TODOアプリケーションのREST API設計における原則、命名規約、エラーハンドリングの統一方針を定めます。開発者がAPI設計時に参照することで、一貫性のある保守しやすいAPIを構築できます。
+本ドキュメントは、WebアプリケーションのREST API設計における原則、命名規約、エラーハンドリングの統一方針を定めます。開発者がAPI設計時に参照することで、一貫性のある保守しやすいAPIを構築できます。
 
 ### 1.2 対象読者
 
@@ -32,21 +32,21 @@
 
 | 原則 | 説明 | 例 |
 |------|------|-----|
-| **リソース指向** | URLはリソースを表現し、動詞ではなく名詞を使用 | ✓ `GET /api/todos`<br/>✗ `GET /api/getTodos` |
+| **リソース指向** | URLはリソースを表現し、動詞ではなく名詞を使用 | ✓ `GET /api/users`<br/>✗ `GET /api/getUsers` |
 | **HTTPメソッドの適切な使用** | CRUD操作をHTTPメソッドで表現 | GET=取得、POST=作成、PATCH/PUT=更新、DELETE=削除 |
 | **ステートレス** | リクエストごとに必要な情報をすべて含める | JWTトークンをCookieで送信 |
-| **階層構造** | リソースの関係性をURLで表現 | `/api/todos/{id}/comments` |
-| **冪等性** | GET, PUT, DELETEは冪等（何度実行しても同じ結果） | PUT /api/todos/1 を複数回実行しても同じ状態 |
+| **階層構造** | リソースの関係性をURLで表現 | `/api/users/{id}/settings` |
+| **冪等性** | GET, PUT, DELETEは冪等（何度実行しても同じ結果） | PUT /api/users/1 を複数回実行しても同じ状態 |
 
 ### 2.2 HTTPメソッドの使い分け
 
 | メソッド | 用途 | 冪等性 | リクエストボディ | レスポンスボディ | 実装例 |
 |---------|------|-------|---------------|---------------|-------|
-| **GET** | リソース取得 | ✓ | なし | リソースデータ | `GET /api/todos` |
-| **POST** | リソース作成 | ✗ | リソースデータ | 作成されたリソース | `POST /api/todos` |
+| **GET** | リソース取得 | ✓ | なし | リソースデータ | `GET /api/users` |
+| **POST** | リソース作成 | ✗ | リソースデータ | 作成されたリソース | `POST /api/auth/login` |
 | **PUT** | リソース完全置換 | ✓ | 完全なリソースデータ | 更新されたリソース | (本プロジェクトでは未使用) |
-| **PATCH** | リソース部分更新 | △ | 更新フィールドのみ | 更新されたリソース | `PATCH /api/todos/{id}` |
-| **DELETE** | リソース削除 | ✓ | なし | なし (204 No Content) | `DELETE /api/todos/{id}` |
+| **PATCH** | リソース部分更新 | △ | 更新フィールドのみ | 更新されたリソース | `PATCH /api/users/{id}` |
+| **DELETE** | リソース削除 | ✓ | なし | なし (204 No Content) | `DELETE /api/users/{id}` |
 
 **注:** 本プロジェクトではPUTではなくPATCHを使用しています。部分更新が主なユースケースのためです。
 
@@ -61,20 +61,20 @@ https://{domain}/api/{version}/{resource}/{id}/{sub-resource}
 ```
 
 **例:**
-- `https://example.com/api/todos` - TODO一覧取得
-- `https://example.com/api/todos/123` - TODO個別取得
-- `https://example.com/api/todos/123/complete` - TODO完了操作（アクション）
+- `https://example.com/api/users` - ユーザー一覧取得
+- `https://example.com/api/users/123` - ユーザー個別取得
+- `https://example.com/api/auth/login` - ログイン操作（アクション）
 
 ### 3.2 命名ルール
 
 | 要素 | ルール | 例 |
 |------|-------|-----|
-| **ベースパス** | `/api` で始める | `/api/todos` |
+| **ベースパス** | `/api` で始める | `/api/users` |
 | **バージョン** | 現在は未使用（将来的に `/api/v1/` 形式を検討） | - |
-| **リソース名** | 複数形の名詞、小文字、ハイフン区切り | `todos`, `refresh-tokens` |
-| **IDパラメータ** | リソースIDは数値、UUID等 | `/api/todos/123` |
-| **クエリパラメータ** | スネークケース（snake_case） | `?status=active&sort_by=due_date` |
-| **アクション** | 動詞を使う場合は明示的なサブパス | `/api/todos/{id}/complete` |
+| **リソース名** | 複数形の名詞、小文字、ハイフン区切り | `users`, `refresh-tokens` |
+| **IDパラメータ** | リソースIDは数値、UUID等 | `/api/users/123` |
+| **クエリパラメータ** | スネークケース（snake_case） | `?role=admin&sort_by=created_at` |
+| **アクション** | 動詞を使う場合は明示的なサブパス | `/api/auth/login` |
 
 ### 3.3 実装済みエンドポイント例
 
@@ -83,11 +83,6 @@ https://{domain}/api/{version}/{resource}/{id}/{sub-resource}
 | **認証** | `POST /api/auth/login` | ログイン（リソース作成） |
 | **認証** | `POST /api/auth/logout` | ログアウト（アクション） |
 | **認証** | `POST /api/auth/refresh` | トークン更新（アクション） |
-| **TODO** | `GET /api/todos` | TODO一覧取得 |
-| **TODO** | `POST /api/todos` | TODO作成 |
-| **TODO** | `PATCH /api/todos/{id}` | TODO更新 |
-| **TODO** | `DELETE /api/todos/{id}` | TODO削除 |
-| **TODO** | `PATCH /api/todos/{id}/complete` | 完了状態トグル（特殊な更新） |
 
 ---
 
@@ -98,26 +93,25 @@ https://{domain}/api/{version}/{resource}/{id}/{sub-resource}
 #### JSONボディ
 ```json
 {
-  "title": "買い物リスト作成",
-  "detail": "スーパーで野菜を買う",
-  "due_date": "2025-10-30"
+  "email": "user@example.com",
+  "password": "SecurePassword123"
 }
 ```
 
 **ルール:**
 - Content-Type: `application/json`
-- フィールド名: スネークケース (`due_date`, `is_completed`)
+- フィールド名: スネークケース (`created_at`, `updated_at`)
 - 日付形式: ISO 8601 (`YYYY-MM-DD` または `YYYY-MM-DDTHH:MM:SSZ`)
 
 #### クエリパラメータ
 ```
-GET /api/todos?status=active&sort_by=due_date&order=asc
+GET /api/users?role=admin&sort_by=created_at&order=desc
 ```
 
 **ルール:**
 - スネークケース
 - ブール値: `true` / `false` （小文字）
-- 列挙値: 小文字、アンダースコア区切り (`all`, `active`, `completed`)
+- 列挙値: 小文字、アンダースコア区切り (`admin`, `user`, `guest`)
 
 ### 4.2 レスポンス形式
 
@@ -125,16 +119,13 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 ```json
 {
   "id": 123,
-  "title": "買い物リスト作成",
-  "detail": "スーパーで野菜を買う",
-  "due_date": "2025-10-30",
-  "is_completed": false,
+  "email": "user@example.com",
   "created_at": "2025-10-28T10:00:00Z",
   "updated_at": "2025-10-28T10:00:00Z"
 }
 ```
 
-**注記:** `user_id` はセキュリティ上の理由で、APIレスポンスには含まれません。ユーザーは自分のTODOのみにアクセスでき、認証トークンから自動的に判別されます。
+**注記:** `password_hash` はセキュリティ上の理由で、APIレスポンスには含まれません。
 
 #### 成功レスポンス（一覧取得）
 ```json
@@ -185,13 +176,13 @@ GET /api/todos?status=active&sort_by=due_date&order=asc
 
 | コード | 意味 | 使用ケース | 実装例 |
 |-------|------|-----------|-------|
-| **200 OK** | 成功 | リソース取得・更新成功 | `GET /api/todos` |
-| **201 Created** | 作成成功 | リソース作成成功 | `POST /api/todos` |
-| **204 No Content** | 成功（ボディなし） | 削除成功 | `DELETE /api/todos/{id}` |
-| **400 Bad Request** | クライアントエラー（入力不正） | バリデーションエラー | titleが空、due_dateが過去 |
+| **200 OK** | 成功 | リソース取得・更新成功 | `GET /api/users` |
+| **201 Created** | 作成成功 | リソース作成成功 | `POST /api/users` |
+| **204 No Content** | 成功（ボディなし） | 削除成功 | `DELETE /api/users/{id}` |
+| **400 Bad Request** | クライアントエラー（入力不正） | バリデーションエラー | emailが無効、パスワードが短い |
 | **401 Unauthorized** | 認証エラー | トークン未提供、期限切れ | アクセストークン無効 |
-| **403 Forbidden** | 認可エラー | 権限不足 | 他ユーザーのTODO編集試行 |
-| **404 Not Found** | リソース不存在 | 指定IDのリソースが存在しない | `GET /api/todos/99999` |
+| **403 Forbidden** | 認可エラー | 権限不足 | 他ユーザーのデータ編集試行 |
+| **404 Not Found** | リソース不存在 | 指定IDのリソースが存在しない | `GET /api/users/99999` |
 | **429 Too Many Requests** | レート制限超過 | API呼び出し頻度が制限を超えた | 認証エンドポイント |
 | **500 Internal Server Error** | サーバーエラー | 予期しないエラー | データベース接続エラー |
 
@@ -264,28 +255,27 @@ def handle_http_exception(err: HTTPException):
 ### 6.1 フィルタリング
 
 ```
-GET /api/todos                    # デフォルト: status=active
-GET /api/todos?status=active      # 未完了TODOのみ
-GET /api/todos?status=completed   # 完了TODOのみ
-GET /api/todos?status=all         # 全TODO
+GET /api/users?role=admin         # 管理者ユーザーのみ
+GET /api/users?role=user          # 一般ユーザーのみ
+GET /api/users                    # 全ユーザー
 ```
 
 **パラメータ:**
 
 | パラメータ | 型 | 必須 | デフォルト | 説明 |
 |-----------|---|------|----------|------|
-| `status` | string | No | `active` | フィルタ条件: `all`, `active`, `completed` |
+| `role` | string | No | なし | フィルタ条件: `admin`, `user` |
 
 **ルール:**
-- パラメータ名: リソースの属性名に対応（`status`, `category` 等）
+- パラメータ名: リソースの属性名に対応（`role`, `status` 等）
 - 値: 小文字、アンダースコア区切り
 - 複数条件: `&` で結合
 
 ### 6.2 ソート
 
 ```
-GET /api/todos?sort_by=due_date&order=asc
-GET /api/todos?sort_by=created_at&order=desc
+GET /api/users?sort_by=created_at&order=desc
+GET /api/users?sort_by=email&order=asc
 ```
 
 **ルール:**
@@ -293,12 +283,10 @@ GET /api/todos?sort_by=created_at&order=desc
 - `order`: `asc` (昇順) または `desc` (降順)
 - デフォルト: `created_at` 降順（最新が先頭）
 
-**注:** 現在のTODOアプリではフロントエンド側でソートを実装しています（`useTodos.ts`）。`sort_by` および `order` クエリパラメータはバックエンドでは**未実装**です。将来的な拡張としてバックエンドソートを検討する場合は、これらのパラメータを実装してください。
-
 ### 6.3 ページネーション（将来実装予定）
 
 ```
-GET /api/todos?page=2&per_page=20
+GET /api/users?page=2&per_page=20
 ```
 
 **ルール:**
@@ -363,7 +351,7 @@ Accept: application/vnd.myapp.v2+json
 
 **リクエスト例:**
 ```http
-GET /api/todos HTTP/1.1
+GET /api/users HTTP/1.1
 Host: example.com
 Cookie: access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -374,7 +362,7 @@ Cookie: access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 **将来的なトークンベース認証の場合:**
 ```http
-GET /api/todos HTTP/1.1
+GET /api/users HTTP/1.1
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -385,11 +373,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | `POST /api/auth/login` | 不要 |
 | `POST /api/auth/logout` | 不要（Cookieは必要） |
 | `POST /api/auth/refresh` | 不要（Cookieは必要） |
-| `GET /api/todos` | **必要** |
-| `POST /api/todos` | **必要** |
-| `PATCH /api/todos/{id}` | **必要** |
-| `DELETE /api/todos/{id}` | **必要** |
-| `PATCH /api/todos/{id}/complete` | **必要** |
 
 **実装方法:** `@require_auth` デコレータ（`backend/app/utils/auth_decorator.py`）
 
@@ -435,7 +418,6 @@ Flask-Limiterが自動的に以下のヘッダーを返します:
 - エラーメッセージは日本語で分かりやすく
 
 **実装箇所:**
-- `backend/app/schemas/todo.py` - TODO API
 - `backend/app/schemas/auth.py` - 認証 API
 
 ### 10.2 エラーメッセージ
@@ -449,7 +431,7 @@ Flask-Limiterが自動的に以下のヘッダーを返します:
 ```json
 {
   "error": "Validation Error",
-  "message": "期限日は今日以降の日付を指定してください"
+  "message": "パスワードは8文字以上で、数字を含む必要があります"
 }
 ```
 

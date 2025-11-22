@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { createUser } from '@/lib/api/users'
 import type { UserCreateResponse } from '@/types/user'
 import { logger } from '@/lib/logger'
-import { ApiError } from '@/lib/api/todos'
+import { ApiError } from '@/lib/api/client'
 
 interface UserCreateFormProps {
   onSuccess: (response: UserCreateResponse) => void

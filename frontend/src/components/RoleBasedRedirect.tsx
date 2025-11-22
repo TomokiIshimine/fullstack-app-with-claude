@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { getDefaultPathForRole } from '@/lib/utils/routing'
 
 /**
  * Component that redirects to the appropriate page based on user role
  * - Admin users are redirected to /admin/users
- * - Regular users are redirected to /todos
+ * - Regular users are redirected to /settings
  * - Unauthenticated users are redirected to /login
  */
 export function RoleBasedRedirect() {
@@ -25,9 +26,6 @@ export function RoleBasedRedirect() {
   }
 
   // Redirect based on user role
-  if (user?.role === 'admin') {
-    return <Navigate to="/admin/users" replace />
-  } else {
-    return <Navigate to="/todos" replace />
-  }
+  const defaultPath = getDefaultPathForRole(user?.role)
+  return <Navigate to={defaultPath} replace />
 }

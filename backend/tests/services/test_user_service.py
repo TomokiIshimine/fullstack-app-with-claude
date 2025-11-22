@@ -152,26 +152,29 @@ def test_delete_user_not_found_raises_error(app, user_service):
 
 
 def test_delete_user_cascades_related_data(app, user_service):
-    """Test that deleting user also deletes related todos and refresh tokens."""
+    """Test that deleting user also deletes related refresh tokens (CASCADE)."""
+    from datetime import datetime, timedelta, timezone
+
     from app.database import get_session
-    from app.models.todo import Todo
+    from app.models.refresh_token import RefreshToken
 
     # Create user and related data
     user_id = create_user(app, email="user@example.com", password="password123", role="user")
 
     with app.app_context():
         session = get_session()
-        # Create a todo for the user
-        todo = Todo(user_id=user_id, title="Test Todo")
-        session.add(todo)
+        # Create a refresh token for the user
+        expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+        refresh_token = RefreshToken(user_id=user_id, token="test_refresh_token_12345", expires_at=expires_at)
+        session.add(refresh_token)
         session.commit()
-        todo_id = todo.id
+        token_id = refresh_token.id
 
     # Delete user
     user_service.delete_user(user_id)
 
-    # Verify todo is also deleted (CASCADE)
+    # Verify refresh token is also deleted (CASCADE)
     with app.app_context():
         session = get_session()
-        todo = session.query(Todo).filter(Todo.id == todo_id).first()
-        assert todo is None
+        token = session.query(RefreshToken).filter(RefreshToken.id == token_id).first()
+        assert token is None
