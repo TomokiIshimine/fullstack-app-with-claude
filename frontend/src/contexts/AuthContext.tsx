@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import type { User } from '@/types/auth'
-import * as authApi from '@/lib/api/auth'
-import { logger } from '@/lib/logger'
+import { useAuthService } from '@/hooks/useAuthService'
 
 interface AuthContextType {
   user: User | null
@@ -19,67 +18,9 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const auth = useAuthService()
 
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
-    try {
-      // Try to refresh token to verify authentication
-      const user = await authApi.refreshToken()
-      // If refresh succeeds, set user information
-      setUser(user)
-      logger.debug('Authentication restored from cookie', { userId: user.id, email: user.email })
-      setIsLoading(false)
-    } catch (error) {
-      // Not authenticated or token expired
-      logger.debug('Not authenticated on mount', { error })
-      setUser(null)
-      setIsLoading(false)
-    }
-  }
-
-  const login = async (email: string, password: string): Promise<User> => {
-    try {
-      const user = await authApi.login({ email, password })
-      setUser(user)
-      logger.info('User logged in', { userId: user.id, email: user.email, role: user.role })
-      return user
-    } catch (error) {
-      logger.error('Login failed', error as Error)
-      throw error
-    }
-  }
-
-  const logout = async () => {
-    try {
-      await authApi.logout()
-      setUser(null)
-      logger.info('User logged out')
-    } catch (error) {
-      logger.error('Logout failed', error as Error)
-      // Clear user state even if logout request fails
-      setUser(null)
-      throw error
-    }
-  }
-
-  const updateUser = (updatedUser: User) => {
-    setUser(updatedUser)
-  }
-
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isAuthenticated: user !== null,
-    login,
-    logout,
-    updateUser,
-  }
+  const value: AuthContextType = auth
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
