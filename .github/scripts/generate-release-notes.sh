@@ -24,13 +24,33 @@ fi
 
 echo "Generating release notes from $PREVIOUS_TAG to $CURRENT_TAG"
 
-# PR 一覧を取得 (GitHub CLI を使用)
-# マージされた PR のみを対象とする
-PRS=$(gh pr list \
-  --state merged \
-  --search "merged:>=$(git log -1 --format=%cI $PREVIOUS_TAG 2>/dev/null || echo '1970-01-01')" \
-  --json number,title,labels,mergedAt \
-  --jq 'sort_by(.mergedAt)')
+# PR 一覧を取得 (コミット範囲ベース)
+# 2つのタグ間のコミットメッセージから PR 番号を抽出し、PR 情報を取得する
+echo "Extracting PR numbers from commits..."
+PR_NUMBERS=$(git log --pretty=format:"%s" ${PREVIOUS_TAG}..${CURRENT_TAG} | \
+  grep -oP '#\K\d+' | sort -u)
+
+if [ -z "$PR_NUMBERS" ]; then
+  echo "No PR numbers found in commit range."
+  PRS="[]"
+else
+  # PR 情報を取得して JSON 配列を構築
+  PRS="["
+  FIRST=true
+  for pr_number in $PR_NUMBERS; do
+    echo "Fetching PR #$pr_number..."
+    pr_info=$(gh pr view $pr_number --json number,title,labels 2>/dev/null || echo "")
+    if [ -n "$pr_info" ]; then
+      if [ "$FIRST" = true ]; then
+        PRS="${PRS}${pr_info}"
+        FIRST=false
+      else
+        PRS="${PRS},${pr_info}"
+      fi
+    fi
+  done
+  PRS="${PRS}]"
+fi
 
 # カテゴリ別に PR を分類
 FEATURES=""
@@ -120,7 +140,7 @@ fi
 
 # コミット範囲を追加
 RELEASE_NOTES="${RELEASE_NOTES}\n---\n\n"
-RELEASE_NOTES="${RELEASE_NOTES}**Full Changelog**: https://github.com/\${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...${CURRENT_TAG}\n"
+RELEASE_NOTES="${RELEASE_NOTES}**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...${CURRENT_TAG}\n"
 
 # 結果を出力
 echo -e "$RELEASE_NOTES"
