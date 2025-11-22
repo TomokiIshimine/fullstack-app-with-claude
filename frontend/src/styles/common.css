@@ -563,7 +563,9 @@
   border-radius: 6px;
   font-size: 15px;
   color: #111827;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .profile-update-form__input:focus {
@@ -588,7 +590,9 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
 }
 
 .profile-update-form__submit-button:hover:not(:disabled) {

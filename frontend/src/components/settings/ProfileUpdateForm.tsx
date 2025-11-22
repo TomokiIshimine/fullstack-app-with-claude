@@ -46,7 +46,10 @@ export function ProfileUpdateForm({ user, onSuccess }: ProfileUpdateFormProps) {
 
     try {
       const updatedUser = await updateProfile({ email: email.trim(), name: name.trim() })
-      logger.info('Profile updated successfully', { userId: updatedUser.id, email: updatedUser.email })
+      logger.info('Profile updated successfully', {
+        userId: updatedUser.id,
+        email: updatedUser.email,
+      })
       onSuccess(updatedUser)
     } catch (err) {
       logger.error('Failed to update profile', err as Error)
@@ -63,7 +66,11 @@ export function ProfileUpdateForm({ user, onSuccess }: ProfileUpdateFormProps) {
   return (
     <div className="profile-update-form">
       <h2 className="profile-update-form__title">プロフィール</h2>
-      <form className="profile-update-form__form" onSubmit={handleSubmit} aria-label="プロフィール更新フォーム">
+      <form
+        className="profile-update-form__form"
+        onSubmit={handleSubmit}
+        aria-label="プロフィール更新フォーム"
+      >
         {error && (
           <div className="profile-update-form__error" role="alert">
             {error}
@@ -101,7 +108,11 @@ export function ProfileUpdateForm({ user, onSuccess }: ProfileUpdateFormProps) {
           <p className="profile-update-form__hint">ログインに使用するメールアドレスを設定します</p>
         </div>
 
-        <button type="submit" disabled={isSubmitting} className="profile-update-form__submit-button">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="profile-update-form__submit-button"
+        >
           {isSubmitting ? '保存中...' : '変更を保存'}
         </button>
       </form>

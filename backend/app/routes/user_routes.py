@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, g, jsonify, request
 from pydantic import ValidationError
 
 from app.database import get_session

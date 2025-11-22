@@ -83,7 +83,9 @@ describe('ProfileUpdateForm', () => {
 
   it('APIエラーの場合にメッセージを表示する', async () => {
     const user = userEvent.setup()
-    vi.spyOn(profileApi, 'updateProfile').mockRejectedValue(new ApiError(409, 'メールアドレスが重複しています'))
+    vi.spyOn(profileApi, 'updateProfile').mockRejectedValue(
+      new ApiError(409, 'メールアドレスが重複しています')
+    )
 
     render(<ProfileUpdateForm user={mockUser} onSuccess={onSuccess} />)
 
