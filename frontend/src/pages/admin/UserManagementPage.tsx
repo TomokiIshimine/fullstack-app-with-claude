@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { UserList } from '@/components/admin/UserList'
 import { UserCreateForm } from '@/components/admin/UserCreateForm'
 import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
-import { ErrorMessage } from '@/components/ErrorMessage'
+import { Alert, Button } from '@/components/ui'
 import { PageHeader } from '@/components/PageHeader'
 import { useUserManagement } from '@/hooks/useUserManagement'
 
@@ -21,34 +21,35 @@ export function UserManagementPage() {
   } = useUserManagement()
 
   return (
-    <div className="user-management-page">
-      <div className="user-management-page__content">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <PageHeader title="ユーザー管理" showSettings={true} showLogout={true} />
 
         {error && (
-          <ErrorMessage
-            message={error}
-            onRetry={() => {
-              clearError()
-              void loadUsers()
-            }}
-            onDismiss={clearError}
-          />
+          <div className="mb-6">
+            <Alert
+              variant="error"
+              onRetry={() => {
+                clearError()
+                void loadUsers()
+              }}
+              onDismiss={clearError}
+            >
+              {error}
+            </Alert>
+          </div>
         )}
 
         {isLoading ? (
-          <div className="loading-container">
-            <div className="loading-spinner">読み込み中...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-600 text-lg">読み込み中...</div>
           </div>
         ) : (
-          <div className="user-management-page__body">
+          <div className="space-y-6">
             {!showCreateForm && (
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="user-management-page__create-button"
-              >
-                + 新規ユーザー追加
-              </button>
+              <div className="flex justify-end">
+                <Button onClick={() => setShowCreateForm(true)}>+ 新規ユーザー追加</Button>
+              </div>
             )}
 
             {showCreateForm && (

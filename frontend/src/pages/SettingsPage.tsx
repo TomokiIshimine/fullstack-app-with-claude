@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/PageHeader'
 import { PasswordChangeForm } from '@/components/settings/PasswordChangeForm'
 import { ProfileUpdateForm } from '@/components/settings/ProfileUpdateForm'
+import { Alert } from '@/components/ui'
 import { logger } from '@/lib/logger'
 import { getHomePathForRole } from '@/lib/utils/routing'
 import type { User } from '@/types/auth'
@@ -33,8 +34,8 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="settings-page">
-      <div className="settings-page__content">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         <PageHeader
           title="設定"
           onBack={user?.role === 'admin' ? handleBack : undefined}
@@ -42,12 +43,14 @@ export function SettingsPage() {
         />
 
         {successMessage && (
-          <div className="settings-page__success" role="alert">
-            {successMessage}
+          <div className="mb-6">
+            <Alert variant="success" autoCloseMs={5000} onDismiss={() => setSuccessMessage(null)}>
+              {successMessage}
+            </Alert>
           </div>
         )}
 
-        <div className="settings-page__body">
+        <div className="space-y-6">
           <ProfileUpdateForm user={user} onSuccess={handleProfileUpdate} />
           <PasswordChangeForm onSuccess={() => handleSuccess('パスワードを変更しました')} />
         </div>
