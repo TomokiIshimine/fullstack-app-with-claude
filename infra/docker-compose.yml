@@ -30,6 +30,7 @@ services:
       - FLASK_APP=${FLASK_APP:-app.main:app}
       - FLASK_DEBUG=1
       - DATABASE_URL=mysql+pymysql://${MYSQL_USER:-app_user}:${MYSQL_PASSWORD:-example-password}@db:3306/${MYSQL_DATABASE:-app_db}
+      - FRONTEND_URL=http://localhost:5174
       - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
