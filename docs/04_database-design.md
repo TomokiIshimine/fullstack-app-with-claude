@@ -1,8 +1,8 @@
 # データベース設計書
 
 **作成日:** 2025-10-28
-**最終更新:** 2025-11-06
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 ---
@@ -43,6 +43,8 @@ erDiagram
         BIGINT id PK "ユーザーID"
         VARCHAR email UK "メールアドレス"
         VARCHAR password_hash "パスワードハッシュ"
+        ENUM role "ロール(admin/user)"
+        VARCHAR name "ユーザー名"
         TIMESTAMP created_at "作成日時"
         TIMESTAMP updated_at "更新日時"
     }
@@ -71,15 +73,19 @@ erDiagram
 | id             | BIGINT UNSIGNED   | PRIMARY KEY, AUTO_INC   | ユーザーID                  |
 | email          | VARCHAR(255)      | NOT NULL, UNIQUE        | メールアドレス（ログインID） |
 | password_hash  | VARCHAR(255)      | NOT NULL                | bcryptハッシュ化パスワード   |
+| role           | ENUM('admin', 'user') | NOT NULL, DEFAULT 'user' | ユーザーロール              |
+| name           | VARCHAR(100)      | NULL                    | ユーザー名                  |
 | created_at     | TIMESTAMP         | NOT NULL, DEFAULT NOW   | レコード作成日時             |
 | updated_at     | TIMESTAMP         | NOT NULL, ON UPDATE NOW | レコード更新日時             |
 
 **インデックス:**
-- `idx_users_email` on `email` (ログイン検索の高速化)
+- `idx_users_role` on `role` (ロール別検索の高速化)
 
 **ビジネスルール:**
 - email は一意である必要がある
 - password_hash は bcrypt でハッシュ化された値を保存
+- role は 'admin' または 'user' のいずれか（デフォルト: 'user'）
+- name はオプション（NULL許可）
 
 ---
 
@@ -226,7 +232,8 @@ poetry -C backend run python scripts/create_user.py test@example.com password123
 ### 5.1 インデックス設計
 
 **users テーブル:**
-- `email` にインデックス（ログイン時の高速検索）
+- `email` にユニーク制約（ログイン時の高速検索）
+- `role` にインデックス（ロール別ユーザー検索の高速化）
 
 **refresh_tokens テーブル:**
 - `token` にインデックス（トークン検証の高速化）

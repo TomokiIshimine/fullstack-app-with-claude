@@ -1,11 +1,12 @@
 # CI/CD環境構築ガイド
 
 **作成日:** 2025-11-10
-**最終更新:** 2025-11-10
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 **更新履歴:**
+- v1.1 (2025-11-23): 最終更新日の更新
 - v1.0 (2025-11-10): 初版作成
 
 ---
@@ -352,8 +353,8 @@ poetry -C backend run python -c "from werkzeug.security import generate_password
 `infra/terraform/terraform.tfvars` ファイルを作成し、以下の内容を記述します：
 
 ```hcl
-project_id = "YOUR_PROJECT_ID"
-region     = "asia-northeast1"  # 東京リージョン
+gcp_project_id = "YOUR_PROJECT_ID"
+gcp_region     = "asia-northeast1"  # 東京リージョン
 
 # その他の変数はデフォルト値を使用
 # 必要に応じてカスタマイズ可能
@@ -664,7 +665,7 @@ env:
 同様に、`infra/terraform/terraform.tfvars` も変更：
 
 ```hcl
-region = "us-central1"
+gcp_region = "us-central1"
 ```
 
 #### デプロイの承認フローを追加
