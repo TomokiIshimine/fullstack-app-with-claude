@@ -68,8 +68,23 @@ src/
 ├── pages/              # ページコンポーネント
 │   ├── LoginPage.tsx
 │   ├── TodoListPage.tsx
+│   ├── SettingsPage.tsx
+│   ├── admin/          # Admin関連ページ
+│   │   └── UserManagementPage.tsx
 │   └── ...
 ├── components/         # 再利用可能なUIコンポーネント
+│   ├── ui/             # 共有UIコンポーネントライブラリ
+│   │   ├── Button.tsx  # 汎用ボタンコンポーネント
+│   │   ├── Input.tsx   # フォーム入力コンポーネント
+│   │   ├── Alert.tsx   # 通知・エラー表示コンポーネント
+│   │   ├── Modal.tsx   # モーダルダイアログコンポーネント
+│   │   └── index.ts    # 共通エクスポート
+│   ├── admin/          # Admin固有コンポーネント
+│   │   ├── UserCreateForm.tsx
+│   │   └── UserList.tsx
+│   ├── settings/       # Settings固有コンポーネント
+│   │   ├── PasswordChangeForm.tsx
+│   │   └── ProfileUpdateForm.tsx
 │   ├── TodoForm.tsx
 │   ├── TodoList.tsx
 │   ├── TodoItem.tsx
@@ -113,6 +128,61 @@ app/
 ├── config.py           # 設定管理
 └── main.py             # Flaskアプリケーションエントリーポイント
 ```
+
+### 2.3 フロントエンド デザインシステム
+
+本プロジェクトでは、**Tailwind CSS**ベースの共有UIコンポーネントライブラリを採用しています。
+
+#### コンポーネント一覧
+
+**Button コンポーネント** (`components/ui/Button.tsx`)
+- 4種類のvariant: `primary`, `secondary`, `danger`, `success`
+- 3種類のsize: `sm`, `md` (44px tap target), `lg`
+- loading状態のサポート (スピナー表示)
+- fullWidth オプション
+
+**Input コンポーネント** (`components/ui/Input.tsx`)
+- ラベル、エラー表示、ヘルパーテキストの統合
+- パスワード表示/非表示トグル機能 (アイコン付き)
+- Caps Lock 検出と警告表示
+- エラー状態の視覚的フィードバック
+- 必須フィールドインジケーター (*)
+
+**Alert コンポーネント** (`components/ui/Alert.tsx`)
+- 4種類のvariant: `success`, `error`, `warning`, `info`
+- カラーコード化されたアイコンと背景
+- オプションの閉じるボタン
+- オプションの再試行ボタン
+- 自動クローズタイマー機能
+
+**Modal コンポーネント** (`components/ui/Modal.tsx`)
+- 3種類のsize: `sm`, `md`, `lg`
+- 背景ブラー効果
+- Escキーで閉じる
+- 外側クリックで閉じる (設定可能)
+- スクロールロック機能
+
+#### デザイン原則
+
+**アクセシビリティ優先:**
+- 最小タップターゲット: 44px (W3C推奨)
+- ARIA属性によるスクリーンリーダー対応
+- キーボードナビゲーション対応
+- フォーカスインジケーター (focus ring)
+
+**カラーパレット:**
+- **Primary**: Blue (blue-500, blue-600, blue-700)
+- **Danger**: Red (red-500, red-600, red-700)
+- **Success**: Emerald (emerald-500, emerald-600)
+- **Warning**: Amber (amber-500, amber-600)
+- **Neutral**: Slate (slate-50 ~ slate-900)
+
+**レスポンシブデザイン:**
+- Tailwindのブレークポイントを使用 (sm, md, lg, xl)
+- モバイルファーストアプローチ
+- タッチフレンドリーなUI (44px tap target)
+
+**詳細な使用方法とAPI仕様については、[frontend/CLAUDE.md - UI Component Library](../frontend/CLAUDE.md#ui-component-library) を参照してください。**
 
 ---
 
