@@ -152,6 +152,7 @@ export const Alert: React.FC<AlertProps> = ({
           <div className="mt-3 flex gap-3">
             {onRetry && (
               <button
+                type="button"
                 onClick={onRetry}
                 className={`text-sm font-medium hover:underline focus:outline-none focus:underline ${styles.text}`}
               >
@@ -160,6 +161,7 @@ export const Alert: React.FC<AlertProps> = ({
             )}
             {onDismiss && (
               <button
+                type="button"
                 onClick={handleDismiss}
                 className={`text-sm font-medium hover:underline focus:outline-none focus:underline ${styles.text}`}
               >
@@ -172,6 +174,7 @@ export const Alert: React.FC<AlertProps> = ({
 
       {onDismiss && (
         <button
+          type="button"
           onClick={handleDismiss}
           className={`flex-shrink-0 p-1 rounded hover:bg-black/5 transition-colors focus:outline-none focus:bg-black/10 ${styles.icon}`}
           aria-label="閉じる"

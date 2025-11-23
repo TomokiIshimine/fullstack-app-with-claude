@@ -7,8 +7,6 @@ import { ApiError } from '@/lib/api/client'
 
 describe('UserList', () => {
   const mockOnDeleteUser = vi.fn<(user: UserResponse) => Promise<void>>()
-  let confirmSpy: ReturnType<typeof vi.spyOn>
-  let alertSpy: ReturnType<typeof vi.spyOn>
 
   const mockUsers: UserResponse[] = [
     {
@@ -35,15 +33,11 @@ describe('UserList', () => {
   ]
 
   beforeEach(() => {
-    confirmSpy = vi.spyOn(window, 'confirm')
-    alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     mockOnDeleteUser.mockReset()
     mockOnDeleteUser.mockResolvedValue()
   })
 
   afterEach(() => {
-    confirmSpy.mockRestore()
-    alertSpy.mockRestore()
     vi.restoreAllMocks()
   })
 
@@ -121,36 +115,56 @@ describe('UserList', () => {
 
   describe('Delete Functionality', () => {
     it('should show confirmation dialog when delete button is clicked', async () => {
-      confirmSpy.mockReturnValue(false)
-
       render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
 
-      expect(confirmSpy).toHaveBeenCalledWith(
-        'user1@example.com を削除しますか?\n\nこの操作は取り消せません。'
-      )
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      expect(screen.getByText('ユーザー削除の確認')).toBeInTheDocument()
+      expect(screen.getByText('この操作は取り消せません。')).toBeInTheDocument()
+
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toHaveTextContent('user1@example.com')
     })
 
     it('should not delete user if confirmation is cancelled', async () => {
-      confirmSpy.mockReturnValue(false)
-
       render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const cancelButton = screen.getByRole('button', { name: 'キャンセル' })
+      fireEvent.click(cancelButton)
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
 
       expect(mockOnDeleteUser).not.toHaveBeenCalled()
     })
 
     it('should delete user successfully when confirmed', async () => {
-      confirmSpy.mockReturnValue(true)
-
       render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const confirmButton = screen.getAllByRole('button', { name: '削除' }).find(btn => {
+        return btn.closest('[role="dialog"]') !== null
+      })
+      fireEvent.click(confirmButton!)
 
       await waitFor(() => {
         expect(mockOnDeleteUser).toHaveBeenCalledWith(mockUsers[1])
@@ -158,7 +172,6 @@ describe('UserList', () => {
     })
 
     it('should show deleting state during deletion', async () => {
-      confirmSpy.mockReturnValue(true)
       let resolveDelete: () => void
       const deletePromise = new Promise<void>(resolve => {
         resolveDelete = resolve
@@ -169,6 +182,15 @@ describe('UserList', () => {
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const confirmButton = screen.getAllByRole('button', { name: '削除' }).find(btn => {
+        return btn.closest('[role="dialog"]') !== null
+      })
+      fireEvent.click(confirmButton!)
 
       await waitFor(() => {
         expect(screen.getByText('削除中...')).toBeInTheDocument()
@@ -178,7 +200,6 @@ describe('UserList', () => {
     })
 
     it('should disable delete button during deletion', async () => {
-      confirmSpy.mockReturnValue(true)
       let resolveDelete: () => void
       const deletePromise = new Promise<void>(resolve => {
         resolveDelete = resolve
@@ -189,6 +210,15 @@ describe('UserList', () => {
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const confirmButton = screen.getAllByRole('button', { name: '削除' }).find(btn => {
+        return btn.closest('[role="dialog"]') !== null
+      })
+      fireEvent.click(confirmButton!)
 
       await waitFor(() => {
         const deletingButton = screen.getByRole('button', { name: '削除中...' })
@@ -199,7 +229,6 @@ describe('UserList', () => {
     })
 
     it('should show error alert on deletion failure', async () => {
-      confirmSpy.mockReturnValue(true)
       const error = new Error('Network error')
       mockOnDeleteUser.mockRejectedValue(error)
 
@@ -209,13 +238,21 @@ describe('UserList', () => {
       fireEvent.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('ユーザーの削除に失敗しました')
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const confirmButton = screen.getAllByRole('button', { name: '削除' }).find(btn => {
+        return btn.closest('[role="dialog"]') !== null
+      })
+      fireEvent.click(confirmButton!)
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent('ユーザーの削除に失敗しました')
         expect(mockOnDeleteUser).toHaveBeenCalledWith(mockUsers[1])
       })
     })
 
     it('should show API error message on deletion failure with ApiError', async () => {
-      confirmSpy.mockReturnValue(true)
       const apiError = new ApiError(403, 'Admin user cannot be deleted', {})
       mockOnDeleteUser.mockRejectedValue(apiError)
 
@@ -225,19 +262,36 @@ describe('UserList', () => {
       fireEvent.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('削除に失敗しました: Admin user cannot be deleted')
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const confirmButton = screen.getAllByRole('button', { name: '削除' }).find(btn => {
+        return btn.closest('[role="dialog"]') !== null
+      })
+      fireEvent.click(confirmButton!)
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent('Admin user cannot be deleted')
         expect(mockOnDeleteUser).toHaveBeenCalledWith(mockUsers[1])
       })
     })
 
     it('should call deleteUserApi when onDeleteUser is not provided', async () => {
-      confirmSpy.mockReturnValue(true)
       const deleteUserSpy = vi.spyOn(usersApi, 'deleteUser').mockResolvedValue()
 
       render(<UserList users={mockUsers} />)
 
       const deleteButtons = screen.getAllByRole('button', { name: '削除' })
       fireEvent.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const confirmButton = screen.getAllByRole('button', { name: '削除' }).find(btn => {
+        return btn.closest('[role="dialog"]') !== null
+      })
+      fireEvent.click(confirmButton!)
 
       await waitFor(() => {
         expect(deleteUserSpy).toHaveBeenCalledWith(2)
@@ -266,15 +320,18 @@ describe('UserList', () => {
     })
   })
 
-  describe('CSS Classes', () => {
-    it('should apply correct CSS classes to role badges', () => {
+  describe('Role Badge Styling', () => {
+    it('should apply correct background colors to role badges', () => {
       const { container } = render(<UserList users={mockUsers} onDeleteUser={mockOnDeleteUser} />)
 
-      const adminRole = container.querySelector('.user-list__role--admin')
-      const userRoles = container.querySelectorAll('.user-list__role--user')
+      // Admin role badge should have purple background
+      const adminBadge = container.querySelector('.bg-purple-100.text-purple-800')
+      expect(adminBadge).toBeInTheDocument()
+      expect(adminBadge?.textContent).toBe('管理者')
 
-      expect(adminRole).toBeInTheDocument()
-      expect(userRoles).toHaveLength(2)
+      // User role badges should have blue background
+      const userBadges = container.querySelectorAll('.bg-blue-100.text-blue-800')
+      expect(userBadges).toHaveLength(2)
     })
   })
 })
