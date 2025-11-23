@@ -1,7 +1,8 @@
 # システム構成設計書
 
 **作成日:** 2025-10-28
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 ---
@@ -54,7 +55,7 @@ flowchart TD
         DB["MySQL 8.0<br/>- InnoDB ストレージエンジン<br/>- UTF-8MB4 文字セット<br/>- トランザクション管理"]
     end
 
-    Client -->|"HTTPS (本番) / HTTP (開発)<br/>Port 5173"| Frontend
+    Client -->|"HTTPS (本番) / HTTP (開発)<br/>Port 5174"| Frontend
     Frontend -->|"REST API (/api/*)<br/>JSON over HTTP"| Backend
     Repository -->|"SQL over TCP/IP<br/>Port 3306"| Database
 ```
@@ -67,7 +68,6 @@ flowchart TD
 src/
 ├── pages/              # ページコンポーネント
 │   ├── LoginPage.tsx
-│   ├── TodoListPage.tsx
 │   ├── SettingsPage.tsx
 │   ├── admin/          # Admin関連ページ
 │   │   └── UserManagementPage.tsx
@@ -78,7 +78,7 @@ src/
 │   │   ├── Input.tsx   # フォーム入力コンポーネント
 │   │   ├── Alert.tsx   # 通知・エラー表示コンポーネント
 │   │   ├── Modal.tsx   # モーダルダイアログコンポーネント
-│   │   └── index.ts    # 共通エクスポート
+│   │   └── index.ts    # 共通エクスポート (各コンポーネントの再エクスポート)
 │   ├── admin/          # Admin固有コンポーネント
 │   │   ├── UserCreateForm.tsx
 │   │   └── UserList.tsx
@@ -197,7 +197,7 @@ app/
 | ビルドツール          | Vite                    | 7.x       | 高速な開発サーバー・ビルド      |
 | ルーティング          | React Router            | 7.x       | SPAのページ遷移管理             |
 | 状態管理              | React Context + Hooks   | -         | グローバル状態管理              |
-| スタイリング          | CSS                     | -         | コンポーネントスタイリング       |
+| スタイリング          | Tailwind CSS            | 4.x       | コンポーネントスタイリング       |
 | テスト                | Vitest + Testing Library| -         | ユニット・統合テスト            |
 | リンター              | ESLint                  | -         | コード品質管理                  |
 | フォーマッター        | Prettier                | -         | コード整形                      |
@@ -280,7 +280,7 @@ app/
 services:
   frontend:
     - Image: node:20-alpine
-    - Port: 5173
+    - Port: 5174
     - Environment: VITE_API_PROXY=http://backend:5000
 
   backend:
@@ -309,10 +309,10 @@ networks:
 
 ```mermaid
 graph TB
-    Host["Host<br/>:5173"]
+    Host["Host<br/>:5174"]
 
     subgraph Docker["Docker Network (app-network)"]
-        Frontend["frontend<br/>:5173"]
+        Frontend["frontend<br/>:5174"]
         Backend["backend<br/>:5000"]
         DB["db<br/>:3306"]
 
@@ -328,7 +328,7 @@ graph TB
 
 **通信フロー:**
 
-1. クライアント → フロントエンド (http://localhost:5173)
+1. クライアント → フロントエンド (http://localhost:5174)
 2. フロントエンド → バックエンド (http://backend:5000/api/*)
 3. バックエンド → データベース (mysql://db:3306/app_db)
 

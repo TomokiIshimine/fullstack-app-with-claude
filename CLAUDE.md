@@ -89,7 +89,7 @@ When verifying UI functionality or performing manual testing, use the **mcp__pla
 
 **Common workflow:**
 1. Start the application: `make up`
-2. Use `mcp__playwright__browser_navigate` to open the application (e.g., `http://localhost:5173`)
+2. Use `mcp__playwright__browser_navigate` to open the application (e.g., `http://localhost:5174`)
 3. Use `mcp__playwright__browser_snapshot` to capture the current page state
 4. Interact with elements using `mcp__playwright__browser_click`, `mcp__playwright__browser_type`, etc.
 5. Verify expected behaviors and take screenshots with `mcp__playwright__browser_take_screenshot`
@@ -101,7 +101,7 @@ When verifying UI functionality or performing manual testing, use the **mcp__pla
 - Validate API integrations from the frontend
 - Confirm navigation and routing behavior
 
-**Note:** These tools are for manual verification and exploratory testing. Automated E2E tests should be implemented using the project's test framework (see [docs/08_e2e-test-list.md](docs/08_e2e-test-list.md)).
+**Note:** These tools are for manual verification and exploratory testing. Automated E2E tests are not yet implemented. For the E2E test implementation plan, see [docs/08_e2e-test-list.md](docs/08_e2e-test-list.md).
 
 ## Database Management
 
