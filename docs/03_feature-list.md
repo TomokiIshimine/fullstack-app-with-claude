@@ -57,6 +57,7 @@ graph TB
 
 | 機能 | 実装箇所 | 主な仕様 |
 |------|---------|---------|
+| **UIコンポーネントライブラリ** | FE: `components/ui/` | - Tailwind CSSベースの共有コンポーネント<br/>- Button, Input, Alert, Modalの4種類<br/>- アクセシビリティ対応 (44px tap target, ARIA)<br/>- 一貫したデザインシステム<br/>- 詳細は [フロントエンドガイド](../frontend/CLAUDE.md#ui-component-library) 参照 |
 | **ロギング** | BE: `logger.py`<br/>FE: `lib/logger.ts` | - リクエストトレーシング (UUID)<br/>- センシティブデータマスキング<br/>- 環境別ログレベル設定<br/>- 詳細は [システム構成設計書](./01_system-architecture.md) セクション6参照 |
 | **エラーハンドリング** | BE: `main.py`<br/>FE: `ErrorBoundary.tsx` | **バックエンド:** HTTP例外の統一処理 (400/401/403/404/500)<br/>**フロントエンド:** React Error Boundary、フォールバックUI |
 | **バリデーション** | BE: `schemas/`<br/>FE: 各フォームコンポーネント | **バックエンド:** Pydantic による厳格な入力検証<br/>**フロントエンド:** リアルタイムバリデーション、HTML5属性 |
@@ -73,6 +74,7 @@ graph TB
 | 認証 | ログイン | ✓ | ✓ | BE: ✓, FE: ✓ |
 | 認証 | ログアウト | ✓ | ✓ | BE: ✓, FE: ✓ |
 | 認証 | トークン自動更新 | ✓ | ✓ | BE: ✓, FE: ✓ |
+| 共通 | UIコンポーネントライブラリ | - | ✓ | FE: ✓ |
 | 共通 | ロギング | ✓ | ✓ | - |
 | 共通 | エラーハンドリング | ✓ | ✓ | BE: ✓, FE: ✓ |
 | 共通 | バリデーション | ✓ | ✓ | BE: ✓, FE: ✓ |

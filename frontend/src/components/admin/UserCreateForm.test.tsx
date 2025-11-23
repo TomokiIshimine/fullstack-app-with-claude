@@ -22,8 +22,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      expect(screen.getByLabelText('メールアドレス *')).toBeInTheDocument()
-      expect(screen.getByLabelText('名前 *')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('user@example.com')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('山田太郎')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'キャンセル' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: '作成' })).toBeInTheDocument()
     })
@@ -45,7 +45,7 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      const emailInput = screen.getByLabelText('メールアドレス *') as HTMLInputElement
+      const emailInput = screen.getByPlaceholderText('user@example.com') as HTMLInputElement
       await user.type(emailInput, 'test@example.com')
 
       expect(emailInput.value).toBe('test@example.com')
@@ -57,7 +57,7 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      const nameInput = screen.getByLabelText('名前 *') as HTMLInputElement
+      const nameInput = screen.getByPlaceholderText('山田太郎') as HTMLInputElement
       await user.type(nameInput, 'テストユーザー')
 
       expect(nameInput.value).toBe('テストユーザー')
@@ -68,7 +68,7 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      const nameInput = screen.getByLabelText('名前 *') as HTMLInputElement
+      const nameInput = screen.getByPlaceholderText('山田太郎') as HTMLInputElement
 
       expect(nameInput).toHaveAttribute('maxLength', '100')
     })
@@ -96,7 +96,7 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      const emailInput = screen.getByLabelText('メールアドレス *')
+      const emailInput = screen.getByPlaceholderText('user@example.com')
       await user.type(emailInput, 'test@example.com')
 
       const submitButton = screen.getByRole('button', { name: '作成' })
@@ -115,8 +115,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      const emailInput = screen.getByLabelText('メールアドレス *')
-      const nameInput = screen.getByLabelText('名前 *')
+      const emailInput = screen.getByPlaceholderText('user@example.com')
+      const nameInput = screen.getByPlaceholderText('山田太郎')
 
       await user.type(emailInput, 'test@example.com')
       // Set a 101-character name (bypassing maxLength)
@@ -149,8 +149,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
-      await user.type(screen.getByLabelText('名前 *'), 'Test User')
+      await user.type(screen.getByPlaceholderText('user@example.com'), 'test@example.com')
+      await user.type(screen.getByPlaceholderText('山田太郎'), 'Test User')
 
       const submitButton = screen.getByRole('button', { name: '作成' })
       fireEvent.click(submitButton)
@@ -181,8 +181,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
-      await user.type(screen.getByLabelText('名前 *'), 'Test User')
+      await user.type(screen.getByPlaceholderText('user@example.com'), 'test@example.com')
+      await user.type(screen.getByPlaceholderText('山田太郎'), 'Test User')
 
       const submitButton = screen.getByRole('button', { name: '作成' })
       fireEvent.click(submitButton)
@@ -209,8 +209,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      const emailInput = screen.getByLabelText('メールアドレス *') as HTMLInputElement
-      const nameInput = screen.getByLabelText('名前 *') as HTMLInputElement
+      const emailInput = screen.getByPlaceholderText('user@example.com') as HTMLInputElement
+      const nameInput = screen.getByPlaceholderText('山田太郎') as HTMLInputElement
 
       await user.type(emailInput, 'test@example.com')
       await user.type(nameInput, 'Test User')
@@ -237,8 +237,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
-      await user.type(screen.getByLabelText('名前 *'), 'Test User')
+      await user.type(screen.getByPlaceholderText('user@example.com'), 'test@example.com')
+      await user.type(screen.getByPlaceholderText('山田太郎'), 'Test User')
 
       const submitButton = screen.getByRole('button', { name: '作成' })
       fireEvent.click(submitButton)
@@ -246,8 +246,8 @@ describe('UserCreateForm', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '作成中...' })).toBeDisabled()
         expect(screen.getByRole('button', { name: 'キャンセル' })).toBeDisabled()
-        expect(screen.getByLabelText('メールアドレス *')).toBeDisabled()
-        expect(screen.getByLabelText('名前 *')).toBeDisabled()
+        expect(screen.getByPlaceholderText('user@example.com')).toBeDisabled()
+        expect(screen.getByPlaceholderText('山田太郎')).toBeDisabled()
       })
 
       resolveCreate!({
@@ -271,8 +271,8 @@ describe('UserCreateForm', () => {
         <UserCreateForm onCreate={mockOnCreate} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
       )
 
-      await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
-      await user.type(screen.getByLabelText('名前 *'), 'Test User')
+      await user.type(screen.getByPlaceholderText('user@example.com'), 'test@example.com')
+      await user.type(screen.getByPlaceholderText('山田太郎'), 'Test User')
 
       const submitButton = screen.getByRole('button', { name: '作成' })
       fireEvent.click(submitButton)
@@ -308,8 +308,8 @@ describe('UserCreateForm', () => {
         initial_password: 'test123456',
       })
 
-      await user.type(screen.getByLabelText('メールアドレス *'), 'test@example.com')
-      await user.type(screen.getByLabelText('名前 *'), 'Test User')
+      await user.type(screen.getByPlaceholderText('user@example.com'), 'test@example.com')
+      await user.type(screen.getByPlaceholderText('山田太郎'), 'Test User')
       fireEvent.click(submitButton)
 
       await waitFor(() => {

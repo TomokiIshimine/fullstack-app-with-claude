@@ -3,6 +3,7 @@ import type { UserCreateRequest, UserCreateResponse } from '@/types/user'
 import { ApiError } from '@/lib/api/client'
 import { createUser as createUserApi } from '@/lib/api/users'
 import { logger } from '@/lib/logger'
+import { Input, Button, Alert } from '@/components/ui'
 
 interface UserCreateFormProps {
   onCreate?: (payload: UserCreateRequest) => Promise<UserCreateResponse>
@@ -54,55 +55,44 @@ export function UserCreateForm({ onCreate, onSuccess, onCancel }: UserCreateForm
   }
 
   return (
-    <div className="user-create-form">
-      <h3 className="user-create-form__title">新規ユーザー追加</h3>
-      <form onSubmit={handleSubmit} className="user-create-form__form">
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h3 className="text-2xl font-semibold text-gray-900 mb-6">新規ユーザー追加</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="error-message" role="alert">
+          <Alert variant="error" onDismiss={() => setError(null)}>
             {error}
-          </div>
+          </Alert>
         )}
-        <div className="form-group">
-          <label htmlFor="email">メールアドレス *</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            placeholder="user@example.com"
-            disabled={isSubmitting}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="name">名前 *</label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            placeholder="山田太郎"
-            maxLength={100}
-            disabled={isSubmitting}
-          />
-        </div>
-        <div className="user-create-form__buttons">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="user-create-form__button user-create-form__button--cancel"
-          >
+        <Input
+          id="email"
+          label="メールアドレス"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          placeholder="user@example.com"
+          disabled={isSubmitting}
+          fullWidth
+        />
+        <Input
+          id="name"
+          label="名前"
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          required
+          placeholder="山田太郎"
+          maxLength={100}
+          disabled={isSubmitting}
+          fullWidth
+        />
+        <div className="flex gap-3 justify-end pt-2">
+          <Button type="button" onClick={onCancel} disabled={isSubmitting} variant="secondary">
             キャンセル
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="user-create-form__button user-create-form__button--submit"
-          >
+          </Button>
+          <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
             {isSubmitting ? '作成中...' : '作成'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

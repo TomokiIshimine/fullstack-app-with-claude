@@ -214,6 +214,7 @@ pnpm -C frontend run commitlint -- --help  # コミットメッセージ形式�
 
 - **Backend**: Flask + SQLAlchemy のレイヤードアーキテクチャ（routes → services → models）
 - **Frontend**: React + TypeScript with Vite、ページとコンポーネントで整理
+  - **共有UIライブラリ**: Tailwind CSSベースのデザインシステム (`components/ui/`)
 - すべての API ルートは `/api` プレフィックスを使用
 - Frontend は開発時に API リクエストを Backend にプロキシ
 

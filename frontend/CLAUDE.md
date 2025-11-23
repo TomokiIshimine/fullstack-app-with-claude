@@ -40,7 +40,11 @@ const response = await fetch('/api/auth/login', {
 ```
 src/
 ├── pages/           # Page-level components (e.g., LoginPage.tsx)
-├── components/      # Reusable UI components (e.g., ProtectedRoute.tsx)
+├── components/
+│   ├── ui/          # Shared UI component library (Button, Input, Alert, Modal)
+│   ├── admin/       # Admin-specific components
+│   ├── settings/    # Settings-specific components
+│   └── ...          # Other reusable components (e.g., ProtectedRoute.tsx)
 ├── contexts/        # React Context (e.g., AuthContext.tsx)
 ├── styles/          # CSS files
 ├── App.tsx          # Root component with routing
@@ -51,8 +55,9 @@ src/
 
 - Page components: `<FeatureName>Page.tsx` (e.g., `LoginPage.tsx`)
 - UI components: `<ComponentName>.tsx` (e.g., `ProtectedRoute.tsx`)
+- Shared UI library: `components/ui/<ComponentName>.tsx` (e.g., `Button.tsx`, `Input.tsx`)
 - One component per file
-- Co-locate styles when possible
+- Prefer Tailwind CSS utilities over custom CSS classes
 
 ### Testing
 
@@ -154,6 +159,249 @@ pnpm --dir frontend add <package>
 pnpm --dir frontend add -D <package>
 ```
 
+## UI Component Library
+
+The project includes a shared UI component library in `src/components/ui/` built with **Tailwind CSS**. These components provide a consistent design system across the application.
+
+### Available Components
+
+#### Button (`components/ui/Button.tsx`)
+
+A versatile button component with multiple variants, sizes, and loading states.
+
+**Props:**
+
+- `variant?: 'primary' | 'secondary' | 'danger' | 'success'` - Visual style (default: `'primary'`)
+- `size?: 'sm' | 'md' | 'lg'` - Button size (default: `'md'`)
+- `fullWidth?: boolean` - Expand to full width (default: `false`)
+- `loading?: boolean` - Show loading spinner (default: `false`)
+- All standard HTML button attributes
+
+**Usage:**
+
+```typescript
+import { Button } from '@/components/ui'
+
+// Primary button
+<Button onClick={handleSubmit}>Submit</Button>
+
+// Danger button with loading state
+<Button variant="danger" loading={isDeleting} onClick={handleDelete}>
+  Delete
+</Button>
+
+// Small secondary button
+<Button variant="secondary" size="sm" onClick={handleCancel}>
+  Cancel
+</Button>
+```
+
+**Features:**
+
+- Minimum tap target of 44px (accessibility)
+- Loading spinner animation
+- Disabled state with reduced opacity
+- Focus ring for keyboard navigation
+
+#### Input (`components/ui/Input.tsx`)
+
+A form input component with label, error display, and password enhancements.
+
+**Props:**
+
+- `label?: string` - Input label
+- `error?: string` - Error message to display
+- `helperText?: string` - Helper text below input
+- `fullWidth?: boolean` - Expand to full width (default: `false`)
+- All standard HTML input attributes
+
+**Usage:**
+
+```typescript
+import { Input } from '@/components/ui'
+
+// Text input with label
+<Input
+  label="Email"
+  type="email"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  required
+/>
+
+// Password input with error
+<Input
+  label="Password"
+  type="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  error={passwordError}
+  required
+/>
+
+// Input with helper text
+<Input
+  label="Name"
+  helperText="Enter your full name"
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+/>
+```
+
+**Features:**
+
+- **Password visibility toggle**: Automatic eye icon to show/hide password
+- **CAPS LOCK detection**: Warning message when Caps Lock is on
+- Integrated label and error display
+- Required field indicator (\*)
+- Minimum tap target of 44px
+
+#### Alert (`components/ui/Alert.tsx`)
+
+A versatile alert component for displaying success, error, warning, and info messages.
+
+**Props:**
+
+- `variant?: 'success' | 'error' | 'warning' | 'info'` - Alert type (default: `'info'`)
+- `onDismiss?: () => void` - Callback when dismissed
+- `onRetry?: () => void` - Show retry button with callback
+- `autoCloseMs?: number` - Auto-close after specified milliseconds
+- `className?: string` - Additional CSS classes
+
+**Usage:**
+
+```typescript
+import { Alert } from '@/components/ui'
+
+// Success message with auto-close
+<Alert variant="success" autoCloseMs={5000} onDismiss={handleDismiss}>
+  Profile updated successfully
+</Alert>
+
+// Error message with retry
+<Alert variant="error" onRetry={handleRetry} onDismiss={handleDismiss}>
+  Failed to save changes
+</Alert>
+
+// Warning message
+<Alert variant="warning">
+  This action cannot be undone
+</Alert>
+```
+
+**Features:**
+
+- Color-coded icons and backgrounds
+- Optional dismiss button
+- Optional retry button
+- Auto-close timer
+- Accessible `role="alert"`
+
+#### Modal (`components/ui/Modal.tsx`)
+
+A modal dialog component with customizable size and behavior.
+
+**Props:**
+
+- `isOpen: boolean` - Control modal visibility
+- `onClose: () => void` - Callback when modal closes
+- `title?: string` - Modal title
+- `size?: 'sm' | 'md' | 'lg'` - Modal size (default: `'md'`)
+- `closeOnOutsideClick?: boolean` - Close on backdrop click (default: `true`)
+- `showCloseButton?: boolean` - Show X button (default: `true`)
+- `footer?: React.ReactNode` - Footer content (usually buttons)
+
+**Usage:**
+
+```typescript
+import { Modal, Button } from '@/components/ui'
+
+<Modal
+  isOpen={showModal}
+  onClose={handleClose}
+  title="Confirm Deletion"
+  size="sm"
+>
+  <p>Are you sure you want to delete this user?</p>
+  <p className="text-red-600">This action cannot be undone.</p>
+  <div className="flex gap-3 justify-end mt-6">
+    <Button variant="secondary" onClick={handleClose}>
+      Cancel
+    </Button>
+    <Button variant="danger" onClick={handleConfirm}>
+      Delete
+    </Button>
+  </div>
+</Modal>
+```
+
+**Features:**
+
+- Backdrop with blur effect
+- Escape key to close
+- Click outside to close (configurable)
+- Body scroll lock when open
+- Smooth fade-in animation
+- Accessible `role="dialog"`
+
+### Design System
+
+**Color Palette:**
+
+- **Primary**: Blue (`blue-500`, `blue-600`, `blue-700`)
+- **Danger**: Red (`red-500`, `red-600`, `red-700`)
+- **Success**: Emerald (`emerald-500`, `emerald-600`)
+- **Warning**: Amber (`amber-500`, `amber-600`)
+- **Neutral**: Slate (`slate-50` to `slate-900`)
+
+**Spacing:**
+
+- Follow Tailwind's spacing scale (`p-4`, `mb-6`, `gap-3`, etc.)
+- Use `space-y-*` for vertical stacking
+
+**Typography:**
+
+- Headings: `text-2xl font-semibold` or `text-3xl font-bold`
+- Body: `text-sm` or `text-base`
+- Labels: `text-sm font-medium`
+
+**Borders & Shadows:**
+
+- Rounded corners: `rounded-lg` (8px) or `rounded-xl` (12px)
+- Shadows: `shadow-md` for cards, `shadow-lg` for modals
+
+### Styling Guidelines
+
+**Prefer Tailwind utilities over custom CSS:**
+
+```typescript
+// ✅ Good - Use Tailwind classes
+<div className="flex items-center gap-3 p-4 bg-white rounded-lg shadow-md">
+  <span className="text-gray-700">Content</span>
+</div>
+
+// ❌ Avoid - Custom CSS classes
+<div className="custom-card">
+  <span className="custom-text">Content</span>
+</div>
+```
+
+**Responsive Design:**
+
+```typescript
+// Use Tailwind's responsive prefixes
+<div className="px-4 py-8 sm:px-6 lg:px-8">
+  <h1 className="text-2xl sm:text-3xl lg:text-4xl">Title</h1>
+</div>
+```
+
+**Accessibility:**
+
+- Minimum tap target: 44px (use `min-h-[2.75rem]`)
+- Proper ARIA attributes (`aria-label`, `aria-describedby`, `role`)
+- Focus indicators (all interactive elements have focus rings)
+- Semantic HTML (`<button>` not `<div onClick>`)
+
 ## Code Style Guidelines
 
 ### ESLint Rules
@@ -244,6 +492,8 @@ The authentication feature demonstrates the full frontend stack:
 3. **Build UI Components**
 
    ```typescript
+   import { Input, Button } from '@/components/ui';
+
    const LoginForm: React.FC<{ onSubmit: (credentials: LoginCredentials) => void }> = ({ onSubmit }) => {
      const [email, setEmail] = useState('');
      const [password, setPassword] = useState('');
@@ -254,20 +504,26 @@ The authentication feature demonstrates the full frontend stack:
      };
 
      return (
-       <form onSubmit={handleSubmit}>
-         <input
+       <form onSubmit={handleSubmit} className="space-y-4">
+         <Input
+           label="Email"
            type="email"
            value={email}
            onChange={(e) => setEmail(e.target.value)}
-           placeholder="Email"
+           placeholder="user@example.com"
+           required
+           fullWidth
          />
-         <input
+         <Input
+           label="Password"
            type="password"
            value={password}
            onChange={(e) => setPassword(e.target.value)}
-           placeholder="Password"
+           placeholder="Enter your password"
+           required
+           fullWidth
          />
-         <button type="submit">Login</button>
+         <Button type="submit" fullWidth>Login</Button>
        </form>
      );
    };

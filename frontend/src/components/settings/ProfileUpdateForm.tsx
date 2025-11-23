@@ -4,6 +4,7 @@ import type { User } from '@/types/auth'
 import { updateProfile } from '@/lib/api/profile'
 import { ApiError } from '@/lib/api/client'
 import { logger } from '@/lib/logger'
+import { Input, Button, Alert } from '@/components/ui'
 
 interface ProfileUpdateFormProps {
   user: User | null
@@ -64,57 +65,41 @@ export function ProfileUpdateForm({ user, onSuccess }: ProfileUpdateFormProps) {
   }
 
   return (
-    <div className="profile-update-form">
-      <h2 className="profile-update-form__title">プロフィール</h2>
-      <form
-        className="profile-update-form__form"
-        onSubmit={handleSubmit}
-        aria-label="プロフィール更新フォーム"
-      >
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">プロフィール</h2>
+      <form className="space-y-4" onSubmit={handleSubmit} aria-label="プロフィール更新フォーム">
         {error && (
-          <div className="profile-update-form__error" role="alert">
+          <Alert variant="error" onDismiss={() => setError(null)}>
             {error}
-          </div>
+          </Alert>
         )}
 
-        <div className="profile-update-form__field">
-          <label htmlFor="profile-name" className="profile-update-form__label">
-            名前
-          </label>
-          <input
-            id="profile-name"
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            disabled={isSubmitting}
-            className="profile-update-form__input"
-            autoComplete="name"
-          />
-        </div>
-
-        <div className="profile-update-form__field">
-          <label htmlFor="profile-email" className="profile-update-form__label">
-            メールアドレス
-          </label>
-          <input
-            id="profile-email"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            disabled={isSubmitting}
-            className="profile-update-form__input"
-            autoComplete="email"
-          />
-          <p className="profile-update-form__hint">ログインに使用するメールアドレスを設定します</p>
-        </div>
-
-        <button
-          type="submit"
+        <Input
+          id="profile-name"
+          label="名前"
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
           disabled={isSubmitting}
-          className="profile-update-form__submit-button"
-        >
+          autoComplete="name"
+          fullWidth
+        />
+
+        <Input
+          id="profile-email"
+          label="メールアドレス"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          disabled={isSubmitting}
+          autoComplete="email"
+          helperText="ログインに使用するメールアドレスを設定します"
+          fullWidth
+        />
+
+        <Button type="submit" disabled={isSubmitting} loading={isSubmitting} fullWidth>
           {isSubmitting ? '保存中...' : '変更を保存'}
-        </button>
+        </Button>
       </form>
     </div>
   )

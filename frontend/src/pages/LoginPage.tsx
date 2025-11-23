@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { logger } from '@/lib/logger'
-import { ErrorMessage } from '@/components/ErrorMessage'
+import { Alert, Input, Button } from '@/components/ui'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { getDefaultPathForRole } from '@/lib/utils/routing'
 
@@ -33,15 +33,19 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <h1>ログイン</h1>
-        <form onSubmit={handleSubmit} className="login-form" aria-label="ログインフォーム">
-          {error && <ErrorMessage message={error} onDismiss={clearError} />}
-          <div className="form-group">
-            <label htmlFor="email">メールアドレス</label>
-            <input
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-gray-900 text-center mb-8">ログイン</h1>
+          <form onSubmit={handleSubmit} className="space-y-6" aria-label="ログインフォーム">
+            {error && (
+              <Alert variant="error" onDismiss={clearError}>
+                {error}
+              </Alert>
+            )}
+            <Input
               id="email"
+              label="メールアドレス"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -49,12 +53,11 @@ export function LoginPage() {
               autoComplete="email"
               placeholder="user@example.com"
               disabled={isLoading}
+              fullWidth
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">パスワード</label>
-            <input
+            <Input
               id="password"
+              label="パスワード"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -62,12 +65,13 @@ export function LoginPage() {
               autoComplete="current-password"
               placeholder="パスワードを入力"
               disabled={isLoading}
+              fullWidth
             />
-          </div>
-          <button type="submit" disabled={isLoading} className="login-button">
-            {isLoading ? 'ログイン中...' : 'ログイン'}
-          </button>
-        </form>
+            <Button type="submit" disabled={isLoading} loading={isLoading} fullWidth>
+              {isLoading ? 'ログイン中...' : 'ログイン'}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   )

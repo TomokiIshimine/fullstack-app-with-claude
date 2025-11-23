@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { changePassword } from '@/lib/api/password'
 import { logger } from '@/lib/logger'
 import { ApiError } from '@/lib/api/client'
+import { Input, Button, Alert } from '@/components/ui'
 
 interface PasswordChangeFormProps {
   onSuccess: () => void
@@ -65,72 +66,52 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
   }
 
   return (
-    <div className="password-change-form">
-      <h2 className="password-change-form__title">パスワード変更</h2>
-      <form
-        onSubmit={handleSubmit}
-        className="password-change-form__form"
-        aria-label="パスワード変更フォーム"
-      >
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">パスワード変更</h2>
+      <form onSubmit={handleSubmit} className="space-y-4" aria-label="パスワード変更フォーム">
         {error && (
-          <div className="password-change-form__error" role="alert">
+          <Alert variant="error" onDismiss={() => setError(null)}>
             {error}
-          </div>
+          </Alert>
         )}
 
-        <div className="password-change-form__field">
-          <label htmlFor="current-password" className="password-change-form__label">
-            現在のパスワード
-          </label>
-          <input
-            id="current-password"
-            type="password"
-            value={currentPassword}
-            onChange={e => setCurrentPassword(e.target.value)}
-            disabled={isSubmitting}
-            className="password-change-form__input"
-            autoComplete="current-password"
-          />
-        </div>
-
-        <div className="password-change-form__field">
-          <label htmlFor="new-password" className="password-change-form__label">
-            新しいパスワード
-          </label>
-          <input
-            id="new-password"
-            type="password"
-            value={newPassword}
-            onChange={e => setNewPassword(e.target.value)}
-            disabled={isSubmitting}
-            className="password-change-form__input"
-            autoComplete="new-password"
-          />
-          <p className="password-change-form__hint">8文字以上で入力してください</p>
-        </div>
-
-        <div className="password-change-form__field">
-          <label htmlFor="confirm-password" className="password-change-form__label">
-            新しいパスワード（確認）
-          </label>
-          <input
-            id="confirm-password"
-            type="password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-            disabled={isSubmitting}
-            className="password-change-form__input"
-            autoComplete="new-password"
-          />
-        </div>
-
-        <button
-          type="submit"
+        <Input
+          id="current-password"
+          label="現在のパスワード"
+          type="password"
+          value={currentPassword}
+          onChange={e => setCurrentPassword(e.target.value)}
           disabled={isSubmitting}
-          className="password-change-form__submit-button"
-        >
+          autoComplete="current-password"
+          fullWidth
+        />
+
+        <Input
+          id="new-password"
+          label="新しいパスワード"
+          type="password"
+          value={newPassword}
+          onChange={e => setNewPassword(e.target.value)}
+          disabled={isSubmitting}
+          autoComplete="new-password"
+          helperText="8文字以上で入力してください"
+          fullWidth
+        />
+
+        <Input
+          id="confirm-password"
+          label="新しいパスワード（確認）"
+          type="password"
+          value={confirmPassword}
+          onChange={e => setConfirmPassword(e.target.value)}
+          disabled={isSubmitting}
+          autoComplete="new-password"
+          fullWidth
+        />
+
+        <Button type="submit" disabled={isSubmitting} loading={isSubmitting} fullWidth>
           {isSubmitting ? '変更中...' : 'パスワードを変更'}
-        </button>
+        </Button>
       </form>
     </div>
   )
