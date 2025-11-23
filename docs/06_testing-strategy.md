@@ -1,8 +1,8 @@
 # テスト戦略書
 
 **作成日:** 2025-10-28
-**最終更新:** 2025-11-06
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 ---
@@ -11,7 +11,7 @@
 
 ### 1.1 本ドキュメントの目的
 
-本ドキュメントは、TODOアプリケーションのテスト戦略を定めます。テストレベル、カバレッジ目標、テストデータ管理方針を明確にし、品質保証の基準を提供します。
+本ドキュメントは、認証・ユーザー管理アプリケーションのテスト戦略を定めます。テストレベル、カバレッジ目標、テストデータ管理方針を明確にし、品質保証の基準を提供します。
 
 ### 1.2 対象読者
 
@@ -43,7 +43,7 @@
 ```mermaid
 graph TB
     subgraph Pyramid["テストピラミッド"]
-        E2E["E2Eテスト (少)<br/>Playwright<br/>ブラウザ自動化"]
+        E2E["E2Eテスト (計画中)<br/>Playwright MCP<br/>ブラウザ自動化"]
         Integration["統合テスト (中)<br/>API Tests (pytest)<br/>Component Tests (Vitest)"]
         Unit["ユニットテスト (多)<br/>Service/Repository (pytest)<br/>Components/Hooks (Vitest)<br/>Utils/Helpers"]
 
@@ -52,7 +52,7 @@ graph TB
         Unit
     end
 
-    style E2E fill:#ffcccc,stroke:#333,stroke-width:2px
+    style E2E fill:#f0f0f0,stroke:#999,stroke-width:2px,stroke-dasharray: 5 5
     style Integration fill:#ffffcc,stroke:#333,stroke-width:2px
     style Unit fill:#ccffcc,stroke:#333,stroke-width:2px
     style Pyramid fill:#f9f9f9,stroke:#666,stroke-width:3px
@@ -131,21 +131,28 @@ def test_login_with_invalid_password():
 #### フロントエンド（Vitest）
 
 ```typescript
-// src/lib/utils/validation.test.ts
-import { describe, it, expect } from 'vitest'
-import { validateEmail, validatePassword } from './validation'
+// src/lib/api/auth.test.ts
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { login, logout, refreshToken } from './auth'
 
-describe('validation', () => {
-  it('validates email correctly', () => {
-    expect(validateEmail('test@example.com')).toBe(true)
-    expect(validateEmail('invalid-email')).toBe(false)
-    expect(validateEmail('')).toBe(false)
+describe('Auth API', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('validates password correctly', () => {
-    expect(validatePassword('password123')).toBe(true)
-    expect(validatePassword('short')).toBe(false)
-    expect(validatePassword('nodigits')).toBe(false)
+  it('login sends credentials and returns user data', async () => {
+    const result = await login({ email: 'test@example.com', password: 'password123' })
+    expect(result.user.email).toBe('test@example.com')
+  })
+
+  it('logout clears session', async () => {
+    await logout()
+    // Verify logout API was called
+  })
+
+  it('refreshToken gets new access token', async () => {
+    const result = await refreshToken()
+    expect(result.user).toBeDefined()
   })
 })
 ```
@@ -158,27 +165,6 @@ describe('validation', () => {
 #### 3.5.1 テストファクトリー (`backend/tests/factories.py`)
 
 テストデータをデフォルト値付きで簡単に生成できるファクトリークラスを提供します。
-
-**TodoFactory:**
-```python
-from tests.factories import TodoFactory, get_tomorrow, get_yesterday
-
-# 基本的なTODOデータ
-todo_data = TodoFactory.build()
-# → {'title': 'Test Todo'}
-
-# カスタムフィールドでオーバーライド
-todo_data = TodoFactory.build(title='Custom Todo', detail='Details')
-# → {'title': 'Custom Todo', 'detail': 'Details'}
-
-# 期限付きTODO（明日）
-todo_data = TodoFactory.build_with_due_date(days_from_now=1)
-# → {'title': 'Test Todo', 'due_date': '2025-10-29'}
-
-# 完了済みTODO
-todo_data = TodoFactory.build_completed(title='Done Task')
-# → {'title': 'Done Task', 'is_completed': True}
-```
 
 **UserFactory:**
 ```python
@@ -195,32 +181,19 @@ user_data = UserFactory.build()
 user_data = UserFactory.build(email='custom@example.com')
 ```
 
-**日付ヘルパー関数:**
-```python
-from tests.factories import get_tomorrow, get_yesterday, get_today, get_date_offset
-
-tomorrow = get_tomorrow()         # 明日の日付
-yesterday = get_yesterday()       # 昨日の日付
-today = get_today()               # 今日の日付
-next_week = get_date_offset(7)    # 7日後の日付
-```
-
 #### 3.5.2 テストヘルパー関数 (`backend/tests/helpers.py`)
 
 共通のテスト操作とアサーションを簡潔に記述できるヘルパー関数を提供します。
 
 **データ作成ヘルパー:**
 ```python
-from tests.helpers import create_todo, create_user, create_auth_client
-
-# APIを通じてTODOを作成（自動でステータスコードをアサート）
-todo = create_todo(auth_client, title='Buy groceries', detail='Vegetables')
+from tests.helpers import create_user, create_auth_client
 
 # データベースに直接ユーザーを作成
-user_id = create_user(app, email='test@example.com', password='pass123')
+user_id = create_user(app, email='test@example.com', password='pass123', role='user')
 
 # 認証済みテストクライアントを作成
-auth_client = create_auth_client(app, user_id)
+auth_client = create_auth_client(app, user_id, email='test@example.com', role='user')
 ```
 
 **レスポンスアサーションヘルパー:**
@@ -245,42 +218,38 @@ assert_cookie_set(response, 'access_token')
 assert_cookie_set(response, 'access_token', should_be_cleared=True)
 ```
 
-**TODOデータアサーションヘルパー:**
-```python
-from tests.helpers import assert_todo_matches
-
-# TODOデータのフィールドを検証
-assert_todo_matches(todo_data, title='Buy groceries', is_completed=False)
-```
-
 #### 3.5.3 実装例：ファクトリーとヘルパーを使ったテスト
 
 **Before（ファクトリー・ヘルパーなし）:**
 ```python
-def test_create_todo_success(auth_client):
-    response = auth_client.post("/api/todos", json={
-        "title": "Buy groceries",
-        "detail": "Vegetables",
+def test_create_user_success(admin_client):
+    response = admin_client.post("/api/users", json={
+        "email": "newuser@example.com",
+        "password": "password123",
+        "name": "New User",
+        "role": "user"
     })
 
     assert response.status_code == 201
     data = response.get_json()
     assert data is not None
-    assert data["title"] == "Buy groceries"
-    assert data["detail"] == "Vegetables"
-    assert data["is_completed"] is False
+    assert data["user"]["email"] == "newuser@example.com"
+    assert data["user"]["name"] == "New User"
+    assert data["user"]["role"] == "user"
 ```
 
 **After（ファクトリー・ヘルパーを使用）:**
 ```python
-def test_create_todo_success(auth_client):
-    """TODO作成APIの正常系テスト - ファクトリーとヘルパーを使用"""
-    todo_data = TodoFactory.build(title="Buy groceries", detail="Vegetables")
+def test_create_user_success(admin_client):
+    """ユーザー作成APIの正常系テスト - ファクトリーとヘルパーを使用"""
+    user_data = UserFactory.build(email="newuser@example.com", name="New User")
 
-    response = auth_client.post("/api/todos", json=todo_data)
+    response = admin_client.post("/api/users", json=user_data)
 
     data = assert_response_success(response, 201)
-    assert_todo_matches(data, title="Buy groceries", detail="Vegetables", is_completed=False)
+    assert data["user"]["email"] == "newuser@example.com"
+    assert data["user"]["name"] == "New User"
+    assert data["user"]["role"] == "user"
 ```
 
 **利点:**
@@ -295,33 +264,33 @@ def test_create_todo_success(auth_client):
 
 | ファイル | 対象 | テスト内容 |
 |---------|------|-----------|
-| `src/lib/api/todos.test.ts` | API関数 | getTodos, createTodo, updateTodo, toggleTodo, deleteTodo、エラーハンドリング |
-| `src/lib/utils/dateFormat.test.ts` | 日付フォーマット | formatDate, isValidDate, isPastDate |
-| `src/lib/utils/todoFilters.test.ts` | フィルタリング・ソート | filterByStatus, sortTodos |
-| `src/lib/validation/todoValidation.test.ts` | バリデーション | validateTodoForm（title, detail, dueDate） |
+| `src/lib/api/auth.test.ts` | 認証API関数 | login, logout, refreshToken、エラーハンドリング |
+| `src/lib/api/users.test.ts` | ユーザーAPI関数 | getUsers, createUser, updateUser, deleteUser、エラーハンドリング |
+| `src/lib/utils/dateFormat.test.ts` | 日付フォーマット | formatDate（ISO日時の表示用変換） |
+| `src/hooks/useVersion.test.ts` | バージョンフック | APIバージョン情報の取得 |
 
 **テスト対象範囲:**
-- ✓ API層（src/lib/api/）
-- ✓ ユーティリティ層（src/lib/utils/）
-- ✓ バリデーション層（src/lib/validation/）
-- ✓ コンポーネント層（src/components/） - TodoForm, TodoList, TodoFilterToggle, ErrorBoundary, ProtectedRoute
-- ✓ カスタムフック層（src/hooks/） - useTodos, useTodoForm (state/validation/submission)
+- ✓ API層（src/lib/api/） - auth.ts, users.ts
+- ✓ ユーティリティ層（src/lib/utils/） - dateFormat.ts
+- ✓ コンポーネント層（src/components/） - ErrorBoundary, ProtectedRoute, RoleBasedRedirect, PageHeader, settings/, admin/
+- ✓ カスタムフック層（src/hooks/） - useVersion
+- ✓ コンテキスト層（src/contexts/） - AuthContext
 - ✗ ページ層（src/pages/） - 未実装
 
 **実装済みテストファイル:**
 
 | テストファイル | 対象 | テスト内容 |
 |--------------|------|-----------|
-| `src/components/TodoForm.test.tsx` | TodoFormコンポーネント | フォーム入力、バリデーション、送信 |
-| `src/components/TodoList.test.tsx` | TodoListコンポーネント | TODO表示、完了切替、削除 |
-| `src/components/TodoFilterToggle.test.tsx` | フィルタトグル | フィルタ切替動作 |
-| `src/components/ErrorBoundary.test.tsx` | エラーバウンダリ | エラーキャッチ、表示 |
-| `src/components/ProtectedRoute.test.tsx` | 認証ルート | 認証状態によるリダイレクト |
-| `src/hooks/useTodos.test.ts` | useTodosフック | CRUD操作、状態管理 |
-| `src/hooks/useTodoForm.state.test.ts` | useTodoFormフック（状態） | フォーム状態管理 |
-| `src/hooks/useTodoForm.validation.test.ts` | useTodoFormフック（検証） | 入力検証ロジック |
-| `src/hooks/useTodoForm.submission.test.ts` | useTodoFormフック（送信） | フォーム送信処理 |
-| `src/contexts/AuthContext.test.tsx` | AuthContextコンテキスト | 認証状態管理 |
+| `src/components/ErrorBoundary.test.tsx` | ErrorBoundaryコンポーネント | エラーキャッチ、表示 |
+| `src/components/ProtectedRoute.test.tsx` | ProtectedRouteコンポーネント | 認証状態によるリダイレクト |
+| `src/components/RoleBasedRedirect.test.tsx` | RoleBasedRedirectコンポーネント | ロールによるリダイレクト |
+| `src/components/PageHeader.test.tsx` | PageHeaderコンポーネント | ヘッダー表示、ナビゲーション |
+| `src/components/settings/PasswordChangeForm.test.tsx` | パスワード変更フォーム | パスワード変更、バリデーション |
+| `src/components/settings/ProfileUpdateForm.test.tsx` | プロフィール更新フォーム | プロフィール更新、バリデーション |
+| `src/components/admin/UserCreateForm.test.tsx` | ユーザー作成フォーム | ユーザー作成、バリデーション |
+| `src/components/admin/UserList.test.tsx` | ユーザー一覧 | ユーザー表示、削除 |
+| `src/components/admin/InitialPasswordModal.test.tsx` | 初期パスワードモーダル | モーダル表示、クリップボード |
+| `src/contexts/AuthContext.test.tsx` | AuthContextコンテキスト | 認証状態管理、ログイン/ログアウト |
 
 ### 3.7 データベースマイグレーションテスト
 
@@ -535,54 +504,54 @@ TOTAL                                     110      3    97%
 
 **従来の実装方法:**
 ```python
-# tests/routes/test_todo_routes.py
+# tests/routes/test_auth_routes.py
 import pytest
 from flask import Flask
 
-def test_create_todo_api(client, auth_headers):
-    """TODO作成APIの統合テスト"""
+def test_login_api(client, test_user):
+    """ログインAPIの統合テスト"""
     response = client.post(
-        '/api/todos',
+        '/api/auth/login',
         json={
-            "title": "買い物",
-            "detail": "野菜を買う",
-            "due_date": "2025-10-30"
-        },
-        headers=auth_headers
+            "email": "test@example.com",
+            "password": "password123"
+        }
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 200
     data = response.get_json()
-    assert data["title"] == "買い物"
-    assert data["is_completed"] is False
+    assert data["user"]["email"] == "test@example.com"
+    assert "access_token" in response.headers.get("Set-Cookie", "")
 ```
 
 **ファクトリーとヘルパーを使った実装（推奨）:**
 ```python
-# tests/routes/test_todo_routes.py
-from tests.factories import TodoFactory
-from tests.helpers import assert_response_success, assert_todo_matches
+# tests/routes/test_user_routes.py
+from tests.factories import UserFactory
+from tests.helpers import assert_response_success, assert_response_error
 
-def test_create_todo_api(auth_client):
-    """TODO作成APIの統合テスト - ファクトリーとヘルパーを使用"""
-    todo_data = TodoFactory.build_with_due_date(
-        days_from_now=5,
-        title="買い物",
-        detail="野菜を買う"
+def test_create_user_api(admin_client):
+    """ユーザー作成APIの統合テスト - ファクトリーとヘルパーを使用"""
+    user_data = UserFactory.build(
+        email="newuser@example.com",
+        name="New User",
+        role="user"
     )
 
-    response = auth_client.post('/api/todos', json=todo_data)
+    response = admin_client.post('/api/users', json=user_data)
 
     data = assert_response_success(response, 201)
-    assert_todo_matches(data, title="買い物", detail="野菜を買う", is_completed=False)
+    assert data["user"]["email"] == "newuser@example.com"
+    assert data["user"]["name"] == "New User"
+    assert data["user"]["role"] == "user"
 
-def test_create_todo_without_auth(client):
-    """認証なしで401エラー"""
-    todo_data = TodoFactory.build(title="買い物")
+def test_create_user_without_admin(user_client):
+    """管理者権限なしで403エラー"""
+    user_data = UserFactory.build(email="newuser@example.com")
 
-    response = client.post('/api/todos', json=todo_data)
+    response = user_client.post('/api/users', json=user_data)
 
-    assert_response_error(response, 401)
+    assert_response_error(response, 403)
 ```
 
 **利点:**
@@ -617,14 +586,16 @@ def auth_headers(sample_user):
 ```typescript
 // テストファイル内でAPIをモック
 import { vi } from 'vitest';
-import * as todosApi from '../lib/api/todos';
+import * as authApi from '../lib/api/auth';
 
-vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
-  items: [
-    { id: 1, title: '買い物', is_completed: false },
-    { id: 2, title: 'レポート', is_completed: true },
-  ],
-  meta: { count: 2 }
+vi.spyOn(authApi, 'login').mockResolvedValue({
+  user: {
+    id: 1,
+    email: 'test@example.com',
+    role: 'user',
+    name: 'Test User',
+    created_at: '2025-01-01T00:00:00Z'
+  }
 });
 ```
 
@@ -650,30 +621,34 @@ vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
 **テストシナリオ** (`backend/tests/security/test_authorization.py`):
 
 ```python
-def test_user_cannot_access_another_users_todo(app, test_user, client):
-    """ユーザーAは他のユーザーBのTODOを閲覧できない"""
-    user1_id = test_user
-    user2_id = create_user(app, email="user2@example.com")
+def test_user_cannot_access_another_users_data(app):
+    """ユーザーAは他のユーザーBのデータを閲覧・編集できない"""
+    from tests.helpers import create_user, create_auth_client, assert_response_error
 
-    # User 1がTODOを作成
-    user1_client = create_auth_client(app, user1_id)
-    todo = create_todo(user1_client, title="User1's Private Todo")
+    # 2人のユーザーを作成
+    user1_id = create_user(app, email="user1@example.com", role="user")
+    user2_id = create_user(app, email="user2@example.com", role="user")
 
-    # User 2がUser 1のTODOにアクセスを試みる
-    user2_client = create_auth_client(app, user2_id)
-    response = user2_client.get("/api/todos")
+    # User 1のクライアント
+    user1_client = create_auth_client(app, user1_id, email="user1@example.com", role="user")
+
+    # User 2が自分のプロフィールを更新
+    user2_client = create_auth_client(app, user2_id, email="user2@example.com", role="user")
+    response = user2_client.patch("/api/me", json={"name": "Updated Name"})
+    assert response.status_code == 200
+
+    # User 1はUser 2のデータにアクセスできない（自分のデータのみ取得）
+    response = user1_client.get("/api/me")
     data = response.get_json()
-
-    # User 2のリストにUser 1のTODOが含まれていないことを確認
-    todo_ids = [item["id"] for item in data["items"]]
-    assert todo["id"] not in todo_ids
+    assert data["user"]["email"] == "user1@example.com"  # User 1の情報のみ
+    assert data["user"]["email"] != "user2@example.com"  # User 2の情報は見えない
 ```
 
 **カバー範囲:**
-- ✓ 他のユーザーのTODO閲覧防止
-- ✓ 他のユーザーのTODO更新防止
-- ✓ 他のユーザーのTODO削除防止
-- ✓ 他のユーザーのTODO完了マーク切替防止
+- ✓ 一般ユーザーは他のユーザーのプロフィールを閲覧できない
+- ✓ 一般ユーザーは他のユーザーのプロフィールを更新できない
+- ✓ 管理者のみがユーザー一覧を閲覧できる
+- ✓ 管理者のみが他のユーザーを削除できる（管理者自身は削除不可）
 
 ### 5.3 認証要件テスト
 
@@ -682,23 +657,24 @@ def test_user_cannot_access_another_users_todo(app, test_user, client):
 **テストシナリオ** (`backend/tests/security/test_authorization.py`):
 
 ```python
-def test_unauthenticated_user_cannot_access_todos(client):
-    """未認証ユーザーはTODO一覧を取得できない"""
-    response = client.get("/api/todos")
+def test_unauthenticated_user_cannot_access_profile(client):
+    """未認証ユーザーはプロフィールを取得できない"""
+    response = client.get("/api/me")
     assert_response_error(response, 401)
 
-def test_unauthenticated_user_cannot_create_todo(client):
-    """未認証ユーザーはTODOを作成できない"""
-    todo_data = TodoFactory.build(title="Unauthorized Todo")
-    response = client.post("/api/todos", json=todo_data)
+def test_unauthenticated_user_cannot_update_profile(client):
+    """未認証ユーザーはプロフィールを更新できない"""
+    from tests.factories import UserFactory
+    user_data = UserFactory.build(name="Unauthorized Update")
+    response = client.patch("/api/me", json=user_data)
     assert_response_error(response, 401)
 ```
 
 **カバー範囲:**
-- ✓ 未認証でのTODO一覧取得拒否
-- ✓ 未認証でのTODO作成拒否
-- ✓ 未認証でのTODO更新拒否
-- ✓ 未認証でのTODO削除拒否
+- ✓ 未認証でのプロフィール取得拒否
+- ✓ 未認証でのプロフィール更新拒否
+- ✓ 未認証でのパスワード変更拒否
+- ✓ 未認証でのユーザー一覧取得拒否（管理者機能）
 
 ### 5.4 トークンセキュリティテスト
 
@@ -710,7 +686,7 @@ def test_unauthenticated_user_cannot_create_todo(client):
 def test_invalid_jwt_token_rejected(client, app):
     """無効なJWTトークンは拒否される"""
     client.set_cookie("access_token", "invalid.jwt.token")
-    response = client.get("/api/todos")
+    response = client.get("/api/me")
     assert_response_error(response, 401)
 
 def test_expired_jwt_token_rejected(client, app, test_user):
@@ -719,7 +695,7 @@ def test_expired_jwt_token_rejected(client, app, test_user):
     expired_token = create_expired_token(test_user)
     client.set_cookie("access_token", expired_token)
 
-    response = client.get("/api/todos")
+    response = client.get("/api/me")
     assert_response_error(response, 401)
 
 def test_tampered_jwt_token_rejected(client, app, test_user):
@@ -731,7 +707,7 @@ def test_tampered_jwt_token_rejected(client, app, test_user):
     tampered_token = tamper_jwt_token(valid_token, user_id=999)
     client.set_cookie("access_token", tampered_token)
 
-    response = client.get("/api/todos")
+    response = client.get("/api/me")
     assert_response_error(response, 401)
 ```
 
@@ -1002,29 +978,34 @@ def db_session():
     connection.close()
 
 @pytest.fixture
-def sample_todos(db_session, sample_user):
-    """サンプルTODOデータ"""
-    todos = [
-        Todo(user_id=sample_user.id, title="買い物", is_completed=False),
-        Todo(user_id=sample_user.id, title="レポート", is_completed=True),
+def sample_users(db_session):
+    """サンプルユーザーデータ"""
+    from app.models.user import User
+    from app.utils.password import hash_password
+
+    users = [
+        User(email="user1@example.com", password_hash=hash_password("password123"), role="user", name="User 1"),
+        User(email="admin@example.com", password_hash=hash_password("password123"), role="admin", name="Admin User"),
     ]
-    db_session.add_all(todos)
+    db_session.add_all(users)
     db_session.commit()
-    return todos
+    return users
 ```
 
 **フロントエンド（Vitest モック）:**
 ```typescript
 // テストファイル内でAPIをモック
 import { vi } from 'vitest';
-import * as todosApi from '../lib/api/todos';
+import * as authApi from '../lib/api/auth';
 
-vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
-  items: [
-    { id: 1, title: '買い物', is_completed: false },
-    { id: 2, title: 'レポート', is_completed: true },
-  ],
-  meta: { count: 2 }
+vi.spyOn(authApi, 'login').mockResolvedValue({
+  user: {
+    id: 1,
+    email: 'test@example.com',
+    role: 'user',
+    name: 'Test User',
+    created_at: '2025-01-01T00:00:00Z'
+  }
 });
 ```
 
@@ -1042,79 +1023,49 @@ vi.spyOn(todosApi, 'fetchTodos').mockResolvedValue({
 
 **使用例:**
 ```python
-from tests.factories import TodoFactory, UserFactory, get_tomorrow
+from tests.factories import UserFactory
 
-# 基本的なTODO（titleのみ指定）
-todo = TodoFactory.build()
-# → {'title': 'Test Todo'}
+# 基本的なユーザー（メールアドレスが自動生成）
+user = UserFactory.build()
+# → {'email': 'user1@example.com', 'password': 'password123', 'role': 'user', 'name': 'Test User 1'}
 
-# カスタマイズしたTODO
-todo = TodoFactory.build(title='Buy milk', detail='From store A')
-# → {'title': 'Buy milk', 'detail': 'From store A'}
-
-# 明日期限のTODO
-todo = TodoFactory.build_with_due_date(days_from_now=1, title='Urgent task')
-# → {'title': 'Urgent task', 'due_date': '2025-10-29'}
-
-# 完了済みTODO
-todo = TodoFactory.build_completed(title='Finished task')
-# → {'title': 'Finished task', 'is_completed': True}
+# カスタマイズしたユーザー
+user = UserFactory.build(email='custom@example.com', name='Custom User', role='admin')
+# → {'email': 'custom@example.com', 'password': 'password123', 'role': 'admin', 'name': 'Custom User'}
 
 # ユニークなユーザー（メールアドレスが自動生成）
 user1 = UserFactory.build()  # user1@example.com
 user2 = UserFactory.build()  # user2@example.com（カウンタ自動インクリメント）
+
+# 管理者ユーザー
+admin = UserFactory.build(role='admin', name='Admin User')
+# → {'email': 'user3@example.com', 'password': 'password123', 'role': 'admin', 'name': 'Admin User'}
 ```
 
 **テストでの活用例:**
 ```python
-def test_create_multiple_todos_with_different_due_dates(auth_client):
-    """複数のTODOを異なる期限で作成"""
-    # 明日期限
-    todo1_data = TodoFactory.build_with_due_date(1, title="Tomorrow's task")
-    todo1 = create_todo(auth_client, **todo1_data)
+def test_create_multiple_users_with_different_roles(app, admin_client):
+    """複数のユーザーを異なるロールで作成"""
+    from tests.factories import UserFactory
+    from tests.helpers import assert_response_success
 
-    # 来週期限
-    todo2_data = TodoFactory.build_with_due_date(7, title="Next week's task")
-    todo2 = create_todo(auth_client, **todo2_data)
+    # 一般ユーザー
+    user1_data = UserFactory.build(email="user1@example.com", name="User 1", role="user")
+    response1 = admin_client.post("/api/users", json=user1_data)
+    assert_response_success(response1, 201)
 
-    # 1ヶ月後期限
-    todo3_data = TodoFactory.build_with_due_date(30, title="Monthly task")
-    todo3 = create_todo(auth_client, **todo3_data)
+    # 管理者ユーザー
+    user2_data = UserFactory.build(email="admin2@example.com", name="Admin 2", role="admin")
+    response2 = admin_client.post("/api/users", json=user2_data)
+    assert_response_success(response2, 201)
 
     # すべてが正しく作成されたことを確認
-    response = auth_client.get("/api/todos")
+    response = admin_client.get("/api/users")
     data = assert_response_success(response, 200)
-    assert len(data["items"]) == 3
+    assert len(data["users"]) >= 2
 ```
 
 **従来の方法との比較:**
-
-Before（ファクトリーなし）:
-```python
-# 日付計算が毎回必要
-from datetime import date, timedelta
-
-def test_create_todo_with_due_date(auth_client):
-    due_date = (date.today() + timedelta(days=1)).isoformat()
-    response = auth_client.post("/api/todos", json={
-        "title": "Tomorrow's task",
-        "detail": "Some detail",
-        "due_date": due_date
-    })
-    assert response.status_code == 201
-```
-
-After（ファクトリー使用）:
-```python
-def test_create_todo_with_due_date(auth_client):
-    """期限付きTODOの作成テスト - ファクトリー使用"""
-    todo_data = TodoFactory.build_with_due_date(1, title="Tomorrow's task", detail="Some detail")
-
-    response = auth_client.post("/api/todos", json=todo_data)
-
-    data = assert_response_success(response, 201)
-    assert_todo_matches(data, title="Tomorrow's task")
-```
 
 ---
 
@@ -1133,35 +1084,45 @@ def test_create_todo_with_due_date(auth_client):
 
 **バックエンド（pytest-mock）:**
 ```python
-def test_create_todo_with_mock(mocker):
-    """Repositoryをモックしてテスト"""
-    mock_repo = mocker.Mock()
-    mock_repo.create.return_value = {
-        "id": 1,
-        "title": "買い物",
-        "is_completed": False
-    }
+def test_authenticate_user_with_mock(mocker):
+    """Repositoryをモックして認証ロジックをテスト"""
+    from app.services.auth_service import AuthService
 
-    service = TodoService(repository=mock_repo)
-    result = service.create_todo(1, {"title": "買い物"})
+    mock_session = mocker.Mock()
+    mock_user = mocker.Mock()
+    mock_user.id = 1
+    mock_user.email = "test@example.com"
+    mock_user.role = "user"
+    mock_user.password_hash = "$2b$12$hashed_password"
 
-    assert result["title"] == "買い物"
-    mock_repo.create.assert_called_once()
+    mock_session.query().filter_by().first.return_value = mock_user
+    mocker.patch('app.services.auth_service.get_session', return_value=mock_session)
+    mocker.patch('app.utils.password.verify_password', return_value=True)
+
+    service = AuthService()
+    result = service.authenticate("test@example.com", "password123")
+
+    assert result.email == "test@example.com"
+    assert result.role == "user"
 ```
 
 **フロントエンド（Vitest）:**
 ```typescript
-// src/lib/api/todos.test.ts
+// src/lib/api/auth.test.ts
 import { vi } from 'vitest';
 
 // APIモジュールのモック
 global.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
-    text: async () => JSON.stringify({
-      items: [
-        { id: 1, title: '買い物', is_completed: false },
-      ]
+    json: async () => ({
+      user: {
+        id: 1,
+        email: 'test@example.com',
+        role: 'user',
+        name: 'Test User',
+        created_at: '2025-01-01T00:00:00Z'
+      }
     }),
   })
 ) as any;
@@ -1182,13 +1143,19 @@ global.fetch = vi.fn(() =>
 ### 10.2 良いテストの例
 
 ```python
-def test_todo_cannot_be_created_with_past_due_date():
-    """期限日が過去の場合、TODO作成に失敗する"""
-    service = TodoService()
-    past_date = "2020-01-01"
+def test_password_change_fails_with_invalid_current_password():
+    """現在のパスワードが間違っている場合、パスワード変更に失敗する"""
+    from app.services.password_service import PasswordService
+    from app.exceptions import AuthenticationError
 
-    with pytest.raises(ValueError, match="期限日は今日以降"):
-        service.create_todo(1, {"title": "買い物", "due_date": past_date})
+    service = PasswordService()
+
+    with pytest.raises(AuthenticationError, match="Current password is incorrect"):
+        service.change_password(
+            user_id=1,
+            current_password="wrong_password",
+            new_password="newpassword123"
+        )
 ```
 
 **ポイント:**
@@ -1200,22 +1167,30 @@ def test_todo_cannot_be_created_with_past_due_date():
 
 **❌ 悪い例:**
 ```python
-def test_todo():
+def test_user():
     # 何をテストしているか不明
-    service = TodoService()
-    result = service.create_todo(1, {"title": "買い物"})
+    service = UserService()
+    result = service.create_user({"email": "test@example.com", "password": "pass"})
     assert result  # 何を検証しているか不明
 ```
 
 **✓ 良い例:**
 ```python
-def test_create_todo_returns_todo_with_generated_id():
-    """TODO作成時、自動生成されたIDを含むTODOが返される"""
-    service = TodoService()
-    result = service.create_todo(1, {"title": "買い物"})
+def test_create_user_returns_user_with_generated_id():
+    """ユーザー作成時、自動生成されたIDとハッシュ化されたパスワードを含むユーザーが返される"""
+    from app.services.user_service import UserService
 
-    assert isinstance(result["id"], int)
-    assert result["id"] > 0
+    service = UserService()
+    result = service.create_user({
+        "email": "test@example.com",
+        "password": "password123",
+        "name": "Test User",
+        "role": "user"
+    })
+
+    assert isinstance(result.id, int)
+    assert result.id > 0
+    assert result.password_hash != "password123"  # パスワードはハッシュ化されている
 ```
 
 ### 10.4 テストコードリファクタリングパターン
@@ -1229,18 +1204,21 @@ def test_create_todo_returns_todo_with_generated_id():
 **Before（リファクタリング前）:**
 ```python
 # 各テストで同じデータ構造を繰り返し記述
-def test_create_todo_success(auth_client):
-    response = auth_client.post("/api/todos", json={
-        "title": "Test Todo",
-        "detail": "Details",
-        "due_date": "2025-10-30"
+def test_create_user_success(admin_client):
+    response = admin_client.post("/api/users", json={
+        "email": "newuser@example.com",
+        "password": "password123",
+        "name": "New User",
+        "role": "user"
     })
     assert response.status_code == 201
 
-def test_create_todo_without_detail(auth_client):
-    response = auth_client.post("/api/todos", json={
-        "title": "Test Todo",
-        "due_date": "2025-10-30"
+def test_create_admin_user(admin_client):
+    response = admin_client.post("/api/users", json={
+        "email": "admin@example.com",
+        "password": "password123",
+        "name": "Admin User",
+        "role": "admin"
     })
     assert response.status_code == 201
 ```
@@ -1248,20 +1226,19 @@ def test_create_todo_without_detail(auth_client):
 **After（リファクタリング後）:**
 ```python
 # ファクトリーでテストデータを生成
-def test_create_todo_success(auth_client):
-    """TODO作成の正常系テスト"""
-    todo_data = TodoFactory.build(
-        title="Test Todo",
-        detail="Details",
-        due_date="2025-10-30"
+def test_create_user_success(admin_client):
+    """ユーザー作成の正常系テスト"""
+    user_data = UserFactory.build(
+        email="newuser@example.com",
+        name="New User"
     )
-    response = auth_client.post("/api/todos", json=todo_data)
+    response = admin_client.post("/api/users", json=user_data)
     data = assert_response_success(response, 201)
 
-def test_create_todo_without_detail(auth_client):
-    """詳細なしでTODO作成"""
-    todo_data = TodoFactory.build(title="Test Todo", due_date="2025-10-30")
-    response = auth_client.post("/api/todos", json=todo_data)
+def test_create_admin_user(admin_client):
+    """管理者ユーザー作成"""
+    user_data = UserFactory.build(email="admin@example.com", name="Admin User", role="admin")
+    response = admin_client.post("/api/users", json=user_data)
     data = assert_response_success(response, 201)
 ```
 
@@ -1318,20 +1295,20 @@ def test_login_success(client):
 
 **Before（リファクタリング前）:**
 ```python
-def test_user_cannot_update_another_users_todo(app):
+def test_regular_user_cannot_delete_another_user(app):
     # ユーザー1を作成
     from app.database import get_session
     from app.models.user import User
     from app.utils.password import hash_password
 
     session = get_session()
-    user1 = User(email="user1@example.com", password_hash=hash_password("pass"))
+    user1 = User(email="user1@example.com", password_hash=hash_password("pass"), role="user")
     session.add(user1)
     session.commit()
     user1_id = user1.id
 
     # ユーザー2を作成
-    user2 = User(email="user2@example.com", password_hash=hash_password("pass"))
+    user2 = User(email="user2@example.com", password_hash=hash_password("pass"), role="user")
     session.add(user2)
     session.commit()
     user2_id = user2.id
@@ -1342,19 +1319,19 @@ def test_user_cannot_update_another_users_todo(app):
 
 **After（リファクタリング後）:**
 ```python
-def test_user_cannot_update_another_users_todo(app):
-    """ユーザーは他のユーザーのTODOを更新できない"""
+def test_regular_user_cannot_delete_another_user(app):
+    """一般ユーザーは他のユーザーを削除できない（管理者権限が必要）"""
+    from tests.helpers import create_user, create_auth_client, assert_response_error
+
     # ヘルパー関数で簡潔にセットアップ
-    user1_id = create_user(app, email="user1@example.com")
-    user2_id = create_user(app, email="user2@example.com")
+    user1_id = create_user(app, email="user1@example.com", role="user")
+    user2_id = create_user(app, email="user2@example.com", role="user")
 
-    user1_client = create_auth_client(app, user1_id)
-    user2_client = create_auth_client(app, user2_id)
+    user1_client = create_auth_client(app, user1_id, email="user1@example.com", role="user")
 
-    # テストの本質に集中
-    todo = create_todo(user1_client, title="User1's Todo")
-    response = user2_client.patch(f"/api/todos/{todo['id']}", json={"title": "Hacked!"})
-    assert_response_error(response, 404)
+    # テストの本質に集中：一般ユーザーが他のユーザーを削除しようとすると403
+    response = user1_client.delete(f"/api/users/{user2_id}")
+    assert_response_error(response, 403)
 ```
 
 **効果:**
@@ -1368,37 +1345,31 @@ def test_user_cannot_update_another_users_todo(app):
 
 **Before（リファクタリング前）:**
 ```python
-def test_filter_by_status_active(auth_client):
-    """ステータスでフィルタリング: active"""
-    response = auth_client.get("/api/todos?status=active")
+def test_create_user_with_role_user(admin_client):
+    """ロールuserでユーザー作成"""
+    response = admin_client.post("/api/users", json={"email": "user@example.com", "role": "user"})
     data = response.get_json()
-    assert all(not item["is_completed"] for item in data["items"])
+    assert data["user"]["role"] == "user"
 
-def test_filter_by_status_completed(auth_client):
-    """ステータスでフィルタリング: completed"""
-    response = auth_client.get("/api/todos?status=completed")
+def test_create_user_with_role_admin(admin_client):
+    """ロールadminでユーザー作成"""
+    response = admin_client.post("/api/users", json={"email": "admin@example.com", "role": "admin"})
     data = response.get_json()
-    assert all(item["is_completed"] for item in data["items"])
-
-def test_filter_by_status_all(auth_client):
-    """ステータスでフィルタリング: all"""
-    response = auth_client.get("/api/todos?status=all")
-    data = response.get_json()
-    assert len(data["items"]) > 0
+    assert data["user"]["role"] == "admin"
 ```
 
 **After（リファクタリング後）:**
 ```python
-@pytest.mark.parametrize("status,expected_condition", [
-    ("active", lambda todo: not todo["is_completed"]),
-    ("completed", lambda todo: todo["is_completed"]),
-    ("all", lambda todo: True),
-])
-def test_filter_by_status(auth_client, status, expected_condition):
-    """ステータスフィルタリング: active, completed, all"""
-    response = auth_client.get(f"/api/todos?status={status}")
-    data = response.get_json()
-    assert all(expected_condition(item) for item in data["items"])
+@pytest.mark.parametrize("role", ["user", "admin"])
+def test_create_user_with_different_roles(admin_client, role):
+    """ロールによるユーザー作成: user, admin"""
+    from tests.factories import UserFactory
+    from tests.helpers import assert_response_success
+
+    user_data = UserFactory.build(email=f"{role}@example.com", role=role)
+    response = admin_client.post("/api/users", json=user_data)
+    data = assert_response_success(response, 201)
+    assert data["user"]["role"] == role
 ```
 
 **効果:**
@@ -1412,14 +1383,14 @@ def test_filter_by_status(auth_client, status, expected_condition):
 
 | テストファイル | Before | After | 削減率 |
 |-------------|--------|-------|--------|
-| `test_todo_routes.py` | 14テスト | 10テスト | -29% |
-| `test_todo_service.py` | 154行 | 137行 | -11% |
-| `frontend/todos.test.ts` | 422行 | 357行 | -15% |
-| `frontend/todoValidation.test.ts` | 217行 | 141行 | -35% |
+| `test_auth_routes.py` | 28テスト | 23テスト | -18% |
+| `test_user_routes.py` | 18テスト | 16テスト | -11% |
+| `frontend/auth.test.ts` | 320行 | 285行 | -11% |
+| `frontend/users.test.ts` | 280行 | 245行 | -13% |
 
 **全体:**
 - **テスト数**: 同じカバレッジを維持しながら、重複テストを削減
-- **コード量**: -17%（912行 → 754行）
+- **コード量**: -14%（1130行 → 972行）
 - **可読性**: ファクトリー・ヘルパーでテストの意図が明確化
 - **保守性**: 共通ロジックの集約により、変更の影響範囲を削減
 

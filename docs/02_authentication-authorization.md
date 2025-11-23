@@ -1,7 +1,8 @@
 # 認証・認可設計書
 
 **作成日:** 2025-10-28
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 ---
@@ -139,7 +140,7 @@ sequenceDiagram
 | **有効期限** | 1日 (1440分) |
 | **保存場所** | httpOnly Cookie (path: /api) |
 | **用途** | API リクエストの認証 |
-| **ペイロード** | `{user_id: number, email: string, exp: timestamp}` |
+| **ペイロード** | `{user_id: number, email: string, role: string, exp: timestamp}` |
 | **検証方法** | `@require_auth` デコレータで自動検証 |
 
 ### 3.2 リフレッシュトークン (refresh_token)
@@ -254,7 +255,10 @@ Set-Cookie: refresh_token=...; HttpOnly; SameSite=Lax; Path=/api; Max-Age=604800
 {
   "user": {
     "id": 1,
-    "email": "user@example.com"
+    "email": "user@example.com",
+    "role": "user",
+    "name": null,
+    "created_at": "2025-10-28T12:34:56.789012"
   }
 }
 ```
@@ -282,7 +286,10 @@ Set-Cookie: refresh_token=...; HttpOnly; SameSite=Lax; Path=/api; Max-Age=604800
   "message": "トークンを更新しました",
   "user": {
     "id": 1,
-    "email": "user@example.com"
+    "email": "user@example.com",
+    "role": "user",
+    "name": null,
+    "created_at": "2025-10-28T12:34:56.789012"
   }
 }
 ```

@@ -1,8 +1,8 @@
 # API設計ガイド
 
 **作成日:** 2025-10-28
-**最終更新:** 2025-11-06
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 ---
@@ -83,6 +83,11 @@ https://{domain}/api/{version}/{resource}/{id}/{sub-resource}
 | **認証** | `POST /api/auth/login` | ログイン（リソース作成） |
 | **認証** | `POST /api/auth/logout` | ログアウト（アクション） |
 | **認証** | `POST /api/auth/refresh` | トークン更新（アクション） |
+| **ユーザー管理** | `GET /api/users` | ユーザー一覧取得（管理者のみ） |
+| **ユーザー管理** | `POST /api/users` | ユーザー作成（管理者のみ） |
+| **ユーザー管理** | `PATCH /api/users/me` | プロフィール更新（認証ユーザー） |
+| **ユーザー管理** | `DELETE /api/users/{id}` | ユーザー削除（管理者のみ） |
+| **パスワード管理** | `POST /api/password/change` | パスワード変更（認証ユーザー） |
 
 ---
 
@@ -167,6 +172,157 @@ GET /api/users?role=admin&sort_by=created_at&order=desc
   "message": "ログアウトしました"
 }
 ```
+
+### 4.3 ユーザー管理APIのリクエスト・レスポンス
+
+#### ユーザー一覧取得 (`GET /api/users`)
+
+**リクエスト:**
+- 認証: 必要（管理者のみ）
+- ボディ: なし
+
+**レスポンス (200 OK):**
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@example.com",
+      "name": "Administrator",
+      "role": "admin",
+      "created_at": "2025-10-01T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "email": "user@example.com",
+      "name": "Regular User",
+      "role": "user",
+      "created_at": "2025-10-15T14:30:00Z"
+    }
+  ]
+}
+```
+
+#### ユーザー作成 (`POST /api/users`)
+
+**リクエスト:**
+- 認証: 必要（管理者のみ）
+- Content-Type: `application/json`
+
+```json
+{
+  "email": "newuser@example.com",
+  "name": "New User"
+}
+```
+
+**バリデーション:**
+- `email`: 必須、有効なメールアドレス形式
+- `name`: 必須、1文字以上100文字以下
+
+**レスポンス (201 Created):**
+```json
+{
+  "user": {
+    "id": 3,
+    "email": "newuser@example.com",
+    "name": "New User",
+    "role": "user",
+    "created_at": "2025-11-06T12:00:00Z"
+  },
+  "initial_password": "aB3xY9mK2pL5"
+}
+```
+
+**注記:**
+- 初期パスワードはランダムに生成されます（12文字、英数字）
+- 初期パスワードは一度だけ表示されるため、ユーザーに確実に伝える必要があります
+- 新規ユーザーのロールは自動的に `user` に設定されます
+
+#### プロフィール更新 (`PATCH /api/users/me`)
+
+**リクエスト:**
+- 認証: 必要（全ユーザー）
+- Content-Type: `application/json`
+
+```json
+{
+  "email": "updated@example.com",
+  "name": "Updated Name"
+}
+```
+
+**バリデーション:**
+- `email`: 必須、有効なメールアドレス形式
+- `name`: 必須、1文字以上100文字以下
+
+**レスポンス (200 OK):**
+```json
+{
+  "message": "プロフィールを更新しました",
+  "user": {
+    "id": 1,
+    "email": "updated@example.com",
+    "name": "Updated Name",
+    "role": "user",
+    "created_at": "2025-10-01T10:00:00Z"
+  }
+}
+```
+
+#### ユーザー削除 (`DELETE /api/users/{id}`)
+
+**リクエスト:**
+- 認証: 必要（管理者のみ）
+- パスパラメータ: `{id}` - 削除対象のユーザーID
+- ボディ: なし
+
+**レスポンス (204 No Content):**
+- ボディなし
+
+**エラーケース:**
+- `404 Not Found`: 指定されたIDのユーザーが存在しない
+- `403 Forbidden`: 管理者権限がない
+
+### 4.4 パスワード管理APIのリクエスト・レスポンス
+
+#### パスワード変更 (`POST /api/password/change`)
+
+**リクエスト:**
+- 認証: 必要（全ユーザー）
+- Content-Type: `application/json`
+
+```json
+{
+  "current_password": "oldpassword123",
+  "new_password": "newpassword456"
+}
+```
+
+**バリデーション:**
+- `current_password`: 必須
+- `new_password`: 必須、8文字以上、英数字を含む
+
+**レスポンス (200 OK):**
+```json
+{
+  "message": "パスワードを変更しました"
+}
+```
+
+**エラーケース:**
+- `400 Bad Request`: バリデーションエラー（パスワード形式が不正）
+  ```json
+  {
+    "error": "Password must contain both letters and numbers"
+  }
+  ```
+- `401 Unauthorized`: 現在のパスワードが一致しない
+  ```json
+  {
+    "error": "Current password is incorrect"
+  }
+  ```
 
 ---
 
@@ -366,15 +522,30 @@ GET /api/users HTTP/1.1
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### 8.3 認証が必要なエンドポイント
+### 8.3 認証・認可が必要なエンドポイント
 
-| エンドポイント | 認証 |
-|--------------|------|
-| `POST /api/auth/login` | 不要 |
-| `POST /api/auth/logout` | 不要（Cookieは必要） |
-| `POST /api/auth/refresh` | 不要（Cookieは必要） |
+| エンドポイント | 認証 | 権限 |
+|--------------|------|------|
+| `POST /api/auth/login` | 不要 | - |
+| `POST /api/auth/logout` | 不要（Cookieは必要） | - |
+| `POST /api/auth/refresh` | 不要（Cookieは必要） | - |
+| `GET /api/users` | 必要 | 管理者のみ |
+| `POST /api/users` | 必要 | 管理者のみ |
+| `PATCH /api/users/me` | 必要 | 全ユーザー |
+| `DELETE /api/users/{id}` | 必要 | 管理者のみ |
+| `POST /api/password/change` | 必要 | 全ユーザー |
 
-**実装方法:** `@require_auth` デコレータ（`backend/app/utils/auth_decorator.py`）
+**実装方法:**
+- 認証: `@require_auth` デコレータ（`backend/app/utils/auth_decorator.py`）
+- 権限: `@require_role("admin")` デコレータ（`backend/app/utils/auth_decorator.py`）
+
+**ロールベース認可:**
+- `@require_role("admin")`: 管理者（`role="admin"`）のみアクセス可能
+- デコレータなし（`@require_auth` のみ）: 認証済みの全ユーザーがアクセス可能
+
+**エラーレスポンス:**
+- `401 Unauthorized`: 認証トークンがない、または無効
+- `403 Forbidden`: 権限不足（一般ユーザーが管理者専用エンドポイントにアクセス）
 
 詳細は [認証・認可設計書](./02_authentication-authorization.md) を参照してください。
 

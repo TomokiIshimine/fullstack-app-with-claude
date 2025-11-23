@@ -1,56 +1,165 @@
-# Repository Guidelines
+# AGENTS.md
 
-CLAUDE.md のガイダンスを踏まえて、以下のポイントを守って作業してください。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## プロジェクト構成とモジュール配置
-- ルートはモノレポ構成です。`frontend/`（React + TypeScript）, `backend/`（Flask + Poetry）, `infra/`（Docker と MySQL 設定）を中心にまとめています。
-- `frontend/src/` は `components/`, `pages/`, `hooks/`, `lib/`, `styles/` に責務分割されています。`@/` エイリアスで共通ユーティリティにアクセスしてください。詳細は `frontend/CLAUDE.md` を参照します。
-- `backend/app/` は `routes/`, `services/`, `models/`, `schemas/`, `config.py`, `main.py` を持ちます。追加モジュールは責務ごとに既存ディレクトリへ配置し、`backend/tests/` に対応するテストを必ず追加します。バックエンド固有の規約は `backend/CLAUDE.md` を確認してください。
-- 本プロジェクトはクリーンアーキテクチャを前提としており、ユースケースやドメインを中心に外側の層が依存する構造を崩さないようにしてください。
-- `infra/docker-compose.yml` と `infra/mysql/` 配下にコンテナ定義と初期化スクリプトをまとめています。アーキテクチャ概要は `docs/01_system-architecture.md` を参照してください。
+## Repository Overview
 
-## ドキュメントと参照資料
-- プロジェクト全体の導入手順は `docs/00_development.md` を最初に確認してください。
-- 機能一覧や API 仕様は `docs/03_feature-list.md` および `docs/05_api-design-guide.md` にまとまっています。
-- 認証・認可、テスト方針、CI/CD など専門トピックは `docs/02_authentication-authorization.md` から `docs/09_cicd-setup-guide.md` を必要に応じて参照します。
+This is a full-stack monorepo containing a React + TypeScript frontend and a Flask + SQLAlchemy backend, implementing a web application with user authentication. The project uses Docker Compose for local development with MySQL.
 
-## セットアップ・開発用コマンド
-- 依存関係のインストール：`make install`（frontend の `pnpm install` と backend の `poetry install` を一括実行）
-- 環境の初期化：`make setup`
-- 開発用スタックの起動／停止：`make up` / `make down`（Docker Compose 利用、環境変数は `infra/.env.development`）
-- 単体コマンド：
-  - フロントエンド開発サーバー：`pnpm -C frontend run dev --host 0.0.0.0 --port 5173`
-  - バックエンド開発サーバー：`poetry -C backend run flask --app app.main run --debug`
-- データベース操作：`make db-init`, `make db-reset`, `make db-create-user EMAIL=... PASSWORD=...`（破壊的操作に注意）
+The system is designed around Clean Architecture principles: inner layers (domain and use cases) must remain independent from outer layers (frameworks, UI, infrastructure). When adding new functionality, keep dependencies flowing inward and isolate infrastructure-specific code at the edges of the system.
 
-## Lint・フォーマッタ・テスト
-- 静的解析一括実行：`make lint`
-- フォーマット：`make format`（確認のみは `make format-check`）
-- テスト一括実行：`make test`（高速実行は `make test-fast`、カバレッジ付きは `make test-cov`、フロント／バック個別は `make test-frontend`, `make test-backend`）
-- 個別テスト：
-  - フロント：`pnpm --dir frontend run test <test-file>`
-  - バック：`poetry -C backend run pytest <path>::<function>`
-- フロントは Vitest + Testing Library、バックエンドは pytest を採用しています。CI では lint と test が並列で走るため、ローカルでも `make lint` → `make test` を基本フローとしてください。
+**For detailed documentation:**
+- Backend: See [backend/CLAUDE.md](backend/CLAUDE.md)
+- Frontend: See [frontend/CLAUDE.md](frontend/CLAUDE.md)
 
-## コーディングスタイルと命名規約
-- `.editorconfig` に従い、デフォルトはスペース 2、Python ファイルはスペース 4。全言語で行長 150 を上限とします。
-- フロントは ESLint + Prettier を `pnpm run lint` / `pnpm run format` で適用します。バックは black・isort・flake8・mypy を `poetry run` 系コマンドで実行します。
-- コンポーネント・サービス名は UpperCamelCase、React フックは `use` プレフィックスを付け、Python モジュールは `snake_case.py` を採用します。
-- 追加のガイドラインがある場合は各モジュール直下の `AGENTS.md` や `CLAUDE.md` を確認してください。
+## Documentation
 
-## プリコミットフック
-- `make pre-commit-install` で初回インストールし、手動実行は `make pre-commit-run` を使用します。
-- フックは軽量チェックのみを対象としています。型チェックやテストは `make lint`・`make test` を手動で実行してください。
+Comprehensive documentation is available in the `docs/` directory:
 
-## コミットとプルリクエスト運用
-- コミットは Conventional Commits（例：`feat(frontend): ヘッダーのレイアウトを追加`）に従い、メッセージ本文は必ず日本語で書いてください。
-- PR では目的、主要変更点、動作確認コマンド（例：`make lint`, `make test`, `docker compose up -d`）を記載し、関連 Issue を `#` でリンクします。UI 変更がある場合はスクリーンショットを添付してください。
-- pre-commit は変更ファイルのみに適用されます。`poetry -C backend run pre-commit run` でローカル確認し、失敗時は指摘部分を修正して再実行してください。
+**For new developers, recommended reading order:**
+1. **[Development Guide](docs/00_development.md)** - Start here: setup, commands, troubleshooting
+2. **[System Architecture](docs/01_system-architecture.md)** - Overall system design and tech stack
+3. **[Authentication & Authorization](docs/02_authentication-authorization.md)** - Security fundamentals
+4. **[Feature List](docs/03_feature-list.md)** - Implemented features and API endpoints
 
-## Docker Compose とサービス構成
-- `frontend`（Node 20-alpine）、`backend`（Python 3.12-slim）、`db`（MySQL 8.0）、`redis`（Redis 7-alpine）が `app-network` 上で連携します。
-- 詳細なアーキテクチャは `docs/01_system-architecture.md`、CI/CD セットアップは `docs/09_cicd-setup-guide.md` を確認してください。
+**Specialized documentation:**
+- **[Database Design](docs/04_database-design.md)** - Schema, ER diagrams, table definitions
+- **[API Design Guide](docs/05_api-design-guide.md)** - REST API conventions and best practices
+- **[Testing Strategy](docs/06_testing-strategy.md)** - Test levels, coverage goals, test data management
+- **[Documentation Guide](docs/07_documentation-guide.md)** - Overview of all documentation (meta-document)
+- **[E2E Test List](docs/08_e2e-test-list.md)** - E2E test scenarios and implementation guide
+- **[CI/CD Setup Guide](docs/09_cicd-setup-guide.md)** - CI/CD environment setup after forking the project
 
-## 追加ヒント
-- 新しいメンバーは `docs/00_development.md` → `docs/01_system-architecture.md` → `docs/02_authentication-authorization.md` → `docs/03_feature-list.md` の順で読むと全体像を掴みやすいです。
-- 認証やテスト戦略、E2E シナリオなど詳細は `docs/04_database-design.md` 以降を適宜参照してください。
+## Quick Start
+
+### Setup and Installation
+```bash
+make install              # Install all dependencies (frontend via pnpm, backend via poetry)
+make setup                # Full environment setup
+```
+
+### Running the Stack
+```bash
+make up                   # Start Docker containers (MySQL, frontend, backend)
+make down                 # Stop Docker containers
+```
+
+### Linting and Formatting
+```bash
+make lint                 # Lint both frontend and backend (includes TypeScript check)
+make format               # Format both frontend and backend
+make format-check         # Check formatting without modifying files (used in CI)
+```
+
+## Testing
+
+### Run All Tests
+```bash
+make test                 # Run all tests (frontend and backend) with coverage
+```
+
+### Test Variants
+```bash
+make test-frontend        # Run only frontend tests
+make test-backend         # Run only backend tests
+make test-fast            # Run tests without coverage (faster)
+make test-cov             # Run tests with coverage and generate HTML report
+make test-parallel        # Run backend tests in parallel
+```
+
+### Run Individual Tests
+```bash
+# Frontend - run specific test file
+pnpm --dir frontend run test src/lib/api/auth.test.ts
+
+# Backend - run specific test file
+poetry -C backend run pytest backend/tests/routes/test_auth_routes.py
+
+# Backend - run specific test function
+poetry -C backend run pytest backend/tests/routes/test_auth_routes.py::test_login_success
+```
+
+**For detailed testing strategy, see [docs/06_testing-strategy.md](docs/06_testing-strategy.md)**
+
+## Manual Testing and Browser Automation
+
+### Browser Testing with Playwright MCP
+
+When verifying UI functionality or performing manual testing, use the **mcp__playwright** tools provided by the Playwright MCP server. These tools allow Claude Code to interact with the browser directly.
+
+**Common workflow:**
+1. Start the application: `make up`
+2. Use `mcp__playwright__browser_navigate` to open the application (e.g., `http://localhost:5174`)
+3. Use `mcp__playwright__browser_snapshot` to capture the current page state
+4. Interact with elements using `mcp__playwright__browser_click`, `mcp__playwright__browser_type`, etc.
+5. Verify expected behaviors and take screenshots with `mcp__playwright__browser_take_screenshot`
+
+**Example use cases:**
+- Verify user registration and login flows
+- Test form validations and error messages
+- Check responsive design and UI components
+- Validate API integrations from the frontend
+- Confirm navigation and routing behavior
+
+**Note:** These tools are for manual verification and exploratory testing. Automated E2E tests should be implemented using the project's test framework (see [docs/08_e2e-test-list.md](docs/08_e2e-test-list.md)).
+
+## Database Management
+
+### Quick Commands
+```bash
+make db-init              # Initialize/recreate all tables
+make db-create-user EMAIL=user@example.com PASSWORD=password123  # Create test user
+make db-reset             # Reset database (⚠️ destructive - drops all data)
+```
+
+**For detailed database schema and management, see:**
+- [docs/04_database-design.md](docs/04_database-design.md) - Complete schema documentation
+- [docs/00_development.md](docs/00_development.md) - Database setup workflows
+
+## Pre-commit Hooks
+
+Pre-commit hooks run lightweight checks (formatting, linting) before each commit. Heavy checks (mypy, pytest, vitest) are excluded for fast commits.
+
+```bash
+make pre-commit-install   # Install hooks (run once after clone)
+make pre-commit-run       # Manually run hooks on all files
+make pre-commit-update    # Update hook versions
+```
+
+**Note:** Type checking and tests are NOT run on commit. Run them manually with `make lint` and `make test`.
+
+**For detailed setup and troubleshooting, see [docs/00_development.md](docs/00_development.md)**
+
+## Docker Compose Setup
+
+Four services run in Docker:
+- `frontend` (Node 20-alpine)
+- `backend` (Python 3.12-slim)
+- `db` (MySQL 8.0)
+- `redis` (Redis 7-alpine) - Used for rate limiting
+
+Services communicate via the `app-network` bridge network.
+
+**For detailed architecture and configuration, see [docs/01_system-architecture.md](docs/01_system-architecture.md)**
+
+## Project Conventions
+
+### Commit Messages
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/) with format `<type>(<scope>): <subject>`.
+
+```bash
+pnpm -C frontend run commitlint -- --help  # Check commit message format
+```
+
+### Code Organization
+
+- **Backend**: Flask + SQLAlchemy with layered architecture (routes → services → models)
+- **Frontend**: React + TypeScript with Vite, organized by pages and components
+- All API routes use `/api` prefix
+- Frontend proxies API requests to backend in development
+
+**For detailed conventions and best practices, see:**
+- [docs/05_api-design-guide.md](docs/05_api-design-guide.md) - API design principles
+- [backend/CLAUDE.md](backend/CLAUDE.md) - Backend conventions
+- [frontend/CLAUDE.md](frontend/CLAUDE.md) - Frontend conventions

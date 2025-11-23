@@ -12,7 +12,7 @@ Vite with TypeScript. Uses `@` alias pointing to `src/` directory (configured in
 
 - `vite.config.ts` - Vite configuration
 - `tsconfig.json` - TypeScript compiler options
-- `.eslintrc.cjs` - ESLint rules
+- `eslint.config.js` - ESLint rules (flat config format)
 - `.prettierrc` - Prettier formatting rules
 
 ### API Communication
@@ -126,14 +126,8 @@ pnpm --dir frontend run test:coverage
 # Linting
 pnpm --dir frontend run lint
 
-# Type checking
-pnpm --dir frontend run type-check
-
 # Formatting
 pnpm --dir frontend run format
-
-# Format check (CI)
-pnpm --dir frontend run format:check
 ```
 
 ### Building
@@ -413,10 +407,11 @@ import { Modal, Button } from '@/components/ui'
 ### Prettier Configuration
 
 - **Print width**: 100 characters
-- **Tab width**: 2 spaces
-- **Semicolons**: Always
+- **Tab width**: 2 spaces (default)
+- **Semicolons**: Never (`semi: false`)
 - **Single quotes**: true
 - **Trailing commas**: es5
+- **Arrow parens**: avoid
 
 ### TypeScript Conventions
 
@@ -452,7 +447,7 @@ The authentication feature demonstrates the full frontend stack:
 - **Context**: `src/contexts/AuthContext.tsx` - Authentication state management
 - **Components**:
   - `src/components/ProtectedRoute.tsx` - Route guard for authenticated pages
-- **Styles**: `src/styles/auth.css` - Authentication-specific styles
+- **Styles**: `src/styles/page-header.css`, `src/styles/common.css` - Shared styles
 - **Tests**: `src/**/*.test.tsx` - Component tests
 
 ### Implementation Pattern

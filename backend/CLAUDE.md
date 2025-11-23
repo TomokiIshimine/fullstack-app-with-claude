@@ -111,23 +111,24 @@ The backend uses **Pydantic v2** for request/response validation:
 
 ```python
 # Schema definition
-class PasswordChangeData(BaseModel):
+class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
 
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
+        if not v or len(v) < 8:
+            raise PasswordValidationError("Password must be at least 8 characters long")
         return v
 
 # Route handler
-@auth_bp.post("/change-password")
+@password_bp.post("/change")
 @require_auth
-def change_password(user_id: int):
+def change_password():
+    user_id = g.user_id
     payload = request.get_json()
-    data = PasswordChangeData.model_validate(payload)  # Auto-validates
+    data = PasswordChangeRequest.model_validate(payload)  # Auto-validates
     return service.change_password(user_id, data)
 ```
 
@@ -604,7 +605,7 @@ The authentication feature demonstrates the full backend stack:
 - **Schema**: `app/schemas/auth.py` - Pydantic request/response schemas
 - **Routes**: `app/routes/auth_routes.py` - Flask Blueprint with endpoints
 - **Service**: `app/services/auth_service.py` - Business logic layer
-- **Tests**: `backend/tests/test_auth*.py` - Unit and integration tests
+- **Tests**: `backend/tests/routes/test_auth_routes.py`, `backend/tests/services/test_auth_service.py` - Unit and integration tests
 
 ### API Endpoints
 
@@ -634,6 +635,9 @@ The authentication feature demonstrates the full backend stack:
    class UserResponse(BaseModel):
        id: int
        email: str
+       role: Literal["admin", "user"]
+       name: str | None = None
+       created_at: datetime
    ```
 
 3. **Implement Service** (`app/services/`)

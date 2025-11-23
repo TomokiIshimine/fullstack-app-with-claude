@@ -1,7 +1,8 @@
 # 機能一覧
 
 **作成日:** 2025-10-28
-**バージョン:** 1.0
+**最終更新:** 2025-11-23
+**バージョン:** 1.1
 **対象システム:** フルスタックWebアプリケーション
 
 ---
@@ -23,11 +24,18 @@ graph TB
     System["Webアプリケーション"]
 
     System --> Auth["認証機能"]
+    System --> UserMgmt["ユーザー管理機能"]
     System --> Common["共通機能"]
 
     Auth --> Login["ログイン"]
     Auth --> Logout["ログアウト"]
     Auth --> TokenRefresh["トークン自動更新"]
+
+    UserMgmt --> UserList["ユーザー一覧取得"]
+    UserMgmt --> UserCreate["ユーザー作成"]
+    UserMgmt --> ProfileUpdate["プロフィール更新"]
+    UserMgmt --> UserDelete["ユーザー削除"]
+    UserMgmt --> PasswordChange["パスワード変更"]
 
     Common --> Logging["ロギング"]
     Common --> ErrorHandle["エラーハンドリング"]
@@ -36,6 +44,7 @@ graph TB
 
     style System fill:#e1f5ff
     style Auth fill:#fff4e6
+    style UserMgmt fill:#e8f5e9
     style Common fill:#f3e5f5
 ```
 
@@ -53,7 +62,19 @@ graph TB
 
 ---
 
-### 3.2 共通機能
+### 3.2 ユーザー管理機能
+
+| 機能 | エンドポイント | 実装箇所 | 主な仕様 |
+|------|--------------|---------|---------|
+| **ユーザー一覧取得** | `GET /api/users` | FE: `UserManagementPage.tsx`<br/>BE: `user_routes.py` | - 管理者のみアクセス可能<br/>- 全ユーザーの情報を取得 |
+| **ユーザー作成** | `POST /api/users` | FE: `UserCreateForm.tsx`<br/>BE: `user_routes.py` | - 管理者のみアクセス可能<br/>- ランダムな初期パスワードを生成<br/>- 作成後に初期パスワードを表示 |
+| **プロフィール更新** | `PATCH /api/users/me` | FE: `SettingsPage.tsx`<br/>BE: `user_routes.py` | - 認証済みユーザーが自身のプロフィールを更新<br/>- メールアドレスと名前の変更 |
+| **ユーザー削除** | `DELETE /api/users/{id}` | FE: `UserList.tsx`<br/>BE: `user_routes.py` | - 管理者のみアクセス可能<br/>- 指定したユーザーを削除 |
+| **パスワード変更** | `POST /api/password/change` | FE: `SettingsPage.tsx`<br/>BE: `password_routes.py` | - 認証済みユーザーが自身のパスワードを変更<br/>- 現在のパスワード確認が必要<br/>- 新パスワードのバリデーション（8文字以上、英数字） |
+
+---
+
+### 3.3 共通機能
 
 | 機能 | 実装箇所 | 主な仕様 |
 |------|---------|---------|
@@ -74,6 +95,11 @@ graph TB
 | 認証 | ログイン | ✓ | ✓ | BE: ✓, FE: ✓ |
 | 認証 | ログアウト | ✓ | ✓ | BE: ✓, FE: ✓ |
 | 認証 | トークン自動更新 | ✓ | ✓ | BE: ✓, FE: ✓ |
+| ユーザー管理 | ユーザー一覧取得 | ✓ | ✓ | BE: ✓, FE: ✓ |
+| ユーザー管理 | ユーザー作成 | ✓ | ✓ | BE: ✓, FE: ✓ |
+| ユーザー管理 | プロフィール更新 | ✓ | ✓ | BE: ✓, FE: ✓ |
+| ユーザー管理 | ユーザー削除 | ✓ | ✓ | BE: ✓, FE: ✓ |
+| ユーザー管理 | パスワード変更 | ✓ | ✓ | BE: ✓, FE: ✓ |
 | 共通 | UIコンポーネントライブラリ | - | ✓ | FE: ✓ |
 | 共通 | ロギング | ✓ | ✓ | - |
 | 共通 | エラーハンドリング | ✓ | ✓ | BE: ✓, FE: ✓ |
@@ -111,23 +137,48 @@ graph TB
 
 **認証方法:** Cookie ベース (httpOnly Cookie に JWT トークンを含む)
 
+### 5.3 ユーザー管理 API
+
+| メソッド | エンドポイント | 認証 | 権限 | 説明 |
+|---------|--------------|------|------|------|
+| GET | `/api/users` | 必要 | 管理者のみ | ユーザー一覧取得 |
+| POST | `/api/users` | 必要 | 管理者のみ | ユーザー作成 |
+| PATCH | `/api/users/me` | 必要 | 全ユーザー | プロフィール更新 |
+| DELETE | `/api/users/{id}` | 必要 | 管理者のみ | ユーザー削除 |
+
+### 5.4 パスワード管理 API
+
+| メソッド | エンドポイント | 認証 | 権限 | 説明 |
+|---------|--------------|------|------|------|
+| POST | `/api/password/change` | 必要 | 全ユーザー | パスワード変更 |
+
 ---
 
 ## 6. 画面一覧
 
 ### 6.1 画面構成
 
-| 画面名 | パス | 認証 | 説明 | ファイル |
-|-------|------|------|------|---------|
-| ログイン画面 | `/login` | 不要 | ユーザー認証 | `LoginPage.tsx` |
+| 画面名 | パス | 認証 | 権限 | 説明 | ファイル |
+|-------|------|------|------|------|---------|
+| ログイン画面 | `/login` | 不要 | - | ユーザー認証 | `LoginPage.tsx` |
+| 設定画面 | `/settings` | 必要 | 全ユーザー | プロフィール編集、パスワード変更 | `SettingsPage.tsx` |
+| ユーザー管理画面 | `/admin/users` | 必要 | 管理者のみ | ユーザー一覧表示、作成、削除 | `UserManagementPage.tsx` |
 
 ### 6.2 画面遷移図
 
 ```mermaid
 stateDiagram-v2
     [*] --> Login: アプリ起動
-    Login --> Dashboard: ログイン成功
-    Dashboard --> Login: ログアウト
+    Login --> RoleCheck: ログイン成功
+
+    RoleCheck --> UserManagement: 管理者
+    RoleCheck --> Settings: 一般ユーザー
+
+    UserManagement --> Settings: 設定画面へ
+    Settings --> UserManagement: ユーザー管理へ（管理者のみ）
+
+    UserManagement --> Login: ログアウト
+    Settings --> Login: ログアウト
 ```
 
 ---
