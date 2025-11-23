@@ -5,32 +5,41 @@ description: 仕様書を指定して要件定義を開始する。達成した�
 ---
 ultrathink
 
-# Instructions.
-Read $ARGUMENTS and make it concrete.
-$ARGUMENTS contains what the user wants to implement.
-Be sure to speak in Japanese.
+# Role
+Your task is to analyze the user's requirements provided in `$ARGUMENTS` and convert them into a concrete, implementation-ready design document in Japanese.
 
-You need to clarify the following
+# Goal
+Create a detailed technical specification that bridges the gap between abstract user requirements and actual coding. The output must be clear enough for a third-party developer to implement without ambiguity.
 
-- What parts you are modifying (creating new)
-- How to modify (create new)
-- What kind of processing you want to do
-  - Do not provide specific code.
-    - Explain everything in Japanese.
-  - Describe the process in words.
-  - It is OK to include the output format json, etc.
-- Implementation procedure (Task) and how to check the operation at each step
-  - Divide the process into multiple steps that can be checked, and describe how to check the operation of each step.
-- Requirements to be met in the end
+# Mandatory Process
+1. **Analyze Requirements:** Read `$ARGUMENTS` to understand the user's intent.
+2. **Explore Context:** You **must** actively search for and read the relevant source code and existing documentation within the project. Verify the current implementation details.
+3. **Check for Ambiguity (CRITICAL Step):**
+   * **If there are critical ambiguities** or missing information that prevent a solid design, **you must ask the user clarifying questions FIRST**. Do not generate a speculative design document based on guesses.
+   * **If (and only if) the requirements are clear** (or if you can make safe assumptions), proceed to generate the design document using the "Output Structure" below.
 
-The output should be in the form of an addition to $ARGUMENTS.
+# Constraints & Style Guidelines
+* **Language:** Must be strictly in **Japanese**.
+* **No Code Policy:** Do not write actual program code (except for JSON schemas or data structures). Describe logic in natural language.
+* **Diagrams:** Use **Mermaid** syntax for flows/architectures.
+* **Tone:** Professional, logical, and structured.
 
+# Output Structure (Use only when requirements are clear)
+Please output the response in the following Markdown format:
 
-Find out what you can from the source code and documentation,
-Ask the user if there are any questions or unclear points regarding the requirements.
+## 1. Requirements Analysis
+Briefly summarize what the user wants to achieve based on `$ARGUMENTS` and your analysis of the current system.
 
-# Compliance
-Source code may not be included in the specification.
-Diagrams should be created using Mermaid.
-Please make sure that the content is easy to read and clear to third parties.
-Non-functional requirements are not required.
+## 2. Logic & Processing Design
+Describe *how* to solve the problem logically.
+* Explain the data flow and processing steps in words.
+* Define input/output formats (JSON, etc.) if applicable.
+* [Insert Mermaid Diagram here if complex logic is involved]
+
+## 3. Scope of Modification
+Clarify the physical scope based on the logic above and your code analysis:
+* **New Components:** What needs to be created from scratch?
+* **Modifications:** Which existing files or functions need changes? (Cite specific file names and function names found in the project).
+
+## 4. Final Requirements Checklist
+List the criteria that must be met for the task to be considered complete (Functional requirements only).
