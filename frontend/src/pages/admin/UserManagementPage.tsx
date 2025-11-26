@@ -5,9 +5,11 @@ import { InitialPasswordModal } from '@/components/admin/InitialPasswordModal'
 import { Alert, Button } from '@/components/ui'
 import { PageHeader } from '@/components/PageHeader'
 import { useUserManagement } from '@/hooks/useUserManagement'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function UserManagementPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const { user } = useAuth()
   const {
     users,
     isLoading,
@@ -23,7 +25,12 @@ export function UserManagementPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <PageHeader title="ユーザー管理" showSettings={true} showLogout={true} />
+        <PageHeader
+          title="ユーザー管理"
+          user={user ? { name: user.name, email: user.email } : undefined}
+          showSettings={true}
+          showLogout={true}
+        />
 
         {error && (
           <div className="mb-6">

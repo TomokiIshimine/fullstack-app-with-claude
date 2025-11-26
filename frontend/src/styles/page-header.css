@@ -20,22 +20,92 @@
   flex: 1;
 }
 
-.page-header__actions {
+/* ハンバーガーメニューコンテナ */
+.page-header__menu-container {
+  position: relative;
+}
+
+/* ハンバーガーメニューボタン */
+.page-header__menu-button {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #374151;
+  transition: background-color 0.2s;
 }
 
-.page-header__version {
-  margin-right: 0.5rem;
+.page-header__menu-button:hover {
+  background-color: #f1f5f9;
+}
+
+.page-header__menu-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* ドロップダウンメニュー */
+.page-header__dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 200px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  overflow: hidden;
+}
+
+/* メニュー情報エリア */
+.page-header__dropdown-info {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.page-header__dropdown-version {
+  font-size: 12px;
   color: #9ca3af;
-  font-size: 0.75rem;
+  margin-bottom: 4px;
 }
 
-.page-header__user-email {
-  margin-right: 0.5rem;
-  color: #6b7280;
-  font-size: 0.875rem;
+.page-header__dropdown-name {
+  font-size: 14px;
+  color: #374151;
+  word-break: break-all;
+}
+
+/* メニューボタン */
+.page-header__dropdown-button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.page-header__dropdown-button:hover {
+  background-color: #f8fafc;
+}
+
+.page-header__dropdown-button--danger {
+  color: #dc2626;
+}
+
+.page-header__dropdown-button--danger:hover {
+  background-color: #fef2f2;
 }
 
 /* 戻るボタン */
@@ -54,38 +124,6 @@
   background-color: #4b5563;
 }
 
-/* 設定ボタン */
-.page-header__settings {
-  padding: 0.5rem 1rem;
-  background-color: #6b7280;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-}
-
-.page-header__settings:hover {
-  background-color: #4b5563;
-}
-
-/* ログアウトボタン */
-.page-header__logout {
-  padding: 0.5rem 1rem;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-}
-
-.page-header__logout:hover {
-  background-color: #dc2626;
-}
-
 /* レスポンシブ対応 */
 @media (max-width: 640px) {
   .page-header {
@@ -94,25 +132,16 @@
 
   .page-header__title {
     order: 1;
-    width: 100%;
-    margin-bottom: 0.5rem;
+    flex: 1;
+    width: auto;
+    margin-bottom: 0;
   }
 
   .page-header__back {
     order: 0;
   }
 
-  .page-header__actions {
+  .page-header__menu-container {
     order: 2;
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .page-header__version {
-    display: none;
-  }
-
-  .page-header__user-email {
-    display: none;
   }
 }
