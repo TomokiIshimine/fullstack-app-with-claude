@@ -38,6 +38,7 @@ export function SettingsPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <PageHeader
           title="設定"
+          user={user ? { name: user.name, email: user.email } : undefined}
           onBack={user?.role === 'admin' ? handleBack : undefined}
           showLogout={true}
         />

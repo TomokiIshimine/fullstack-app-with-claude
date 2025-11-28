@@ -5,9 +5,10 @@ import { BrowserRouter } from 'react-router-dom'
 import { PageHeader } from './PageHeader'
 
 // useLogout フックのモック
+const mockHandleLogout = vi.fn()
 vi.mock('@/hooks/useLogout', () => ({
   useLogout: () => ({
-    handleLogout: vi.fn(),
+    handleLogout: mockHandleLogout,
   }),
 }))
 
@@ -33,6 +34,7 @@ vi.mock('react-router-dom', async () => {
 describe('PageHeader', () => {
   beforeEach(() => {
     mockNavigate.mockClear()
+    mockHandleLogout.mockClear()
     // Reset useVersion mock to default values
     mockUseVersion.mockReturnValue({
       version: 'v1.0.0',
@@ -55,17 +57,91 @@ describe('PageHeader', () => {
       expect(screen.getByRole('heading', { name: 'テストページ' })).toBeInTheDocument()
     })
 
-    it('ユーザーメールが渡された場合に表示される', () => {
+    it('ハンバーガーメニューボタンが表示される', () => {
+      renderPageHeader({ title: 'テストページ' })
+
+      expect(screen.getByRole('button', { name: 'メニューを開く' })).toBeInTheDocument()
+    })
+  })
+
+  describe('ハンバーガーメニュー', () => {
+    it('メニューボタンをクリックするとドロップダウンが開く', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      const menuButton = screen.getByRole('button', { name: 'メニューを開く' })
+      await user.click(menuButton)
+
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+    })
+
+    it('メニューが開いている時にもう一度クリックすると閉じる', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      const menuButton = screen.getByRole('button', { name: 'メニューを開く' })
+      await user.click(menuButton)
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+
+      await user.click(menuButton)
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    it('Escapeキーでメニューが閉じる', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      const menuButton = screen.getByRole('button', { name: 'メニューを開く' })
+      await user.click(menuButton)
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    it('aria-expanded属性が正しく設定される', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      const menuButton = screen.getByRole('button', { name: 'メニューを開く' })
+      expect(menuButton).toHaveAttribute('aria-expanded', 'false')
+
+      await user.click(menuButton)
+      expect(menuButton).toHaveAttribute('aria-expanded', 'true')
+    })
+  })
+
+  describe('ユーザー情報表示', () => {
+    it('ユーザー名がある場合、名前が表示される', async () => {
+      const user = userEvent.setup()
       renderPageHeader({
         title: 'テストページ',
-        userEmail: 'test@example.com',
+        user: { name: '山田太郎', email: 'test@example.com' },
       })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      expect(screen.getByText('山田太郎')).toBeInTheDocument()
+      expect(screen.queryByText('test@example.com')).not.toBeInTheDocument()
+    })
+
+    it('ユーザー名がない場合、メールアドレスが表示される', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({
+        title: 'テストページ',
+        user: { name: null, email: 'test@example.com' },
+      })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
 
       expect(screen.getByText('test@example.com')).toBeInTheDocument()
     })
 
-    it('ユーザーメールが渡されない場合は表示されない', () => {
-      renderPageHeader({ title: 'テストページ' })
+    it('ユーザーが渡されない場合は表示されない', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
 
       expect(screen.queryByText(/@/)).not.toBeInTheDocument()
     })
@@ -103,92 +179,132 @@ describe('PageHeader', () => {
   })
 
   describe('設定ボタン', () => {
-    it('showSettings=true の場合に設定ボタンが表示される', () => {
-      renderPageHeader({
-        title: 'テストページ',
-        showSettings: true,
-      })
-
-      expect(screen.getByRole('button', { name: '設定' })).toBeInTheDocument()
-    })
-
-    it('設定ボタンをクリックすると /settings に遷移する', async () => {
+    it('showSettings=true の場合にメニュー内に設定ボタンが表示される', async () => {
       const user = userEvent.setup()
       renderPageHeader({
         title: 'テストページ',
         showSettings: true,
       })
 
-      await user.click(screen.getByRole('button', { name: '設定' }))
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
 
-      expect(mockNavigate).toHaveBeenCalledWith('/settings')
+      expect(screen.getByRole('menuitem', { name: '設定' })).toBeInTheDocument()
     })
 
-    it('showSettings=false の場合は設定ボタンが表示されない', () => {
+    it('設定ボタンをクリックすると /settings に遷移しメニューが閉じる', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({
+        title: 'テストページ',
+        showSettings: true,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+      await user.click(screen.getByRole('menuitem', { name: '設定' }))
+
+      expect(mockNavigate).toHaveBeenCalledWith('/settings')
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    it('showSettings=false の場合は設定ボタンが表示されない', async () => {
+      const user = userEvent.setup()
       renderPageHeader({
         title: 'テストページ',
         showSettings: false,
+        showLogout: true,
       })
 
-      expect(screen.queryByRole('button', { name: '設定' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      expect(screen.queryByRole('menuitem', { name: '設定' })).not.toBeInTheDocument()
     })
   })
 
   describe('ログアウトボタン', () => {
-    it('showLogout=true の場合にログアウトボタンが表示される', () => {
+    it('showLogout=true の場合にメニュー内にログアウトボタンが表示される', async () => {
+      const user = userEvent.setup()
       renderPageHeader({
         title: 'テストページ',
         showLogout: true,
       })
 
-      expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      expect(screen.getByRole('menuitem', { name: 'ログアウト' })).toBeInTheDocument()
     })
 
-    it('showLogout=false の場合はログアウトボタンが表示されない', () => {
+    it('ログアウトボタンをクリックするとhandleLogoutが呼ばれメニューが閉じる', async () => {
+      const user = userEvent.setup()
+      renderPageHeader({
+        title: 'テストページ',
+        showLogout: true,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+      await user.click(screen.getByRole('menuitem', { name: 'ログアウト' }))
+
+      expect(mockHandleLogout).toHaveBeenCalledOnce()
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    it('showLogout=false の場合はログアウトボタンが表示されない', async () => {
+      const user = userEvent.setup()
       renderPageHeader({
         title: 'テストページ',
         showLogout: false,
+        showSettings: true,
       })
 
-      expect(screen.queryByRole('button', { name: 'ログアウト' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      expect(screen.queryByRole('menuitem', { name: 'ログアウト' })).not.toBeInTheDocument()
     })
   })
 
   describe('バージョン表示', () => {
-    it('バージョン情報が正しく表示される', () => {
+    it('バージョン情報がメニュー内に正しく表示される', async () => {
+      const user = userEvent.setup()
       mockUseVersion.mockReturnValue({
         version: 'v1.2.3',
         isLoading: false,
       })
 
-      renderPageHeader({ title: 'テストページ' })
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
 
       expect(screen.getByText('v1.2.3')).toBeInTheDocument()
     })
 
-    it('ローディング中はバージョンが表示されない', () => {
+    it('ローディング中はバージョンが表示されない', async () => {
+      const user = userEvent.setup()
       mockUseVersion.mockReturnValue({
         version: 'v1.0.0',
         isLoading: true,
       })
 
-      renderPageHeader({ title: 'テストページ' })
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
 
       expect(screen.queryByText('v1.0.0')).not.toBeInTheDocument()
     })
 
-    it('バージョンが "unknown" の場合も表示される', () => {
+    it('バージョンが "unknown" の場合も表示される', async () => {
+      const user = userEvent.setup()
       mockUseVersion.mockReturnValue({
         version: 'unknown',
         isLoading: false,
       })
 
-      renderPageHeader({ title: 'テストページ' })
+      renderPageHeader({ title: 'テストページ', showLogout: true })
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
 
       expect(screen.getByText('unknown')).toBeInTheDocument()
     })
 
-    it('バージョンはユーザーメールの左側に表示される', () => {
+    it('バージョンはユーザー名の上に表示される', async () => {
+      const user = userEvent.setup()
       mockUseVersion.mockReturnValue({
         version: 'v2.0.0',
         isLoading: false,
@@ -196,101 +312,107 @@ describe('PageHeader', () => {
 
       renderPageHeader({
         title: 'テストページ',
-        userEmail: 'test@example.com',
+        user: { name: '山田太郎', email: 'test@example.com' },
       })
 
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
       const version = screen.getByText('v2.0.0')
-      const email = screen.getByText('test@example.com')
-      const actions = version.parentElement
+      const name = screen.getByText('山田太郎')
+      const infoContainer = version.parentElement
 
-      expect(actions).toContainElement(version)
-      expect(actions).toContainElement(email)
+      expect(infoContainer).toContainElement(version)
+      expect(infoContainer).toContainElement(name)
 
-      // Check that version appears before email in the DOM
-      const children = Array.from(actions?.children || [])
+      // Check that version appears before name in the DOM
+      const children = Array.from(infoContainer?.children || [])
       const versionIndex = children.indexOf(version)
-      const emailIndex = children.indexOf(email)
-      expect(versionIndex).toBeLessThan(emailIndex)
+      const nameIndex = children.indexOf(name)
+      expect(versionIndex).toBeLessThan(nameIndex)
     })
 
-    it('異なるバージョン形式が正しく表示される', () => {
+    it('異なるバージョン形式が正しく表示される', async () => {
+      const user = userEvent.setup()
       const versions = ['v1.0.0', 'v2.1.0-beta.1', 'v3.0.0-rc.2']
 
-      versions.forEach(version => {
+      for (const version of versions) {
         mockUseVersion.mockReturnValue({
           version,
           isLoading: false,
         })
 
-        const { unmount } = renderPageHeader({ title: 'テストページ' })
+        const { unmount } = renderPageHeader({ title: 'テストページ', showLogout: true })
 
+        await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
         expect(screen.getByText(version)).toBeInTheDocument()
 
         unmount()
-      })
+      }
     })
   })
 
   describe('複合パターン', () => {
-    it('すべてのオプションを有効にした場合、すべての要素が表示される', () => {
+    it('すべてのオプションを有効にした場合、すべての要素がメニュー内に表示される', async () => {
+      const user = userEvent.setup()
       const handleBack = vi.fn()
       renderPageHeader({
         title: 'テストページ',
-        userEmail: 'test@example.com',
+        user: { name: '山田太郎', email: 'test@example.com' },
         onBack: handleBack,
         showSettings: true,
         showLogout: true,
       })
 
+      // 戻るボタンはヘッダーに表示
       expect(screen.getByRole('heading', { name: 'テストページ' })).toBeInTheDocument()
-      expect(screen.getByText('test@example.com')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: '戻る' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: '設定' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
+
+      // メニューを開く
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      // メニュー内の要素
+      expect(screen.getByText('山田太郎')).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: '設定' })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'ログアウト' })).toBeInTheDocument()
     })
 
-    it('TodoListPage パターン: タイトル、メール、設定、ログアウト', () => {
-      renderPageHeader({
-        title: 'TODOリスト',
-        userEmail: 'user@example.com',
-        showSettings: true,
-        showLogout: true,
-      })
-
-      expect(screen.getByRole('heading', { name: 'TODOリスト' })).toBeInTheDocument()
-      expect(screen.getByText('user@example.com')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: '設定' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: '戻る' })).not.toBeInTheDocument()
-    })
-
-    it('UserManagementPage パターン: タイトル、設定、ログアウト', () => {
+    it('UserManagementPage パターン: タイトル、設定、ログアウト', async () => {
+      const user = userEvent.setup()
       renderPageHeader({
         title: 'ユーザー管理',
+        user: { name: '管理者', email: 'admin@example.com' },
         showSettings: true,
         showLogout: true,
       })
 
       expect(screen.getByRole('heading', { name: 'ユーザー管理' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: '設定' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
-      expect(screen.queryByText(/@/)).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: '戻る' })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      expect(screen.getByText('管理者')).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: '設定' })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'ログアウト' })).toBeInTheDocument()
     })
 
-    it('SettingsPage パターン: タイトル、戻る、ログアウト', () => {
+    it('SettingsPage パターン: タイトル、戻る、ログアウト', async () => {
+      const user = userEvent.setup()
       const handleBack = vi.fn()
       renderPageHeader({
         title: '設定',
+        user: { name: 'ユーザー', email: 'user@example.com' },
         onBack: handleBack,
         showLogout: true,
       })
 
       expect(screen.getByRole('heading', { name: '設定' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: '戻る' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
-      expect(screen.queryByText(/@/)).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: '設定' })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'メニューを開く' }))
+
+      expect(screen.getByText('ユーザー')).toBeInTheDocument()
+      expect(screen.queryByRole('menuitem', { name: '設定' })).not.toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'ログアウト' })).toBeInTheDocument()
     })
   })
 })
