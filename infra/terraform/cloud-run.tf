@@ -93,7 +93,13 @@ resource "google_cloud_run_service" "backend" {
           value = "PRIVATE"
         }
 
+        # =================================================================
         # Redis configuration for rate limiting
+        # COST OPTIMIZATION: Redis is currently DISABLED.
+        # Rate limiting uses in-memory storage instead.
+        # To re-enable, uncomment the env blocks below and in redis.tf
+        # =================================================================
+        /*
         env {
           name  = "REDIS_HOST"
           value = google_redis_instance.rate_limiter.host
@@ -108,10 +114,12 @@ resource "google_cloud_run_service" "backend" {
           name  = "REDIS_PASSWORD"
           value = google_redis_instance.rate_limiter.auth_string
         }
+        */
 
+        # Rate limiting is disabled (uses in-memory fallback in limiter.py)
         env {
           name  = "RATE_LIMIT_ENABLED"
-          value = "true"
+          value = "false"
         }
 
         # リソース制限
@@ -169,8 +177,8 @@ resource "google_cloud_run_service" "backend" {
   depends_on = [
     google_project_service.run,
     google_sql_database_instance.main,
-    google_vpc_access_connector.connector,
-    google_redis_instance.rate_limiter
+    google_vpc_access_connector.connector
+    # google_redis_instance.rate_limiter  # COST OPTIMIZATION: Redis disabled
   ]
 
   # ライフサイクル設定 (イメージはGitHub Actionsで更新される)
