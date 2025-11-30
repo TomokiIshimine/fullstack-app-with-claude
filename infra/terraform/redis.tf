@@ -1,5 +1,19 @@
 # Redis (Memorystore) for rate limiting storage
+#
+# =============================================================================
+# COST OPTIMIZATION: Redis is currently DISABLED to reduce infrastructure costs.
+# The application uses in-memory rate limiting instead (via Flask-Limiter).
+#
+# To re-enable Redis for production use:
+# 1. Uncomment the resources below
+# 2. Uncomment Redis-related environment variables in cloud-run.tf
+# 3. Uncomment Redis outputs in outputs.tf
+# 4. Run `terraform apply`
+#
+# Estimated cost savings: ~$35-40/month
+# =============================================================================
 
+/*
 # Redis API
 resource "google_project_service" "redis" {
   project = var.gcp_project_id
@@ -61,3 +75,4 @@ resource "google_redis_instance" "rate_limiter" {
     google_compute_network.vpc
   ]
 }
+*/

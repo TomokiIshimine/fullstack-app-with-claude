@@ -119,6 +119,11 @@ output "db_migrate_job_name" {
   value       = google_cloud_run_v2_job.db_migrate.name
 }
 
+# =============================================================================
+# Redis outputs (COST OPTIMIZATION: Currently disabled)
+# To re-enable, uncomment the outputs below and redis.tf resources
+# =============================================================================
+/*
 # Redis instance host
 output "redis_host" {
   description = "Redis instance host for rate limiting"
@@ -137,3 +142,4 @@ output "redis_auth_string" {
   value       = google_redis_instance.rate_limiter.auth_string
   sensitive   = true
 }
+*/
